@@ -1,0 +1,135 @@
+{
+  "project_name": "Gamified Life Improvement App",
+  "theme": "DARK",
+  "archetype": "Mixed: Archetype 4 (Swiss & High-Contrast) for Focus Mode, Archetype 7 (Electric & Neon) for Game Mode",
+  "brand_colors": "Linear.app aesthetic (Dark with purple/violet accents)",
+  "typography": {
+    "heading_font": "Outfit",
+    "body_font": "Inter",
+    "mono_font": "JetBrains Mono",
+    "scales": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter font-black",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-bold",
+      "h3": "text-xl sm:text-2xl tracking-tight font-semibold",
+      "h4": "text-lg sm:text-xl font-semibold",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm",
+      "overline": "text-xs uppercase tracking-[0.2em] font-semibold"
+    },
+    "rules": [
+      "Headings must use Outfit, never Inter.",
+      "Never center headings by default, align left unless in a specific symmetrical hero section.",
+      "Keep line height tight for headers (leading-none or leading-tight) and loose for body (leading-relaxed)."
+    ]
+  },
+  "color_palette": {
+    "background": {
+      "default": "#0A0A0A",
+      "surface": "#121212",
+      "elevated": "#1A1A1A"
+    },
+    "text": {
+      "primary": "#F7F7F7",
+      "secondary": "#A1A1AA",
+      "muted": "#71717A"
+    },
+    "primary": {
+      "default": "#8B5CF6",
+      "hover": "#A78BFA",
+      "glow": "rgba(139, 92, 246, 0.5)"
+    },
+    "accent": {
+      "focus": "#E4E4E7",
+      "game": "#C084FC",
+      "warning": "#FBBF24",
+      "success": "#34D399"
+    },
+    "border": {
+      "default": "rgba(255, 255, 255, 0.1)",
+      "hover": "rgba(255, 255, 255, 0.2)"
+    }
+  },
+  "modes": {
+    "focus_mode": {
+      "description": "Minimal dark UI, clean typography, no animations, muted colors, data-first.",
+      "ui_characteristics": [
+        "Cardless or 1px solid border surfaces (border-white/10)",
+        "Minimal gradients, pure flat dark colors",
+        "Strict grid hierarchy, dense and compact",
+        "Monochrome with very subtle purple tints for active states only",
+        "No particle effects, no glowing shadows, no animations (disable Framer Motion)"
+      ]
+    },
+    "game_mode": {
+      "description": "Full glassmorphism, glowing purple accents, animated XP bars, particle effects, celebrations.",
+      "ui_characteristics": [
+        "Glassmorphic cards (backdrop-blur-xl bg-white/5 border-white/10)",
+        "Glowing shadows (drop-shadow-[0_0_15px_rgba(139,92,246,0.3)])",
+        "Animated progress bars and dynamic counters",
+        "Neon edge lighting and 'Tracing Beam' effects",
+        "Celebratory micro-interactions on habit completion"
+      ]
+    }
+  },
+  "layout_and_spacing": {
+    "grid_system": "Bento Grid protocol. Use grid-cols-1 md:grid-cols-8 lg:grid-cols-12 for Marketing, grid-cols-1 md:grid-cols-3 lg:grid-cols-4 for Dashboard.",
+    "padding": "Generous spacing. p-6 or p-8 inside bordered containers. py-20 or py-32 for marketing sections.",
+    "radius": "Game Mode: rounded-xl or rounded-2xl. Focus Mode: rounded-sm or rounded-none for a brutalist edge.",
+    "rules": [
+      "Containers with borders MUST have internal padding to prevent text collision.",
+      "Images must not exceed 80vh on mobile.",
+      "Grid items must be direct children of the grid container."
+    ]
+  },
+  "components": {
+    "buttons": "Shadcn Button heavily customized. Focus: solid white or gray, sharp edges. Game: glowing purple gradient, rounded, hover lift.",
+    "cards": "Avoid generic 'card' component. Build custom with standard divs. Game: Glassmorphism. Focus: Flat with 1px border.",
+    "inputs": "Shadcn Input. Always include a visible focus ring.",
+    "navigation": "Sticky header (z-50) with backdrop-blur-xl and bg-black/60.",
+    "tabs": "Override default height. Use h-auto. Focus: underline active. Game: glowing pill background active."
+  },
+  "motion_and_interactions": {
+    "rules": [
+      "Always explicitly set hover states (e.g., hover:bg-white/10 hover:text-white).",
+      "Focus states must have HIGHER contrast, not lower.",
+      "Respect prefers-reduced-motion, especially in Game Mode.",
+      "Use framer-motion for Game Mode (staggered list entrances, progress bar fills). Disable for Focus Mode."
+    ]
+  },
+  "media": {
+    "image_urls": [
+      {
+        "category": "hero_background",
+        "url": "https://images.unsplash.com/photo-1687463221020-b8769b32c622?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwxfHxkYXJrJTIwYWJzdHJhY3QlMjBnZW9tZXRyaWMlMjBiYWNrZ3JvdW5kJTIwcHVycGxlfGVufDB8fHx8MTc3NTA3ODQxN3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Dark geometric purple background for the marketing hero section."
+      },
+      {
+        "category": "game_mode_showcase",
+        "url": "https://images.pexels.com/photos/7773745/pexels-photo-7773745.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Neon purple gaming controller to visually represent the Game Mode in features or onboarding."
+      },
+      {
+        "category": "focus_mode_showcase",
+        "url": "https://images.unsplash.com/photo-1763596396590-81193928cdeb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwyfHxkYXJrJTIwZ2xvd2luZyUyMGFic3RyYWN0fGVufDB8fHx8MTc3NTA3ODQyOHww&ixlib=rb-4.1.0&q=85",
+        "description": "Dark, minimal abstract background to visually represent the Focus Mode in features or onboarding."
+      },
+      {
+        "category": "auth_background",
+        "url": "https://images.unsplash.com/photo-1687639160028-95d24c15d04d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwyfHxkYXJrJTIwYWJzdHJhY3QlMjBnZW9tZXRyaWMlMjBiYWNrZ3JvdW5kJTIwcHVycGxlfGVufDB8fHx8MTc3NTA3ODQxN3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Subtle dark purple wavy lines for the login/signup split screen background."
+      }
+    ]
+  },
+  "icons": "lucide-react",
+  "testing": {
+    "attributes": "All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid='login-submit-button')."
+  },
+  "instructions_to_main_agent": [
+    "You are working with .jsx and .js files. Do NOT use .tsx or .ts.",
+    "Implement a global React Context (e.g., ModeProvider) to manage 'focus' vs 'game' modes. This context should inject a CSS class or variable to the root to easily toggle styles.",
+    "For Game Mode, utilize Framer Motion for animations. For Focus Mode, render components without Framer Motion wrappers or set animation durations to 0.",
+    "Use standard HTML tags for layout structure (div, section) heavily styled with Tailwind, rather than relying on Shadcn structural components.",
+    "Ensure high contrast ratios (APCA preferred). The background is near black (#0A0A0A) and text should be highly legible (#F7F7F7).",
+    "Never use generic sans-serif (Inter) for headings. Use the designated 'Outfit' display font."
+  ]
+}

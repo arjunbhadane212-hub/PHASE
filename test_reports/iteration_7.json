@@ -1,0 +1,74 @@
+{
+  "summary": "V7 Shop/profile/title expansion verified. Backend 13/13 pytest passed covering /api/shop/profile-items (9 icons/30 anims/8 banners), /api/shop/buy-profile-item, /api/profile/me/titles, /api/profile/me/equip, /api/profile/{username}. Frontend: Shop renders 5 tabs (Boosts/Colors/Icons/Anims/Banners — note tab id for Boosts is 'powerups'), 9 icons/30 anims/8 banners render, 2-col grid on mobile (grid-cols-2 sm:grid-cols-3), tabs container overflow-x-auto for mobile scroll. Progress page confirmed NO all-time stats. Settings has Profile Customization section. Public profile /profile/Admin6419 renders banner, avatar, Level 4 Achiever, Total XP 720, streak, longest streak, habits done. Admin successfully purchased an icon and equipped it via the API (persistence verified). One React console warning reported below.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ShopPage PowerUpsGrid",
+        "issue": "React warning: 'Encountered two children with the same key xp_boost_2xcommon'. Shop inventory generator (generate_shop_inventory) creates 4 random slots and often picks the same common item (e.g., xp_boost_2x) multiple times; the grid uses key={`${item.id}-${item.rarity}`} or similar non-unique composite causing duplicate React keys. Fix: use array index in key (e.g., key={`${idx}-${item.id}`}) OR dedupe inventory on insert.",
+        "selector": "[data-testid=\"powerups-grid\"]",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Public profile (/profile/Admin6419)",
+        "issues": ["Level badge renders 'Level 4 -- Achiever' with double-dash — cosmetic; consider '•' separator or en-dash '—'."]
+      }
+    ]
+  },
+  "passed_tests": [
+    "Backend admin+test login",
+    "GET /api/shop/profile-items returns exactly 9 icons, 30 animations, 8 banners with required fields (key, name, rarity, price, owned; animations have css; banners have gradient)",
+    "GET /api/profile/me/titles returns earned_titles + equipped_title",
+    "GET /api/profile/{username} returns equipped_title, equipped_icon, equipped_animation, equipped_banner, earned_titles",
+    "GET /api/profile/unknown returns 404",
+    "POST /api/shop/buy-profile-item (type=icon) — purchase succeeds, unlocked_icons updated, gems decremented",
+    "PUT /api/profile/me/equip (type=icon) persists equipped_icon",
+    "PUT /api/profile/me/equip rejects unearned title with 400 (admin cannot equip 'The Sovereign Overlord')",
+    "PUT /api/profile/me/equip rejects unowned animation (anim_divine) with 400",
+    "PUT /api/profile/me/equip {type=title, key=null} unequips (200, equipped_title=null)",
+    "POST /api/shop/buy-profile-item with invalid type returns 400",
+    "GET /api/shop/profile-items requires auth (401)",
+    "Frontend: Shop 5 tabs visible (powerups/colors/icons/anims/banners) desktop + mobile",
+    "Frontend: Icons tab renders 9 items, Anims renders 30 items, Banners renders 8 items",
+    "Frontend: Mobile (390px) — shop-tabs has overflow-x-auto, icon-grid uses grid-cols-2 sm:grid-cols-3",
+    "Frontend: Progress page has no all-time stats section",
+    "Frontend: Settings has [data-testid=\"profile-customization\"] section",
+    "Frontend: /profile/Admin6419 renders with username, Level/Achiever badge, Total XP 720, Current Streak, Longest Streak 7, Habits Done 22, Member since Apr 2026"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_shop_profile_v7.py",
+    "/app/test_reports/pytest/pytest_v7_results.xml"
+  ],
+  "action_items": [
+    "Fix React key duplication in ShopPage PowerUpsGrid: when random shop inventory contains duplicates of the same power-up (e.g., xp_boost_2x appears twice in 4 slots), React logs 'Encountered two children with the same key'. Use array index in key or dedupe inventory when generating.",
+    "Optional cosmetic: replace '--' separator in level badge on public profile with '•' or em-dash."
+  ],
+  "critical_code_review_comments": [
+    "server.py generate_shop_inventory() picks 4 random items independently — can produce duplicates. If business intent is unique slots, dedupe or use random.sample across candidates.",
+    "PUT /api/profile/me/equip correctly validates ownership for icon/animation/banner using user.get(field, []) but reads from the already-loaded user doc — if the user just purchased an item in the same session, the stale user doc may not include it. Consider re-fetching user doc inside equip_profile_item for freshness.",
+    "Public /api/profile/{username} endpoint is unauthenticated (correct) but does not apply rate limiting — could be abused for username enumeration via 404 vs 403 timing.",
+    "get_earned_titles does not sort titles or deduplicate — if a user reaches higher streak tiers, all lower titles are also returned (acceptable as 'unlocked collection'). Frontend should ensure proper display order.",
+    "ROAST_MESSAGES verified milder (no harsh words). Matches spec."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_shop_profile_v7.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13)",
+    "frontend": "95% — 1 React console warning on PowerUpsGrid keys; all functional checks pass"
+  },
+  "test_credentials": {
+    "admin_game_mode": "admin@habitrpg.com / Admin123!",
+    "test_focus_mode": "test@habitrpg.com / Test123!"
+  },
+  "seed_data_creation": "Admin purchased one of the cheapest icons during test run (persisted in DB). Gems decremented by icon price. Equipped_icon set. Subsequent runs may skip purchase if all icons owned.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Shop tab IDs are: powerups (labeled 'Boosts'), colors, icons, anims, banners. data-testids: tab-{id}, shop-{type}-{key} for items, icon-grid/animation-grid/banner-grid for containers. Admin username Admin6419. Admin has longest_streak=7 so only 'Rookie' streak title is earned (if backend threshold is 10 days, admin has zero titles — confirmed via test). To test equip title flow end-to-end via UI, main agent would need to seed admin with longest_streak_ever>=10 OR adjust streak title thresholds. Backend equip endpoint itself verified working with 400 for unearned and 200 for null unequip."
+}

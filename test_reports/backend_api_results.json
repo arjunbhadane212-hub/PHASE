@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-04-01T21:40:31.259970",
+  "total_tests": 19,
+  "passed_tests": 18,
+  "success_rate": 94.73684210526315,
+  "results": [
+    {
+      "test": "API Health Check",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/"
+    },
+    {
+      "test": "User Registration",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/auth/register"
+    },
+    {
+      "test": "New User Login",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/auth/login"
+    },
+    {
+      "test": "Get Current User",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/auth/me"
+    },
+    {
+      "test": "Onboarding Flow",
+      "success": true,
+      "details": "Completed 5 steps",
+      "endpoint": "/users/onboarding"
+    },
+    {
+      "test": "Habit Creation",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/habits"
+    },
+    {
+      "test": "Get Habits",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/habits"
+    },
+    {
+      "test": "Get Today's Habits",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/habits/today"
+    },
+    {
+      "test": "Complete Habit",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/habits/86337966-4071-4b8e-8297-446f95d93d37/complete"
+    },
+    {
+      "test": "Daily Progress",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/progress/daily"
+    },
+    {
+      "test": "Weekly Progress",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/progress/weekly"
+    },
+    {
+      "test": "User Stats",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/users/stats"
+    },
+    {
+      "test": "Mode Switching",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/users/mode"
+    },
+    {
+      "test": "User Logout",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/auth/logout"
+    },
+    {
+      "test": "Test User Login",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/auth/login"
+    },
+    {
+      "test": "Get Current User",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/auth/me"
+    },
+    {
+      "test": "Admin Login",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/auth/login"
+    },
+    {
+      "test": "Get Levels",
+      "success": true,
+      "details": "Status: 200",
+      "endpoint": "/levels"
+    },
+    {
+      "test": "Brute Force Protection",
+      "success": false,
+      "details": "Blocked after 6 attempts",
+      "endpoint": "/auth/login"
+    }
+  ]
+}

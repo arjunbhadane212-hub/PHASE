@@ -1,0 +1,75 @@
+{
+  "summary": "Full backend + frontend testing of new Discord-style avatar Decorations feature. Backend pytest 11/11 passed (1 skipped — happy-path equip requires admin to own a decoration; admin has 52 gems vs 3000 price). Frontend verified end-to-end via Playwright on the live preview URL: Shop has all 6 tabs (Boosts/Colors/Icons/Anims/Banners/Decors), Decors tab renders exactly 50 .deco-wrap cards each priced 3,000 gems, MyProfilePage has the new Decorations accordion (data-testid=equip-decos) plus the existing 4 sections, the profile-preview avatar is wrapped in .deco-wrap, and the public profile /profile/Admin6419 also wraps the avatar in .deco-wrap. All previously-validated flows (login both modes, existing shop tabs, equip Title/Icon/Anim/Banner) continue to work.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Shop → Decors tab",
+        "issues": ["All 50 decoration preview avatars render as the same flat dark-blue circle because no .deco-* CSS class is applied to the preview <div className=`deco-wrap`> in DecorationsGrid (ShopPage.js:322). The animated ::before/::after rings only appear on the actual avatars (profile/public), not on the shop preview cards. Consider passing item.css to the preview wrapper so users can see the animation before buying."]
+      },
+      {
+        "screen": "Public profile /profile/{username}",
+        "issues": ["Carry-over from iter_7/8/9: 'Level N -- Name' double-dash separator on level badge — purely cosmetic."]
+      }
+    ]
+  },
+  "passed_tests": [
+    "Backend pytest 11/11 PASSED, 1 SKIPPED (happy-path equip — admin owns no decoration)",
+    "GET /api/shop/profile-items returns icons+animations+banners+decorations keys",
+    "decorations array has exactly 50 items, all priced 3000 gems, all css starts with 'deco-'",
+    "Known keys present: deco_flame_ring, deco_frost_ring, deco_supernova_burst, deco_galaxy_spiral",
+    "POST /api/shop/buy-profile-item with type=decoration, invalid key → 404",
+    "POST /api/shop/buy-profile-item with insufficient gems → 400 'not enough gems'",
+    "POST /api/shop/buy-profile-item with type=garbage → 400",
+    "PUT /api/profile/me/equip type=decoration, key=null → 200; persisted via /auth/me",
+    "PUT /api/profile/me/equip type=decoration, key=<unowned> → 400 'not owned'",
+    "GET /api/profile/{username} response includes 'equipped_decoration' field",
+    "Both admin@habitrpg.com (Game Mode) and test@habitrpg.com (Focus Mode) login OK",
+    "Frontend Shop page has all 6 tabs visible: Boosts, Colors, Icons, Anims, Banners, Decors",
+    "Decors tab shows 50 .deco-wrap cards (count via DOM query)",
+    "Decors tab shows '3,000' label 100 times (50 items × subtitle + buy button)",
+    "MyProfilePage has equip-decos accordion alongside equip-titles/icons/anims/banners",
+    "MyProfilePage profile preview avatar wrapped in .deco-wrap div",
+    "Decorations accordion empty-state copy: 'Buy avatar decorations from the Shop (3,000 gems each) for animated frames around your avatar.'",
+    "Public profile /profile/Admin6419 has 1 .deco-wrap on the avatar"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_decorations_v10.py",
+    "/app/test_reports/pytest/iteration_10.xml"
+  ],
+  "action_items": [
+    "(Minor UX) In ShopPage.js DecorationsGrid (line ~322), apply item.css to the preview <div className=`deco-wrap`> so the shop preview shows the actual animated ring, e.g. `<div className={`deco-wrap ${item.css}`}>`. Currently all 50 cards look identical (plain dark-blue circle).",
+    "(Cosmetic, carry-over from iter_7/8/9) Fix 'Level N -- Name' double-dash separator on public profile level badge.",
+    "(Optional) Seed admin (or a TEST_ user) with one decoration to allow happy-path equip-and-persist regression to run automatically without skip."
+  ],
+  "critical_code_review_comments": [
+    "server.py SHOP_DECORATIONS dict has all 50 entries with consistent shape (name, css, price=3000); equip and buy endpoints correctly include 'decoration' branch and use 'unlocked_decorations' / 'equipped_decoration' fields.",
+    "buy-profile-item endpoint comment still says 'Buy a profile item (icon, animation, banner)' — should be updated to mention decoration.",
+    "/api/profile/me/equip correctly accepts None to remove decoration (verified via curl + pytest).",
+    "ShopPage.js DecorationsGrid does NOT pass item.css to the preview wrapper — only the literal class 'deco-wrap' is applied, so preview ring animations are missing in the shop. Other grids (Icons, Banners) have the same render concept but those use SVG/inline styles; decorations rely on CSS pseudo-elements and need the per-item class.",
+    "MyProfilePage.js correctly wraps the live-preview avatar with `${decoClass}` (line 105) and the per-pill mini-preview also uses `${d.css}` (line 320) — so the equip section will display correctly once admin owns a decoration.",
+    "PublicProfilePage.js correctly applies decoClass to the public avatar wrapper (line 91).",
+    "index.css contains 50 distinct .deco-* classes plus shared .deco-wrap base + .deco-wrap::before/::after rules — count verified via grep (62 matches total = 50 main + 1 base + .deco-wrap::before/::after + a few shared keyframes)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_decorations_v10.py (created)"
+  ],
+  "success_rate": {
+    "backend": "100% (11 passed, 1 skipped due to insufficient gems on admin)",
+    "frontend": "100% on requested features; 1 minor UX nit on shop preview rendering"
+  },
+  "test_credentials": {
+    "admin_game_mode": "admin@habitrpg.com / Admin123!",
+    "test_focus_mode": "test@habitrpg.com / Test123!"
+  },
+  "seed_data_creation": "None. Admin equipped_decoration was briefly set to null and verified persisted; left as null (matches pre-test state since admin owns no decoration).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Decorations feature is fully wired end-to-end. Backend: SHOP_DECORATIONS=50 items @3000 gems in server.py:381; user fields equipped_decoration / unlocked_decorations added; buy/equip/profile-items/public-profile endpoints all support type='decoration'. Frontend: ShopPage Decors tab + MyProfilePage equip-decos accordion + .deco-wrap on both avatars (My + Public). 50 .deco-* CSS classes in index.css. Admin (Admin6419) has 52 gems and owns no decorations, so to test buy/equip happy paths, either grant gems via DB or seed a TEST_ user with unlocked_decorations:['deco_flame_ring']. Known minor UX issue: ShopPage DecorationsGrid preview wrapper missing item.css class — see action_items.",
+  "rca of the issue": "N/A — no functional bugs found. The only finding is a UX gap where shop preview cards don't show the animated ring (because the per-item CSS class isn't applied to the preview deco-wrap div in ShopPage.js:322). Fix is a 1-line interpolation change."
+}
