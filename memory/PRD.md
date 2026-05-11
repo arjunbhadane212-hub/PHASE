@@ -53,13 +53,27 @@ Build a full-stack gamified life improvement web app (HabitRPG style). Turn real
 - PUT /api/profile/me/equip - Equip title/icon/animation/banner
 - GET /api/progress/monthly - 30-day progress data
 
+### Phase 7 — Leaderboard, Admin & Profiles (2026-04-28)
+53. Leaderboard screen (`LeaderboardPage.js`) with tier colors + rank animations
+54. Admin Dashboard (`AdminPage.js`) — Overview / Users / Shop tabs (secret: habitrpg-admin-2026)
+55. 30 Premium Battle Scenes (Dragon vs Samurai etc., 7000 gems tier)
+56. Full-width Discord-style profile banners with animations
+
+### Phase 8 — Focus Mode Session & Roast System (2026-02-XX)
+57. Roast Notification System — `/api/roasts/check` (polled every 5 min), `/api/session/abandon`, Settings toggle `roast_enabled`, daily cap of 2 roasts/user
+58. Full-screen Focus Session Timer (`FocusSession.js`) — replaces Focus Mode checkbox with "Begin" button per habit
+59. Abandon penalty: −30 gems (clamped to min(30, gems)), consumes streak shield if available, fires roast toast via `phase-roast` CustomEvent
+60. `shield_consumed` flag returned by `/api/session/abandon`; frontend shows context-aware toast ("Streak shield consumed" vs "−N gems" vs "Session abandoned")
+61. Backend tests: `/app/backend/tests/test_roast_session_v11.py` 11/11 PASSED; frontend Playwright verified full Begin → Timer → Abandon → Roast flow
+
 ## Next Action Items
-- P2: Refactor server.py into modular route files
+- P1: Native Push Notifications / Live Activities (PWA Web Push for web/Android; iOS limitations)
+- P1: Achievement badges system
+- P1: Weekly challenges
+- P2: Refactor server.py (2300+ lines) into modular route files (/routes/auth.py, /routes/shop.py, /routes/session.py)
 - Track total_hours_tracked properly (currently 0 for all users)
 
 ## Future/Backlog
 - Google OAuth / Apple OAuth
-- Leaderboard & Friends
-- Achievement badges
-- Weekly challenges
-- Push notifications
+- Friends / social
+- Native shell wrapper (Capacitor) for full iOS/Android notifications

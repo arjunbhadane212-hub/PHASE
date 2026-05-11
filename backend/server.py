@@ -1355,15 +1355,17 @@ async def abandon_session(body: dict = Body(...), user: dict = Depends(get_curre
 
     # Consume streak shield if active
     shields = user_doc.get("streak_shields", 0)
+    shield_consumed = False
     if shields > 0:
         update_ops["$inc"]["streak_shields"] = -1
+        shield_consumed = True
 
     await db.users.update_one({"_id": ObjectId(user_id)}, update_ops)
 
     # Pick a roast
     roast = random.choice(FOCUS_ROASTS).format(mins=mins_elapsed)
 
-    return {"message": "Session abandoned", "gems_deducted": gem_deduction, "roast": roast}
+    return {"message": "Session abandoned", "gems_deducted": gem_deduction, "shield_consumed": shield_consumed, "roast": roast}
 
 
 @api_router.get("/roasts/check")

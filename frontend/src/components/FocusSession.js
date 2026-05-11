@@ -58,7 +58,13 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       if (data.roast) {
         setTimeout(() => fireRoast(data.roast), 500);
       }
-      toast.error(`-${data.gems_deducted} gems`);
+      if (data.gems_deducted > 0) {
+        toast.error(`-${data.gems_deducted} gems`);
+      } else if (data.shield_consumed) {
+        toast(`Streak shield consumed`);
+      } else {
+        toast(`Session abandoned`);
+      }
     } catch { /* ignore */ }
     onAbandon();
   }, [onAbandon]);
@@ -178,7 +184,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
         onClick={() => setShowAbandonModal(true)}
-        className="text-xs text-white/20 hover:text-white/40 transition-colors z-10 mt-auto mb-12"
+        className="text-xs text-white/40 hover:text-white/70 transition-colors z-10 mt-auto mb-12"
         data-testid="abandon-session-btn"
       >
         Abandon Session
