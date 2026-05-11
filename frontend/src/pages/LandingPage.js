@@ -254,13 +254,13 @@ export default function LandingPage() {
                 transition={{ duration: 0.8 }}
               >
                 <h1 
-                  className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight font-['Satoshi'] leading-[1.1] mb-6"
+                  className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tight font-['Satoshi'] leading-[1.15] mb-6"
                   data-testid="hero-title"
                 >
-                  Habit infrastructure
-                  <br />
+                  You download other habit trackers if you want to be somebody.
+                  <br className="hidden sm:block" />
                   <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
-                    for your life
+                    You download Phase if you're going to be somebody.
                   </span>
                 </h1>
                 <p 
