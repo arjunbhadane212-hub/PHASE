@@ -9,9 +9,10 @@ import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Progress } from '../components/ui/progress';
-import { Plus, Check, Sunrise, Sun, Moon, Flame, Sparkles, Loader2, Gem, Heart, Shield, Zap, X, Award } from 'lucide-react';
+import { Plus, Check, Sunrise, Sun, Moon, Flame, Sparkles, Loader2, Gem, Heart, Shield, Zap, X, Award, Play } from 'lucide-react';
 import StreakCard from '../components/StreakCard';
 import XpPopAnimation from '../components/XpPopAnimation';
+import FocusSession from '../components/FocusSession';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
@@ -32,6 +33,7 @@ export default function HomePage() {
   const [levelUpData, setLevelUpData] = useState(null);
   const [xpEvents, setXpEvents] = useState([]);
   const xpIdRef = useRef(0);
+  const [focusSession, setFocusSession] = useState(null); // { habit, duration }
 
   // Get greeting based on time
   const getGreeting = () => {
@@ -286,6 +288,7 @@ export default function HomePage() {
               habits={morningHabits}
               onComplete={handleCompleteHabit}
               onUncomplete={handleUncompleteHabit}
+              onBeginSession={(h) => setFocusSession({ habit: h, duration: h.session_duration || 15 })}
               completingHabit={completingHabit}
               isGameMode={isGameMode}
             />
@@ -295,6 +298,7 @@ export default function HomePage() {
               habits={afternoonHabits}
               onComplete={handleCompleteHabit}
               onUncomplete={handleUncompleteHabit}
+              onBeginSession={(h) => setFocusSession({ habit: h, duration: h.session_duration || 15 })}
               completingHabit={completingHabit}
               isGameMode={isGameMode}
             />
@@ -304,6 +308,7 @@ export default function HomePage() {
               habits={nightHabits}
               onComplete={handleCompleteHabit}
               onUncomplete={handleUncompleteHabit}
+              onBeginSession={(h) => setFocusSession({ habit: h, duration: h.session_duration || 15 })}
               completingHabit={completingHabit}
               isGameMode={isGameMode}
             />
@@ -332,11 +337,26 @@ export default function HomePage() {
           }
         />
       )}
+
+      {/* Focus Session fullscreen timer */}
+      <AnimatePresence>
+        {focusSession && !isGameMode && (
+          <FocusSession
+            habit={focusSession.habit}
+            duration={focusSession.duration}
+            onComplete={async () => {
+              await handleCompleteHabit(focusSession.habit.habit_id);
+              setFocusSession(null);
+            }}
+            onAbandon={() => setFocusSession(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function HabitSection({ title, icon, habits, onComplete, onUncomplete, completingHabit, isGameMode }) {
+function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSession, completingHabit, isGameMode }) {
   if (habits.length === 0) return null;
   const IconMap = { morning: Sunrise, afternoon: Sun, night: Moon };
   const Icon = IconMap[title.toLowerCase()] || Sunrise;
@@ -358,6 +378,7 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, completin
             habit={habit}
             onComplete={onComplete}
             onUncomplete={onUncomplete}
+            onBeginSession={onBeginSession}
             isCompleting={completingHabit === habit.habit_id}
             isGameMode={isGameMode}
           />
@@ -367,7 +388,7 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, completin
   );
 }
 
-function HabitCard({ habit, onComplete, onUncomplete, isCompleting, isGameMode }) {
+function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleting, isGameMode }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
 
@@ -431,25 +452,37 @@ function HabitCard({ habit, onComplete, onUncomplete, isCompleting, isGameMode }
       </AnimatePresence>
 
       <div className="flex items-center gap-4">
-        {/* Checkbox */}
-        <button
-          onClick={handleClick}
-          disabled={isCompleting}
-          className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-            habit.completed_today
-              ? isGameMode
-                ? 'bg-purple-500 border-purple-500'
-                : 'bg-zinc-600 border-zinc-600'
-              : 'border-zinc-600 hover:border-zinc-400'
-          }`}
-          data-testid={`habit-checkbox-${habit.habit_id}`}
-        >
-          {isCompleting ? (
-            <Loader2 className="w-4 h-4 text-white animate-spin" />
-          ) : habit.completed_today ? (
-            <Check className="w-4 h-4 text-white" />
-          ) : null}
-        </button>
+        {/* Focus Mode: Begin button instead of checkbox for uncompleted habits */}
+        {!isGameMode && !habit.completed_today ? (
+          <button
+            onClick={() => onBeginSession(habit)}
+            disabled={isCompleting}
+            className="px-4 py-1.5 rounded-full bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold flex-shrink-0 transition-all flex items-center gap-1.5"
+            data-testid={`habit-begin-${habit.habit_id}`}
+          >
+            {isCompleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Play className="w-3 h-3" /> Begin</>}
+          </button>
+        ) : (
+          /* Game Mode checkbox OR completed Focus Mode checkbox */
+          <button
+            onClick={handleClick}
+            disabled={isCompleting}
+            className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+              habit.completed_today
+                ? isGameMode
+                  ? 'bg-purple-500 border-purple-500'
+                  : 'bg-zinc-600 border-zinc-600'
+                : 'border-zinc-600 hover:border-zinc-400'
+            }`}
+            data-testid={`habit-checkbox-${habit.habit_id}`}
+          >
+            {isCompleting ? (
+              <Loader2 className="w-4 h-4 text-white animate-spin" />
+            ) : habit.completed_today ? (
+              <Check className="w-4 h-4 text-white" />
+            ) : null}
+          </button>
+        )}
 
         {/* Content */}
         <div className="flex-1 min-w-0">
@@ -462,7 +495,7 @@ function HabitCard({ habit, onComplete, onUncomplete, isCompleting, isGameMode }
                 +{habit.xp_value} XP
               </span>
             ) : (
-              <span className="text-xs text-zinc-500 capitalize">{habit.difficulty}</span>
+              <span className="text-xs text-zinc-500 capitalize">{habit.difficulty} &middot; {habit.session_duration || 15}min</span>
             )}
             {isGameMode && (
               <span className="text-xs text-purple-400 flex items-center gap-1">
@@ -519,7 +552,8 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
     description: '',
     time_of_day: 'morning',
     difficulty: 'medium',
-    repeat_schedule: 'daily'
+    repeat_schedule: 'daily',
+    session_duration: 15
   });
   const [loading, setLoading] = useState(false);
 
@@ -537,7 +571,8 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
         description: '',
         time_of_day: 'morning',
         difficulty: 'medium',
-        repeat_schedule: 'daily'
+        repeat_schedule: 'daily',
+        session_duration: 15
       });
       onSuccess();
     } catch (e) {
@@ -636,6 +671,26 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
               </SelectContent>
             </Select>
           </div>
+
+          {/* Session Duration - Focus Mode only */}
+          {!isGameMode && (
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Session Duration</Label>
+              <Select
+                value={String(formData.session_duration)}
+                onValueChange={(v) => setFormData({ ...formData, session_duration: Number(v) })}
+              >
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white" data-testid="habit-duration-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  {[5, 10, 15, 20, 30, 45, 60].map(m => (
+                    <SelectItem key={m} value={String(m)}>{m} min</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="pt-4">
             <Button

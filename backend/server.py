@@ -85,6 +85,7 @@ class HabitCreate(BaseModel):
     difficulty: str  # easy, medium, hard
     repeat_schedule: str = "daily"  # daily, weekdays, weekends
     custom_days: Optional[List[str]] = None
+    session_duration: Optional[int] = 15  # minutes for Focus Mode timer
 
 class HabitUpdate(BaseModel):
     habit_name: Optional[str] = None
@@ -93,6 +94,7 @@ class HabitUpdate(BaseModel):
     difficulty: Optional[str] = None
     repeat_schedule: Optional[str] = None
     custom_days: Optional[List[str]] = None
+    session_duration: Optional[int] = None
 
 class PasswordReset(BaseModel):
     email: EmailStr
@@ -976,6 +978,7 @@ async def create_habit(habit_data: HabitCreate, user: dict = Depends(get_current
         "created_at": now.isoformat(),
         "current_streak": 0,
         "longest_streak": 0,
+        "session_duration": habit_data.session_duration or 15,
         "completions": []
     }
     
@@ -1314,6 +1317,114 @@ async def uncomplete_habit(habit_id: str, user: dict = Depends(get_current_user)
     )
     
     return {"message": "Habit uncompleted", "new_xp": new_xp}
+
+
+GAME_ROASTS = [
+    "Your friends are lapping you right now.",
+    "Day 3 and you already quit. Tragic.",
+    "Your streak died so you could scroll. Worth it?",
+    "Bro seriously? You were so close.",
+    "Your competition didn't skip today. You did.",
+    "Ghost mode activated. Your streak is gone.",
+    "You picked this app and still couldn't show up. Respect the irony.",
+    "Skipped again? Your future self is cringing.",
+]
+
+FOCUS_ROASTS = [
+    "You lasted {mins} minutes. You said this mattered.",
+    "The timer was still running. You weren't.",
+    "You picked Focus Mode for a reason. Remember it.",
+    "Walked away again. The habit isn't going to build itself.",
+    "No streak shield. No session complete. Just an excuse.",
+    "Silence means nothing if you're not doing the work.",
+    "You set this habit. You abandoned it. That's on you.",
+]
+
+
+@api_router.post("/session/abandon")
+async def abandon_session(body: dict = Body(...), user: dict = Depends(get_current_user)):
+    """Abandon a focus session — deduct 30 gems, consume shield, fire roast"""
+    user_id = str(user["_id"])
+    user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
+    gems = user_doc.get("gems", 0)
+    mins_elapsed = body.get("mins_elapsed", 0)
+
+    update_ops = {}
+    gem_deduction = min(30, gems)
+    update_ops["$inc"] = {"gems": -gem_deduction}
+
+    # Consume streak shield if active
+    shields = user_doc.get("streak_shields", 0)
+    if shields > 0:
+        update_ops["$inc"]["streak_shields"] = -1
+
+    await db.users.update_one({"_id": ObjectId(user_id)}, update_ops)
+
+    # Pick a roast
+    roast = random.choice(FOCUS_ROASTS).format(mins=mins_elapsed)
+
+    return {"message": "Session abandoned", "gems_deducted": gem_deduction, "roast": roast}
+
+
+@api_router.get("/roasts/check")
+async def check_roasts(user: dict = Depends(get_current_user)):
+    """Check if any roasts should fire for the current user"""
+    user_id = str(user["_id"])
+    user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
+    is_game = user_doc.get("app_mode") == "game"
+    roast_enabled = user_doc.get("notification_settings", {}).get("roast_enabled", True)
+
+    if not roast_enabled:
+        return {"roasts": []}
+
+    # Check today's roast count
+    today_str = datetime.now(timezone.utc).date().isoformat()
+    today_roasts = await db.notifications.count_documents({
+        "user_id": user_doc["_id"],
+        "type": "roast",
+        "date": today_str,
+    })
+    if today_roasts >= 2:
+        return {"roasts": []}
+
+    roasts = []
+    now = datetime.now(timezone.utc)
+    hour = now.hour
+
+    # Check streak broken
+    streak = user_doc.get("current_streak", 0)
+    last_roast_streak = user_doc.get("last_roast_streak_val", -1)
+    if streak == 0 and last_roast_streak > 0:
+        pool = GAME_ROASTS if is_game else FOCUS_ROASTS
+        roasts.append(random.choice(pool).replace("{mins}", "0"))
+        await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"last_roast_streak_val": 0}})
+
+    # Check habits incomplete at evening
+    threshold_hour = 22 if is_game else 20
+    if hour >= threshold_hour and not roasts:
+        habits = await db.habits.find({"user_id": user_doc["_id"]}, {"_id": 0}).to_list(100)
+        log = await db.daily_logs.find_one({"user_id": user_doc["_id"], "date": today_str}, {"_id": 0})
+        completed_ids = set(log.get("habits_completed", [])) if log else set()
+        incomplete = [h for h in habits if h["habit_id"] not in completed_ids]
+        if incomplete:
+            pool = GAME_ROASTS if is_game else FOCUS_ROASTS
+            roasts.append(random.choice(pool).replace("{mins}", "0"))
+
+    # Save roast to avoid repeats
+    for r in roasts:
+        await db.notifications.insert_one({
+            "notification_id": str(uuid.uuid4()),
+            "user_id": user_doc["_id"],
+            "type": "roast",
+            "message": r,
+            "date": today_str,
+            "created_at": now.isoformat(),
+        })
+
+    # Update streak tracking
+    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"last_roast_streak_val": streak}})
+
+    return {"roasts": roasts}
 
 # ==================== PROGRESS ENDPOINTS ====================
 

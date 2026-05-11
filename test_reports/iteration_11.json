@@ -1,0 +1,78 @@
+{
+  "summary": "Iteration 11 — Full end-to-end testing of the NEW Roast Notification System + Focus Mode FocusSession timer rework. Backend pytest 11/11 PASSED (POST /api/session/abandon, GET /api/roasts/check, PUT /api/users/notification-settings, plus regression smoke on auth/habits/shops). Frontend Playwright verified the complete Focus Mode Begin -> FocusSession -> Abandon -> Roast Toast flow end-to-end on the live preview URL. Game Mode regression confirmed (checkbox flow intact, no Begin buttons rendered). Admin Dashboard renders correctly. No critical defects found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Focus Mode HomePage — abandon toast",
+        "issues": ["When the user has 0 gems, the abandon toast displays '-0 gems' which is awkward UX. Consider suppressing the gem-deduction toast (or showing 'Streak shield consumed' / 'No gems lost') when data.gems_deducted === 0. Pure cosmetic — backend math is correct (min(30, gems)=0 when gems=0)."]
+      },
+      {
+        "screen": "FocusSession abandon button",
+        "issues": ["The 'Abandon Session' button uses text-white/20 (very low contrast on black background). It is intentionally subtle but borders on accessibility-failing contrast. Consider text-white/40 minimum."]
+      }
+    ]
+  },
+  "passed_tests": [
+    "Backend pytest 11/11 PASSED (file: /app/backend/tests/test_roast_session_v11.py)",
+    "POST /api/session/abandon -> deducts min(30, gems), returns {gems_deducted, roast}, persisted via /auth/me",
+    "POST /api/session/abandon without auth -> 401/403",
+    "GET /api/roasts/check returns {roasts: []} when notification_settings.roast_enabled = False",
+    "GET /api/roasts/check returns valid {roasts: [...]} list when roast_enabled = True",
+    "GET /api/roasts/check requires auth -> 401/403",
+    "PUT /api/users/notification-settings toggles roast_enabled and persists (verified via /auth/me)",
+    "Auth login: test@habitrpg.com (Focus) and admin@habitrpg.com (Game) both OK",
+    "GET /api/habits, /api/focus/shop, /api/shop/profile-items still return 200 (regression)",
+    "Frontend Focus Mode: 2 Begin buttons (data-testid='habit-begin-*') rendered for uncompleted habits",
+    "Click Begin -> FocusSession opens (data-testid='focus-session'); habit name, session-timer (14:59), abandon-session-btn all rendered",
+    "Click Abandon Session -> data-testid='abandon-modal' appears with both keep-going-btn and confirm-abandon-btn",
+    "Click Keep Going -> modal closes, focus-session remains active",
+    "Click Abandon again -> confirm-abandon-btn fires POST /api/session/abandon; roast toast appears in top-right ('Walked away again. The habit isn't going to build itself.') and focus-session unmounts",
+    "Game Mode regression: 0 Begin buttons, checkbox flow intact (data-testid='habit-checkbox-*')",
+    "Admin Dashboard renders Overview/Users/Shop tabs with full data (Top XP, Top Streaks, Top Gems)",
+    "Mode-based route gating works (Focus user can't access /shop; Game user can't access /focus-shop) — redirects to '/'",
+    "RoastListener (top-right toast) also rendered Day's-half-gone roast for admin in Game Mode (background scheduled fire from /api/roasts/check)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_roast_session_v11.py",
+    "/app/test_reports/pytest/iteration_11.xml"
+  ],
+  "action_items": [
+    "(Minor UX) In /app/frontend/src/components/FocusSession.js line 61: when data.gems_deducted === 0, change toast to 'Session abandoned' or 'Streak shield consumed' instead of '-0 gems'.",
+    "(Minor a11y) Increase abandon-session-btn contrast from text-white/20 to at least text-white/40 (FocusSession.js line 181).",
+    "(Carry-over from iter_10) ShopPage DecorationsGrid preview cards still don't apply item.css to deco-wrap; cosmetic only.",
+    "(Carry-over) Public profile 'Level N -- Name' double-dash on level badge."
+  ],
+  "critical_code_review_comments": [
+    "server.py /api/session/abandon (lines 1344-1366): correctly uses min(30, gems) clamp so user gems never go negative; shield decrement only when shields > 0 — good. Returns roast string formatted with mins_elapsed.",
+    "server.py /api/roasts/check (lines 1369-1427): respects roast_enabled flag, daily cap of 2 roasts via db.notifications, tracks last_roast_streak_val to avoid repeating streak-broke roast. Solid logic. One nit: when 'roasts' is empty due to no conditions firing, last_roast_streak_val is still overwritten — that's intentional.",
+    "FocusSession.js: handleAbandon uses startTimeRef to compute mins_elapsed but startTimeRef is set in useRef initializer to Date.now() at mount — works because component unmounts on abandon, so no stale-ref issue.",
+    "FocusSession.js setInterval uses setSecondsLeft(prev => prev - 1) with stale-closure-safe functional update — good.",
+    "RoastNotification.js: RoastNotification polls /api/roasts/check every 5 min and stores dismissed in Set — fine. RoastListener uses window event 'phase-roast' for in-process toasts (used by FocusSession.handleAbandon) — works without prop drilling.",
+    "HomePage.js: AnimatePresence around FocusSession is mode-gated `!isGameMode` — correctly prevents Game Mode users from ever seeing the timer; HabitCard branches isGameMode for Begin vs checkbox render.",
+    "Code smell: FocusSession.js imports X from lucide-react but never uses it (only re-imported below). Safe to remove unused import."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_roast_session_v11.py (created)",
+    "/app/test_reports/pytest/iteration_11.xml (generated)"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 passed)",
+    "frontend": "100% on requested new features + regression"
+  },
+  "test_credentials": {
+    "focus_user": "test@habitrpg.com / Test123!",
+    "game_admin": "admin@habitrpg.com / Admin123!",
+    "admin_secret": "habitrpg-admin-2026"
+  },
+  "seed_data_creation": "None. Focus test user already had 2 morning habits including TEST_gems_habit_v8 from prior iterations. Test user gems went from 0 -> 0 (clamped). Admin notification_settings.roast_enabled toggled off then back on; ended in roast_enabled=True (matches pre-test state).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Roast Notification + Focus Session Abandon features are fully wired backend->frontend and verified end-to-end. Backend endpoints: POST /api/session/abandon, GET /api/roasts/check, PUT /api/users/notification-settings. Frontend components: /app/frontend/src/components/FocusSession.js (full-screen timer + abandon modal) and /app/frontend/src/components/RoastNotification.js (RoastListener uses CustomEvent('phase-roast'), RoastNotification polls every 5 min). HomePage HabitCard renders Begin button only when !isGameMode && !habit.completed_today. Two minor UX nits open (see action_items). Focus test user (test@habitrpg.com) has 0 gems — for happy-path full-30-deduction regression, grant gems via DB or use a freshly seeded TEST_ user with gems>=30. All previous iterations 1-10 features still pass smoke (auth, habits, shops both modes, admin).",
+  "rca of the issue": "N/A — no functional bugs found. Two minor UX/a11y suggestions documented above."
+}

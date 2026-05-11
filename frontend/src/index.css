@@ -285,6 +285,37 @@ code {
   transform: scale(1.15);
 }
 
+
+/* Roast toast notification */
+.roast-toast {
+  background: rgba(12, 18, 32, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(27, 106, 228, 0.25);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 0 20px rgba(27, 106, 228, 0.12), 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Focus session colon pulse */
+@keyframes colon-pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.focus-colon { animation: colon-pulse 1s ease-in-out infinite; }
+
+/* Focus session background glow */
+@keyframes focus-glow { 0%,100%{opacity:0.08;transform:scale(1)} 50%{opacity:0.15;transform:scale(1.1)} }
+.focus-glow-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60vmax;
+  height: 60vmax;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #1B6AE4 0%, transparent 70%);
+  animation: focus-glow 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .shimmer {
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
   background-size: 200% 100%;

@@ -23,6 +23,7 @@ import MyProfilePage from "./pages/MyProfilePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import AdminPage from "./pages/AdminPage";
+import RoastNotification, { RoastListener } from "./components/RoastNotification";
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -155,6 +156,8 @@ function App() {
           <GameProvider>
             <AppRoutes />
             <Toaster position="top-right" richColors />
+            <RoastNotification />
+            <RoastListener />
           </GameProvider>
         </ModeProvider>
       </AuthProvider>

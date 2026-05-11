@@ -508,23 +508,20 @@ function NotificationSettings({ user, isGameMode }) {
             />
           </div>
           
-          {isGameMode && (
-            <>
-              <Separator className="bg-zinc-800" />
-              <div className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-white">Roast Notifications</p>
-                  <p className="text-sm text-zinc-500">Playful callouts when you slack off</p>
-                </div>
-                <Switch
-                  checked={settings.roast_enabled}
-                  onCheckedChange={() => handleToggle('roast_enabled')}
-                  className="data-[state=checked]:bg-purple-600"
-                  data-testid="roast-toggle"
-                />
-              </div>
-            </>
-          )}
+          {/* Roast Mode - both modes */}
+          <Separator className="bg-zinc-800" />
+          <div className="p-4 flex items-center justify-between">
+            <div>
+              <p className="font-medium text-white">Roast Mode</p>
+              <p className="text-sm text-zinc-500">{isGameMode ? 'Competitive trash talk when you slack' : 'Quiet nudges when you miss sessions'}</p>
+            </div>
+            <Switch
+              checked={settings.roast_enabled}
+              onCheckedChange={() => handleToggle('roast_enabled')}
+              className="data-[state=checked]:bg-purple-600"
+              data-testid="roast-toggle"
+            />
+          </div>
         </>
       )}
     </div>
