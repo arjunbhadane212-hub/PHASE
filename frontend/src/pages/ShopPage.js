@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
 import MysteryBoxesHeader from '../components/MysteryBoxesHeader';
 import BoxDetailModal from '../components/BoxDetailModal';
+import BoxOpening from '../components/BoxOpening';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
@@ -52,6 +53,7 @@ export default function ShopPage() {
   const { gems, fetchGameStatus } = useGame();
   const [tab, setTab] = useState('powerups');
   const [openedBoxId, setOpenedBoxId] = useState(null);
+  const [openingState, setOpeningState] = useState(null); // { boxId, items } once API resolves
   const [shopItems, setShopItems] = useState([]);
   const [nextRestock, setNextRestock] = useState('');
   const [colors, setColors] = useState({ main_colors: [], banner_colors: [] });
@@ -159,11 +161,28 @@ export default function ShopPage() {
         boxId={openedBoxId}
         userGems={gems ?? 0}
         onClose={() => setOpenedBoxId(null)}
-        onOpen={(id) => {
-          // Opening animation + reward grant handled in next prompt.
-          toast(`Opening ${id.toUpperCase()} box — flow coming next.`);
+        onOpen={async (id) => {
+          try {
+            const { data } = await axios.post(`${API}/game/boxes/open/${id}`);
+            setOpenedBoxId(null);
+            setOpeningState({ boxId: id, items: data.items });
+          } catch (e) {
+            toast.error(e.response?.data?.detail || 'Could not open box');
+          }
         }}
       />
+
+      {/* Box opening — full-screen choreographed sequence */}
+      {openingState && (
+        <BoxOpening
+          boxId={openingState.boxId}
+          rolledItems={openingState.items}
+          onContinue={async () => {
+            setOpeningState(null);
+            await Promise.all([fetchShop(), fetchGameStatus(), refreshUser()]);
+          }}
+        />
+      )}
 
       {/* Spotlight */}
       {spotlightItem && (

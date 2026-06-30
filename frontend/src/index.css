@@ -361,6 +361,33 @@ code {
   will-change: text-shadow, opacity;
 }
 
+/* Mystery Box — buildup shake (increasing amplitude + frequency over 0.4s) */
+@keyframes box-shake-rise {
+  0%   { transform: translate3d(0, 0, 0); }
+  10%  { transform: translate3d(-1px, 0, 0); }
+  20%  { transform: translate3d(2px, -1px, 0); }
+  30%  { transform: translate3d(-2px, 1px, 0); }
+  40%  { transform: translate3d(3px, -1px, 0); }
+  50%  { transform: translate3d(-3px, 2px, 0); }
+  60%  { transform: translate3d(4px, -2px, 0); }
+  70%  { transform: translate3d(-5px, 2px, 0); }
+  80%  { transform: translate3d(5px, -3px, 0); }
+  90%  { transform: translate3d(-6px, 3px, 0); }
+  100% { transform: translate3d(6px, -2px, 0); }
+}
+.box-shake {
+  animation: box-shake-rise 0.4s steps(20, end);
+  animation-iteration-count: 2;
+  will-change: transform;
+}
+
+/* Mystery Box — linear crack trace */
+@keyframes crack-trace {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+
 
 
 .shimmer {

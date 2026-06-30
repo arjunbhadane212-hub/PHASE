@@ -246,6 +246,7 @@ ROAST_MESSAGES = {
 
 import random
 import string
+from box_drops import BOXES, roll_box
 
 def generate_username(first_name: str) -> str:
     """Generate a unique username like Admin4283"""
@@ -1757,6 +1758,104 @@ async def buy_shop_item(item_id: str, user: dict = Depends(get_current_user)):
         "message": f"Purchased {item['name']}!",
         "gems_remaining": current_gems - price,
         "new_count": current_owned + 1
+    }
+
+
+@api_router.post("/game/boxes/open/{box_id}")
+async def open_mystery_box(box_id: str, user: dict = Depends(get_current_user)):
+    """
+    Open a mystery box. Server rolls items, deducts gems, grants rewards atomically.
+    Returns the rolled items so the client can play the reveal animation.
+    """
+    if box_id not in BOXES:
+        raise HTTPException(status_code=400, detail="Invalid box")
+
+    box = BOXES[box_id]
+    cost = box["cost"]
+    user_id = ObjectId(user["_id"])
+
+    # Re-read fresh user state to avoid stale gems
+    user_doc = await db.users.find_one({"_id": user_id})
+    current_gems = user_doc.get("gems", 0)
+    if current_gems < cost:
+        raise HTTPException(status_code=400, detail="Not enough gems")
+
+    # Roll server-side (authoritative)
+    rolled = roll_box(box_id)
+
+    # Build atomic update
+    inc_ops: dict = {"gems": -cost}
+    add_to_set_ops: dict = {}
+    push_ops: dict = {}
+    set_ops: dict = {}
+
+    bonus_gems = 0
+    for it in rolled:
+        t = it["type"]
+        if t == "gems":
+            bonus_gems += int(it.get("amount", 0))
+        elif t == "shield":
+            inc_ops["streak_shields"] = inc_ops.get("streak_shields", 0) + 1
+        elif t == "boost":
+            # Append to box_boosts inventory (each entry = single-use)
+            entry = {
+                "id": it["id"],
+                "multiplier": it["meta"]["multiplier"],
+                "duration": it["meta"]["duration"],
+                "granted_at": datetime.now(timezone.utc).isoformat(),
+                "uses_left": 1,
+            }
+            push_ops.setdefault("box_boosts", {"$each": []})["$each"].append(entry)
+        elif t == "title":
+            # Use name as the unlocked id; shared titles include tier tag in metadata
+            add_to_set_ops.setdefault("unlocked_titles", {"$each": []})["$each"].append(it["name"])
+            if it.get("shared"):
+                # Store source-tier tag for flex display
+                push_ops.setdefault("shared_title_drops", {"$each": []})["$each"].append({
+                    "title": it["name"], "tier_tag": it.get("tier_tag"),
+                    "dropped_at": datetime.now(timezone.utc).isoformat(),
+                })
+        elif t == "banner":
+            add_to_set_ops.setdefault("unlocked_banners", {"$each": []})["$each"].append(it["id"])
+        elif t == "color":
+            add_to_set_ops.setdefault("unlocked_accent_colors", {"$each": []})["$each"].append(it["id"])
+        elif t == "animation":
+            add_to_set_ops.setdefault("unlocked_animations", {"$each": []})["$each"].append(it["id"])
+        elif t == "logo_anim":
+            set_ops["has_logo_animation"] = True
+        elif t == "ui_color":
+            set_ops["has_ui_accent_unlock"] = True
+
+    if bonus_gems:
+        inc_ops["gems"] = inc_ops["gems"] + bonus_gems
+
+    update_doc: dict = {}
+    if inc_ops:
+        update_doc["$inc"] = inc_ops
+    if add_to_set_ops:
+        update_doc["$addToSet"] = add_to_set_ops
+    if push_ops:
+        update_doc["$push"] = push_ops
+    if set_ops:
+        update_doc["$set"] = set_ops
+
+    if update_doc:
+        await db.users.update_one({"_id": user_id}, update_doc)
+
+    # Highest rarity in the drop (for client to flash correctly even though
+    # server already rolled — defensive duplicate of client logic).
+    tier_order = {"common": 0, "rare": 1, "ultra": 2}
+    highest_tier = max((it["tier"] for it in rolled), key=lambda t: tier_order[t])
+
+    new_gems = current_gems - cost + bonus_gems
+    return {
+        "success": True,
+        "box_id": box_id,
+        "items": rolled,
+        "highest_tier": highest_tier,
+        "gems_spent": cost,
+        "gems_bonus": bonus_gems,
+        "gems_remaining": new_gems,
     }
 
 @api_router.post("/game/shop/buy-color")
