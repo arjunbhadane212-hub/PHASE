@@ -8,27 +8,42 @@ import axios from 'axios';
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export default function FocusSession({ habit, duration, onComplete, onAbandon }) {
-  const [secondsLeft, setSecondsLeft] = useState(duration * 60);
-  const [showAbandonModal, setShowAbandonModal] = useState(false);
-  const [completed, setCompleted] = useState(false);
-  const [abandoning, setAbandoning] = useState(false);
   const totalSeconds = duration * 60;
-  const intervalRef = useRef(null);
   const startTimeRef = useRef(Date.now());
+  // Wall-clock derived state — never tick-based, immune to tab/app
+  // backgrounding throttling. We recompute from (now - start) every interval.
+  const [now, setNow] = useState(() => Date.now());
+  const [showAbandonModal, setShowAbandonModal] = useState(false);
+  const [abandoning, setAbandoning] = useState(false);
 
-  // Countdown
+  const elapsed = Math.min(totalSeconds, Math.floor((now - startTimeRef.current) / 1000));
+  const secondsLeft = Math.max(0, totalSeconds - elapsed);
+  const completed = elapsed >= totalSeconds;
+
+  // Single tick loop. setInterval is throttled when backgrounded but our state
+  // is derived from Date.now() so resuming always shows the correct value.
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setSecondsLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(intervalRef.current);
-          setCompleted(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(intervalRef.current);
+    if (completed) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [completed]);
+
+  // Page Visibility API: when tab/app returns to foreground, force an
+  // immediate recompute. NEVER triggers an abandon — backgrounding is benign.
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') {
+        setNow(Date.now());
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    window.addEventListener('pageshow', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onVis);
+      window.removeEventListener('pageshow', onVis);
+    };
   }, []);
 
   // Update page title with timer
@@ -51,7 +66,6 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
 
   const handleAbandon = useCallback(async () => {
     setAbandoning(true);
-    clearInterval(intervalRef.current);
     const minsElapsed = Math.floor((Date.now() - startTimeRef.current) / 60000);
     try {
       const { data } = await axios.post(`${API}/session/abandon`, { mins_elapsed: minsElapsed });
@@ -69,8 +83,15 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
     onAbandon();
   }, [onAbandon]);
 
-  const mins = Math.floor(secondsLeft / 60);
+  // Build timer display string. Supports H:MM:SS for hour-long sessions.
+  const hours = Math.floor(secondsLeft / 3600);
+  const mins = Math.floor((secondsLeft % 3600) / 60);
   const secs = secondsLeft % 60;
+  const timerStr = hours > 0
+    ? `${hours}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+    : `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  const charCount = timerStr.length;
+
   const progress = secondsLeft / totalSeconds;
   const circumference = 2 * Math.PI * 120;
   const strokeOffset = circumference * (1 - progress);
@@ -140,15 +161,33 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         <span className="text-[10px] text-[#4D8EF0] uppercase tracking-[0.2em] font-bold">Focus Session</span>
       </motion.div>
 
-      {/* Timer display */}
+      {/* Timer display — circle container with flex-centered text */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
-        className="relative z-10 mb-8"
+        className="relative z-10 mb-8 flex items-center justify-center"
+        style={{
+          // Circle diameter — responsive, fixed aspect ratio
+          width: 'min(72vmin, 360px)',
+          height: 'min(72vmin, 360px)',
+          // CSS vars consumed by inline font-size calc below
+          '--circle-size': 'min(72vmin, 360px)',
+          '--digit-chars': charCount,
+        }}
+        data-testid="session-timer-container"
       >
-        {/* Progress ring */}
-        <svg className="absolute -inset-8" viewBox="0 0 280 280" style={{ transform: 'rotate(-90deg)' }}>
+        {/* Progress ring (absolute, fills container) */}
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          viewBox="0 0 280 280"
+          style={{
+            transform: 'rotate(-90deg)',
+            filter:
+              'drop-shadow(0 0 16px rgba(59, 130, 246, 0.35))' +
+              ' drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3))',
+          }}
+        >
           <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(27,106,228,0.08)" strokeWidth="3" />
           <circle
             cx="140" cy="140" r="120" fill="none"
@@ -157,25 +196,35 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeOffset}
-            style={{ transition: 'stroke-dashoffset 1s linear', filter: 'drop-shadow(0 0 6px rgba(27,106,228,0.5))' }}
+            style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
         </svg>
 
-        {/* Timer numbers */}
-        <div className="flex items-baseline justify-center" data-testid="session-timer">
-          <span className="text-[min(35vh,180px)] font-black text-white leading-none tracking-tight"
-            style={{ fontFamily: "'Satoshi', 'SF Pro Display', sans-serif", textShadow: '0 0 40px rgba(27,106,228,0.4)' }}>
-            {String(mins).padStart(2, '0')}
-          </span>
-          <span className="text-[min(30vh,150px)] font-black mx-1 leading-none focus-colon"
-            style={{ color: '#1B6AE4', textShadow: '0 0 20px rgba(27,106,228,0.6)' }}>
-            :
-          </span>
-          <span className="text-[min(35vh,180px)] font-black text-white leading-none tracking-tight"
-            style={{ fontFamily: "'Satoshi', 'SF Pro Display', sans-serif", textShadow: '0 0 40px rgba(27,106,228,0.4)' }}>
-            {String(secs).padStart(2, '0')}
-          </span>
-        </div>
+        {/* Timer text — flex centered inside circle, font-size scales with char count.
+            Width capped to 78% of circle diameter; 0.55 is approx glyph-width ratio
+            for the Satoshi/SF Pro tabular-nums character set. */}
+        <span
+          className="font-black text-white leading-none select-none"
+          style={{
+            fontFamily: "'Satoshi', 'SF Pro Display', sans-serif",
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.02em',
+            // Text width budget = 78% of circle diameter (circle = 240/280 of container).
+            // Each glyph ≈ 0.55 × fontSize for Satoshi/SF Pro tabular-nums.
+            // → fontSize = (0.78 * 240/280 * D) / (chars * 0.55) = D * 0.668 / (chars * 0.55)
+            fontSize: `calc(var(--circle-size) * 0.668 / (var(--digit-chars) * 0.55))`,
+            maxWidth: 'calc(var(--circle-size) * 0.668)',
+            // Soft outer blue glow + subtle white top-edge highlight for depth
+            textShadow:
+              '0 -1px 0 rgba(255, 255, 255, 0.35),' +
+              ' 0 0 24px rgba(59, 130, 246, 0.4),' +
+              ' 0 0 48px rgba(59, 130, 246, 0.18)',
+            willChange: 'transform',
+          }}
+          data-testid="session-timer"
+        >
+          {timerStr}
+        </span>
       </motion.div>
 
       {/* Abandon button */}

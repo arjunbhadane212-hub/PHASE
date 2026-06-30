@@ -1,0 +1,51 @@
+{
+  "summary": "Iteration 12 — Targeted verification of two Focus Session bug fixes (timer text overflow + tab-backgrounding false-abandon). Backend pytest 11/11 PASSED (regression on /api/session/abandon, /api/roasts/check, /api/users/notification-settings, auth/habits/shop). Frontend Playwright verified BOTH bug fixes end-to-end on the live preview URL with measured DOM metrics and a real 6-second wall-clock background simulation. ALL 8 sub-bug checks PASS. No defects found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "passed_tests": [
+    "Backend pytest 11/11 PASSED (file: /app/backend/tests/test_roast_session_v11.py, junit: /app/test_reports/pytest/iteration_12.xml)",
+    "BUG-1a PASS: '14:59' timer width = 240.9px vs inner-circle diameter 309.2px → 77.9% (within the 78% design budget). Center-aligned: timer center (640.0, 273.99) vs svg center (640.0, 274.00) → dx<1px, dy<1px. Flex-centered confirmed.",
+    "BUG-1b PASS: Simulated 7-char timer '1:00:00' by overriding --digit-chars=7 → text width 236.2px vs diameter 308.5px = 76.6% (still inside 78% budget). Font auto-scales from 87.4px (5 chars) down to 62.5px (7 chars). H:MM:SS will fit.",
+    "BUG-1c PASS: SVG computed filter = 'drop-shadow(rgba(59, 130, 246, 0.35) 0px 0px 16px) drop-shadow(rgba(0, 0, 0, 0.3) 0px 8px 24px)' — exact spec match (16px blur 35% #3B82F6 glow + 8px-y 24px black 30% drop shadow). Timer text-shadow also includes white top-edge highlight (0 -1px 0 rgba(255,255,255,0.35)) + blue glow layers.",
+    "BUG-2a PASS: Set document.visibilityState='hidden' + dispatched visibilitychange + window blur, then real-wait 6s. Focus session stayed mounted; timer decreased 14:59 → 14:52 (7s — matches real wall-clock elapsed including processing time). No penalty toasts (no gems/shield/abandon toasts visible). Wall-clock derivation from Date.now() works as designed.",
+    "BUG-2b PASS: window.dispatchEvent(new Event('blur')) alone does NOT abandon — focus-session still visible after 2s.",
+    "BUG-2c PASS: Visibility change to 'hidden' then back to 'visible' restored an immediate setNow(Date.now()) recompute (verified by 7s decrement matching real elapsed time, no freeze).",
+    "BUG-2d PASS: Abandon Session button → abandon-modal opens → confirm-abandon-btn → POST /api/session/abandon returned 200 → focus-session unmounted cleanly. Explicit abandon flow intact.",
+    "REGRESSION PASS: Backend POST /api/session/abandon still returns {gems_deducted, shield_consumed, roast} (pytest TestSessionAbandon::test_abandon_deducts_gems_and_returns_roast).",
+    "REGRESSION PASS: Game Mode admin@habitrpg.com still uses checkbox flow (verified in iteration_11 and unchanged in this iteration; FocusSession code path is gated by !isGameMode in HomePage which was not touched)."
+  ],
+  "measured_dom_metrics": {
+    "container_size_px": "360.7 x 360.7",
+    "inner_circle_diameter_px": 309.2,
+    "timer_text_5char": {"text": "14:59", "width_px": 240.9, "height_px": 87.6, "font_size_px": 87.4, "pct_of_diameter": 77.9},
+    "timer_text_7char_simulated": {"text": "1:00:00", "width_px": 236.2, "height_px": 62.5, "font_size_px": 62.5, "pct_of_diameter": 76.6},
+    "svg_filter": "drop-shadow(rgba(59, 130, 246, 0.35) 0px 0px 16px) drop-shadow(rgba(0, 0, 0, 0.3) 0px 8px 24px)",
+    "timer_text_shadow": "rgba(255, 255, 255, 0.35) 0px -1px 0px, rgba(59, 130, 246, 0.4) 0px 0px 24px, rgba(59, 130, 246, 0.18) 0px 0px 48px",
+    "background_simulation": {"before": "14:59", "after_6s_hidden": "14:52", "delta_sec": 7, "expected_range": "5-9s"},
+    "abandon_api_response": {"status": 200, "url": "/api/session/abandon"}
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_roast_session_v11.py",
+    "/app/test_reports/pytest/iteration_12.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "FocusSession.js wall-clock derivation is clean: state is derived (elapsed = Math.min(totalSeconds, Math.floor((now - startTimeRef.current) / 1000))), interval just bumps `now` every 500ms — browser-throttling-immune by design.",
+    "visibilitychange/focus/pageshow handlers only call setNow(Date.now()); they NEVER call onAbandon. Confirmed by code inspection and by 6s-background test producing zero abandon side effects.",
+    "Font-size calc fontSize: calc(var(--circle-size) * 0.668 / (var(--digit-chars) * 0.55)) is sound — confirmed at runtime: 5-char yields 87.4px text, 7-char yields 62.5px text, both well inside the inner ring.",
+    "SVG filter chain (drop-shadow blue 16px + drop-shadow black 8px-y 24px) matches the elevated treatment spec exactly.",
+    "Minor (carry-over from iter 11, NOT regressed): When data.gems_deducted === 0 the toast shows '-0 gems'. Not in scope of this bug report — left for future polish.",
+    "Minor: lucide-react `X` icon is imported in FocusSession.js but never used (line 3). Safe to remove. Not blocking."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% (8/8 bug checks)"},
+  "test_credentials": {
+    "focus_user": "test@habitrpg.com / Test123!",
+    "game_admin": "admin@habitrpg.com / Admin123!"
+  },
+  "seed_data_creation": "None. Used existing TEST_gems_habit_v8 morning habit on the Focus test account. Account had a session abandoned during test (clean unmount, 200 OK).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Both Focus Session bugs are fully fixed and verified. Timer text fits ≤78% of inner-circle diameter at all char counts (5 = 77.9%, 7 = 76.6%). Ring has the elevated drop-shadow filter chain. Wall-clock derivation via Date.now() + setNow tick handles tab backgrounding cleanly — no penalty fires unless user explicitly clicks Abandon. Backgrounding simulation in Playwright works via: Object.defineProperty(document, 'visibilityState', {value:'hidden', ...}) + dispatchEvent(visibilitychange) + window blur, then real wait, then restore. The explicit abandon API path (POST /api/session/abandon) is unchanged and still functional. Code is production-ready for these two bug fixes.",
+  "rca of the issue": "N/A — main agent's fix is verified working. Original RCA: (1) Old timer used absolute-positioned text with fixed font-size that overflowed 6-7 char strings — now flex-centered span inside relative container with font-size = D*0.668/(chars*0.55) auto-scales per char count. (2) Old code likely used a tick-based decrementing counter that paused under browser throttling and a visibility/blur listener that mistakenly called onAbandon — now state is derived from Date.now() each tick, and visibility/focus/pageshow handlers ONLY refresh `now`, never abandon."
+}
