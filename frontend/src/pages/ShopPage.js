@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
 import MysteryBoxesHeader from '../components/MysteryBoxesHeader';
+import BoxDetailModal from '../components/BoxDetailModal';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
@@ -50,6 +51,7 @@ export default function ShopPage() {
   const { isGameMode } = useMode();
   const { gems, fetchGameStatus } = useGame();
   const [tab, setTab] = useState('powerups');
+  const [openedBoxId, setOpenedBoxId] = useState(null);
   const [shopItems, setShopItems] = useState([]);
   const [nextRestock, setNextRestock] = useState('');
   const [colors, setColors] = useState({ main_colors: [], banner_colors: [] });
@@ -148,9 +150,20 @@ export default function ShopPage() {
         data-testid="mystery-boxes-section"
       >
         <MysteryBoxesHeader
-          onOpenBox={(id) => toast(`${id.toUpperCase()} box — opening flow coming next.`)}
+          onOpenBox={(id) => setOpenedBoxId(id)}
         />
       </div>
+
+      {/* Box detail modal (data-driven; opening flow handled in next prompt) */}
+      <BoxDetailModal
+        boxId={openedBoxId}
+        userGems={gems ?? 0}
+        onClose={() => setOpenedBoxId(null)}
+        onOpen={(id) => {
+          // Opening animation + reward grant handled in next prompt.
+          toast(`Opening ${id.toUpperCase()} box — flow coming next.`);
+        }}
+      />
 
       {/* Spotlight */}
       {spotlightItem && (
