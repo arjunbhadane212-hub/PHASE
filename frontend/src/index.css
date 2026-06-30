@@ -316,6 +316,35 @@ code {
   pointer-events: none;
 }
 
+/* Mystery Box — PHASE tier shimmer sweep (45deg gradient, 4s cycle, ~1.2s pass) */
+@keyframes phase-shimmer-sweep {
+  0%   { transform: translateX(-120%) rotate(45deg); opacity: 0; }
+  5%   { opacity: 0; }
+  10%  { opacity: 0.4; }
+  25%  { opacity: 0.4; }
+  30%  { transform: translateX(140%) rotate(45deg); opacity: 0; }
+  100% { transform: translateX(140%) rotate(45deg); opacity: 0; }
+}
+.phase-shimmer-sweep {
+  position: absolute;
+  top: -50%;
+  left: 0;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(166, 199, 255, 0.0) 20%,
+    rgba(166, 199, 255, 0.85) 50%,
+    rgba(166, 199, 255, 0.0) 80%,
+    transparent 100%
+  );
+  animation: phase-shimmer-sweep 4s ease-in-out infinite;
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+
 .shimmer {
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
   background-size: 200% 100%;

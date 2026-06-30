@@ -6,6 +6,7 @@ import { Gem, Lock, Clock, Check, Zap, Palette, Crown, Diamond, Image, Sparkles,
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
+import MysteryBoxesHeader from '../components/MysteryBoxesHeader';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
@@ -134,6 +135,21 @@ export default function ShopPage() {
           <Gem className="w-4 sm:w-5 h-4 sm:h-5 text-blue-400" />
           <span className="text-base sm:text-lg font-bold text-blue-300">{gems ?? 0}</span>
         </div>
+      </div>
+
+      {/* Persistent Mystery Boxes — sticky header, single source of truth, persists across tab navigation */}
+      <div
+        className="-mx-3 sm:-mx-6 mb-4 sm:mb-6 sticky top-0 z-30 pt-3 pb-3"
+        style={{
+          background: 'linear-gradient(180deg, rgba(7,10,17,0.97) 0%, rgba(7,10,17,0.92) 80%, rgba(7,10,17,0) 100%)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+        data-testid="mystery-boxes-section"
+      >
+        <MysteryBoxesHeader
+          onOpenBox={(id) => toast(`${id.toUpperCase()} box — opening flow coming next.`)}
+        />
       </div>
 
       {/* Spotlight */}
