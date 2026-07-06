@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronDown, Gem, Star, Lock } from 'lucide-react';
 import { BOXES_BY_ID, groupPoolByTier, TIER_META } from '../data/boxDrops';
@@ -173,37 +174,70 @@ export default function BoxDetailModal({ boxId, onClose, onOpen, userGems = 0 })
 
   const canAfford = box ? userGems >= box.cost : false;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {box && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
-          style={{ background: 'rgba(0, 0, 0, 0.75)' }}
-          data-testid="box-detail-modal"
-          onClick={onClose}
-        >
+        <>
+          {/* Scrim — separate sibling, catches taps to dismiss */}
           <motion.div
-            initial={{ y: 24, opacity: 0, scale: 0.96 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 24, opacity: 0, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="relative flex flex-col"
+            key="box-modal-scrim"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
             style={{
-              background: '#0A0E14',
-              border: '1.5px solid rgba(59, 130, 246, 0.7)',
-              borderRadius: 24,
-              width: '85%',
-              maxWidth: 480,
-              height: 'auto',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 32px rgba(59, 130, 246, 0.15)',
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              background: 'rgba(0, 0, 0, 0.75)',
+              zIndex: 1000,
+              cursor: 'pointer',
+              pointerEvents: 'auto',
             }}
-            onClick={(e) => e.stopPropagation()}
-            data-testid={`box-detail-modal-${boxId}`}
+            data-testid="box-detail-modal-scrim"
+            aria-label="Close modal"
+          />
+
+          {/* Fixed viewport-anchored wrapper — flex-centers the card */}
+          <div
+            key="box-modal-wrapper"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1001,
+              pointerEvents: 'none', // let taps around the card fall through to scrim
+            }}
+            data-testid="box-detail-modal"
           >
+            <motion.div
+              initial={{ y: 24, opacity: 0, scale: 0.96 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 24, opacity: 0, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+              className="relative flex flex-col"
+              style={{
+                width: '85%',
+                maxWidth: 420,
+                height: 'auto',
+                borderRadius: 24,
+                background: '#0A0E14',
+                border: '1.5px solid rgba(59, 130, 246, 0.7)',
+                padding: '32px 24px',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 32px rgba(59, 130, 246, 0.15)',
+                pointerEvents: 'auto',
+              }}
+              onClick={(e) => e.stopPropagation()}
+              data-testid={`box-detail-modal-${boxId}`}
+            >
             {/* Close button */}
             <button
               onClick={onClose}
@@ -319,8 +353,10 @@ export default function BoxDetailModal({ boxId, onClose, onOpen, userGems = 0 })
               </AnimatePresence>
             </div>
           </motion.div>
-        </motion.div>
+          </div>
+        </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
