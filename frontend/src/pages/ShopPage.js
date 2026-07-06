@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import { useGame } from '../contexts/GameContext';
-import { Gem, Lock, Clock, Check, Zap, Palette, Crown, Diamond, Image, Sparkles, Frame, Star, Swords } from 'lucide-react';
+import { Gem, Lock, Clock, Check, Zap, Palette, Crown, Diamond, Image, Sparkles, Frame, Star } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
@@ -119,7 +119,7 @@ export default function ShopPage() {
     { id: 'anims', icon: Sparkles, label: 'Anims' },
     { id: 'banners', icon: Frame, label: 'Banners' },
     { id: 'decos', icon: Star, label: 'Effects' },
-    { id: 'battles', icon: Swords, label: 'Battles' },
+    { id: 'titles', icon: Crown, label: 'Titles' },
   ];
 
   return (
@@ -141,14 +141,9 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* Persistent Mystery Boxes — sticky header, single source of truth, persists across tab navigation */}
+      {/* Mystery Boxes — natural top-of-page position, scrolls with content */}
       <div
-        className="-mx-3 sm:-mx-6 mb-4 sm:mb-6 sticky top-0 z-30 pt-3 pb-3"
-        style={{
-          background: 'linear-gradient(180deg, rgba(7,10,17,0.97) 0%, rgba(7,10,17,0.92) 80%, rgba(7,10,17,0) 100%)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-        }}
+        className="-mx-3 sm:-mx-6 mb-4 sm:mb-6 relative z-10"
         data-testid="mystery-boxes-section"
       >
         <MysteryBoxesHeader
@@ -184,25 +179,6 @@ export default function ShopPage() {
         />
       )}
 
-      {/* Spotlight */}
-      {spotlightItem && (
-        <div className="mb-4 sm:mb-6 relative overflow-hidden rounded-2xl border border-[#1A2438]" data-testid="shop-spotlight">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-950/90 via-purple-950/70 to-blue-950/90" />
-          <div className="relative p-4 sm:p-6 flex items-center gap-4 sm:gap-6">
-            <div className="flex-shrink-0 w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center">
-              <img src={SPOTLIGHT_IMAGE} alt="Spotlight" className="w-full h-full object-contain" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-base sm:text-xl font-bold text-white font-['Satoshi'] mb-1">Shop Spotlight</h2>
-              <p className="text-xs sm:text-sm text-zinc-400 mb-2 sm:mb-3 line-clamp-2">{spotlightItem.description || 'Featured item. Limited stock!'}</p>
-              <Button onClick={() => handleBuy(spotlightItem.id)} disabled={buying === spotlightItem.id} className="bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm px-4 h-8 sm:h-9 rounded-lg" data-testid="spotlight-buy-btn">
-                {buying === spotlightItem.id ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Shop now'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Tabs - scrollable on mobile */}
       <div className="flex gap-1.5 mb-4 sm:mb-6 overflow-x-auto no-scrollbar relative z-10" data-testid="shop-tabs">
         {TABS.map(({ id, icon: Icon, label }) => (
@@ -230,7 +206,9 @@ export default function ShopPage() {
         ) : tab === 'decos' ? (
           <DecorationsGrid items={profileItems.decorations || []} gems={gems} buying={buying} onBuy={handleBuyProfileItem} />
         ) : (
-          <BattleEffectsGrid items={profileItems.battles || []} gems={gems} buying={buying} onBuy={handleBuyProfileItem} />
+          <div className="flex items-center justify-center py-16" data-testid="titles-placeholder">
+            <p className="text-sm text-white/50">Titles coming soon</p>
+          </div>
         )}
       </div>
 

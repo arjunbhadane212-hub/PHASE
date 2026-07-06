@@ -181,21 +181,25 @@ export default function BoxDetailModal({ boxId, onClose, onOpen, userGems = 0 })
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[9999] flex items-stretch justify-center"
-          style={{ background: 'rgba(5, 8, 13, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+          style={{ background: 'rgba(0, 0, 0, 0.75)' }}
           data-testid="box-detail-modal"
           onClick={onClose}
         >
           <motion.div
-            initial={{ y: 24, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 24, opacity: 0 }}
+            initial={{ y: 24, opacity: 0, scale: 0.96 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 24, opacity: 0, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="relative w-full max-w-md mx-auto flex flex-col overflow-y-auto"
+            className="relative flex flex-col"
             style={{
               background: '#0A0E14',
-              borderLeft: '1px solid rgba(59, 130, 246, 0.18)',
-              borderRight: '1px solid rgba(59, 130, 246, 0.18)',
+              border: '1.5px solid rgba(59, 130, 246, 0.7)',
+              borderRadius: 24,
+              width: '85%',
+              maxWidth: 480,
+              height: 'auto',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 32px rgba(59, 130, 246, 0.15)',
             }}
             onClick={(e) => e.stopPropagation()}
             data-testid={`box-detail-modal-${boxId}`}
