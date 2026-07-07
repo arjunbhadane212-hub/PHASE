@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Trophy, Flame, Target, Calendar, ArrowLeft, Shield, Sparkles } from 'lucide-react';
+import { PhaseBanner, bannerComponents } from '../components/banners/PhaseBanners';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
@@ -80,13 +81,22 @@ export default function PublicProfilePage() {
         </Link>
       </div>
 
-      {/* Banner — battle image > decoration CSS > solid color */}
-      <div className={`relative h-36 sm:h-48 overflow-hidden ${!battleImage ? decoClass : ''}`} data-testid="profile-banner">
-        {battleImage ? (
-          <img src={battleImage} alt="Profile Effect" className="absolute inset-0 w-full h-full object-cover battle-scene-animate" />
-        ) : !decoClass ? (
-          <div className="absolute inset-0" style={bannerStyle} />
-        ) : null}
+      {/* Banner — Phase SVG banner component */}
+      <div className="relative h-36 sm:h-48 overflow-hidden" data-testid="profile-banner">
+        <div className="absolute inset-0">
+          <PhaseBanner
+            bannerKey={
+              // Prefer new-style key (nested or explicit); fall back to 'default'
+              (profile?.equipped_banner && bannerComponents[profile.equipped_banner.key]?.name
+                ? profile.equipped_banner.key
+                : null)
+              || (profile?.equipped_banner_key && bannerComponents[profile.equipped_banner_key]
+                ? profile.equipped_banner_key
+                : null)
+              || 'default'
+            }
+          />
+        </div>
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#06080F] to-transparent z-[1]" />
       </div>
 

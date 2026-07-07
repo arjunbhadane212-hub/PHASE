@@ -3,7 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import { useGame } from '../contexts/GameContext';
 import { Link } from 'react-router-dom';
-import { Trophy, Flame, Target, Calendar, Shield, Sparkles, ExternalLink, Check, ChevronDown, ChevronUp, Gem, X } from 'lucide-react';
+import { Trophy, Flame, Target, Calendar, Shield, Sparkles, ExternalLink, Check, ChevronDown, ChevronUp, Gem, X, Lock } from 'lucide-react';
+import { PhaseBanner, BANNER_META, bannerComponents } from '../components/banners/PhaseBanners';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -106,13 +107,17 @@ export default function ProfilePanel({ open, onClose }) {
           <X className="w-5 h-5" />
         </button>
 
-        {/* Banner: SOLID fill, no gradient fade */}
-        <div className={`h-32 sm:h-36 relative overflow-hidden ${!battleImage ? decoClass : ''}`} data-testid="panel-banner">
-          {battleImage ? (
-            <img src={battleImage} alt="Effect" className="absolute inset-0 w-full h-full object-cover battle-scene-animate" />
-          ) : !decoClass ? (
-            <div className="absolute inset-0" style={bannerStyle} />
-          ) : null}
+        {/* Banner — Phase SVG banner component */}
+        <div className="h-32 sm:h-36 relative overflow-hidden" data-testid="panel-banner">
+          <div className="absolute inset-0">
+            <PhaseBanner
+              bannerKey={
+                bannerComponents[user?.equipped_banner]
+                  ? user.equipped_banner
+                  : 'default'
+              }
+            />
+          </div>
         </div>
 
         {/* Lower section with equipped main color */}
@@ -191,23 +196,52 @@ export default function ProfilePanel({ open, onClose }) {
           </Section>
 
           {/* Banners */}
-          <Section title="Banners" count={ownedBanners.length} expanded={expandedSection === 'banners'} onToggle={() => toggle('banners')}>
-            {ownedBanners.length === 0 ? <Empty text="Buy gradient banners from the Shop." /> : (
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => handleEquip('banner', null)}
-                  className={`h-12 rounded-xl border transition-all ${!user?.equipped_banner ? 'border-white/30' : 'border-white/[0.06]'}`}
-                  style={{ backgroundColor: '#1B6AE4' }}>
-                  {!user?.equipped_banner && <Check className="w-4 h-4 text-white mx-auto" />}
-                </button>
-                {ownedBanners.map(b => (
-                  <button key={b.key} onClick={() => handleEquip('banner', b.key)}
-                    className={`h-12 rounded-xl border transition-all ${user?.equipped_banner === b.key ? 'border-white/30 ring-1 ring-white/10' : 'border-white/[0.06]'}`}
-                    style={{ background: b.gradient || '#1F2937' }}>
-                    {user?.equipped_banner === b.key && <Check className="w-4 h-4 text-white mx-auto" />}
-                  </button>
-                ))}
-              </div>
-            )}
+          <Section title="Banners" count={BANNER_META.length} expanded={expandedSection === 'banners'} onToggle={() => toggle('banners')}>
+            <div className="space-y-2">
+              {BANNER_META.map((b) => {
+                const isEquipped = user?.equipped_banner === b.key;
+                // For now: treat all 6 as owned (real ownership wiring in next prompt).
+                const isOwned = true;
+                return (
+                  <div key={b.key}
+                    className={`w-full rounded-xl overflow-hidden border transition-all ${isEquipped ? 'border-[#3B82F6]/70 ring-1 ring-[#3B82F6]/25' : 'border-white/[0.06]'}`}
+                    data-testid={`banner-preview-${b.key}`}
+                    style={{ backgroundColor: '#0A0E14' }}
+                  >
+                    <div className="flex items-stretch">
+                      {/* Preview thumbnail: 60px height, banner fills */}
+                      <div className="relative flex-1" style={{ height: 60 }}>
+                        <div className="absolute inset-0">
+                          <PhaseBanner bannerKey={b.key} />
+                        </div>
+                      </div>
+                      {/* Label + action */}
+                      <div className="flex items-center gap-2 px-3" style={{ minWidth: 128 }}>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-bold text-white truncate">{b.name}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-white/40">{b.tier}</p>
+                        </div>
+                        {isOwned ? (
+                          <button
+                            onClick={() => handleEquip('banner', isEquipped ? null : b.key)}
+                            disabled={equipping === `banner-${b.key}`}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${isEquipped ? 'bg-[#3B82F6]/25 text-[#BFD9FF]' : 'bg-[#3B82F6] text-white hover:brightness-110'} disabled:opacity-50`}
+                            data-testid={`banner-equip-${b.key}`}
+                          >
+                            {isEquipped ? 'Equipped' : 'Equip'}
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1 text-white/40" title={`Drops from ${b.tier} boxes`}>
+                            <Lock className="w-3 h-3" />
+                            <span className="text-[9px] uppercase tracking-wider">{b.tier}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </Section>
 
           {/* Effects (gradient + battle) */}
