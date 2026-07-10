@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Users, BarChart3, ShoppingBag, Gem, Zap, Flame, Search, Edit2, Trash2, ChevronDown, ChevronUp, RefreshCw, Lock, ArrowLeft, Trophy, Shield } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -61,7 +61,7 @@ export default function AdminPage() {
 
 function AdminDashboard({ secret }) {
   const [tab, setTab] = useState('overview');
-  const headers = { 'X-Admin-Secret': secret };
+  const headers = useMemo(() => ({ 'X-Admin-Secret': secret }), [secret]);
 
   const TABS = [
     { id: 'overview', icon: BarChart3, label: 'Overview' },
@@ -107,7 +107,7 @@ function OverviewTab({ headers }) {
       .then(r => setStats(r.data))
       .catch(() => toast.error('Failed to load stats'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [headers]);
 
   if (loading) return <Loader />;
   if (!stats) return <p className="text-zinc-500">Failed to load</p>;
@@ -145,7 +145,7 @@ function UsersTab({ headers }) {
       setUsers(data.users || []);
     } catch { toast.error('Failed to load users'); }
     finally { setLoading(false); }
-  }, []);
+  }, [headers]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -363,7 +363,7 @@ function ShopTab({ headers }) {
       setShop(data);
     } catch { toast.error('Failed to load shop'); }
     finally { setLoading(false); }
-  }, []);
+  }, [headers]);
 
   useEffect(() => { fetchShop(); }, [fetchShop]);
 
