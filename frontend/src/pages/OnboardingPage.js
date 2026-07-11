@@ -97,10 +97,10 @@ export default function OnboardingPage() {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ selected_mode: mode, onboarding_completed: true })
+        .update({ app_mode: mode, onboarding_completed: true })
         .eq('id', user.id);
       if (error) throw error;
-      updateUser({ selected_mode: mode, onboarding_completed: true });
+      updateUser({ app_mode: mode, onboarding_completed: true });
     } catch (e) {
       console.error('Failed to save onboarding', e);
       toast.error('Could not save your preferences. Please try again.');
