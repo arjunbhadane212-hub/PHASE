@@ -46,7 +46,11 @@ export default function HomePage() {
   const fetchHabits = useCallback(async () => {
     try {
       const { data } = await axios.get(`${API}/habits/today`, { withCredentials: true });
-      setHabits(data);
+      if (Array.isArray(data)) {
+        setHabits(data);
+      } else {
+        console.error('Habits endpoint returned unexpected shape', data);
+      }
     } catch (e) {
       console.error('Failed to fetch habits', e);
     } finally {
