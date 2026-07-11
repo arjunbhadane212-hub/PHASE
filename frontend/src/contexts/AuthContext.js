@@ -1,102 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
-
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
-
-// Token storage - in-memory primary, localStorage backup
-let inMemoryToken = localStorage.getItem('access_token') || null;
-let inMemoryRefreshToken = localStorage.getItem('refresh_token') || null;
-
-function saveTokens(access, refresh) {
-  inMemoryToken = access;
-  inMemoryRefreshToken = refresh;
-  if (access) localStorage.setItem('access_token', access);
-  else localStorage.removeItem('access_token');
-  if (refresh) localStorage.setItem('refresh_token', refresh);
-  else localStorage.removeItem('refresh_token');
-}
-
-function clearTokens() {
-  inMemoryToken = null;
-  inMemoryRefreshToken = null;
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-}
-
-// Axios interceptor: attach Bearer token to every request
-axios.interceptors.request.use((config) => {
-  if (inMemoryToken) {
-    config.headers.Authorization = `Bearer ${inMemoryToken}`;
-  }
-  config.withCredentials = true;
-  return config;
-});
-
-// Axios response interceptor: auto-refresh on 401
-let isRefreshing = false;
-let failedQueue = [];
-
-function processQueue(error, token) {
-  failedQueue.forEach(prom => {
-    if (error) prom.reject(error);
-    else prom.resolve(token);
-  });
-  failedQueue = [];
-}
-
-axios.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // Don't retry auth endpoints or already-retried requests
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !originalRequest.url?.includes('/auth/login') &&
-      !originalRequest.url?.includes('/auth/register') &&
-      !originalRequest.url?.includes('/auth/refresh')
-    ) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axios(originalRequest);
-        });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const { data } = await axios.post(`${API}/auth/refresh`, {}, {
-          headers: inMemoryRefreshToken
-            ? { Authorization: `Bearer ${inMemoryRefreshToken}` }
-            : {},
-          withCredentials: true
-        });
-        
-        if (data.access_token) {
-          saveTokens(data.access_token, inMemoryRefreshToken);
-          originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
-          processQueue(null, data.access_token);
-          return axios(originalRequest);
-        }
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        clearTokens();
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export function formatApiErrorDetail(detail) {
   if (detail == null) return "Something went wrong. Please try again.";
@@ -107,75 +12,86 @@ export function formatApiErrorDetail(detail) {
   return String(detail);
 }
 
+async function fetchProfile(userId) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+function mergeAuthUser(authUser, profile) {
+  if (!authUser) return false;
+  return {
+    id: authUser.id,
+    email: authUser.email,
+    ...profile,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null); // null = checking, false = not auth, object = auth
   const [loading, setLoading] = useState(true);
   const hasChecked = useRef(false);
 
+  const loadUser = useCallback(async (authUser) => {
+    if (!authUser) {
+      setUser(false);
+      return false;
+    }
+    let merged;
+    try {
+      const profile = await fetchProfile(authUser.id);
+      merged = mergeAuthUser(authUser, profile);
+    } catch {
+      merged = mergeAuthUser(authUser, null);
+    }
+    setUser(merged);
+    return merged;
+  }, []);
+
   const checkAuth = useCallback(async () => {
     if (hasChecked.current) return;
     hasChecked.current = true;
-    
-    try {
-      const { data } = await axios.get(`${API}/auth/me`);
-      setUser(data);
-    } catch {
-      // Try refresh
-      try {
-        const refreshResp = await axios.post(`${API}/auth/refresh`, {}, {
-          headers: inMemoryRefreshToken
-            ? { Authorization: `Bearer ${inMemoryRefreshToken}` }
-            : {},
-          withCredentials: true
-        });
-        if (refreshResp.data.access_token) {
-          saveTokens(refreshResp.data.access_token, inMemoryRefreshToken);
-        }
-        const { data } = await axios.get(`${API}/auth/me`);
-        setUser(data);
-      } catch {
-        clearTokens();
-        setUser(false);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    await loadUser(session?.user ?? null);
+    setLoading(false);
+  }, [loadUser]);
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      loadUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [checkAuth, loadUser]);
 
   const login = async (email, password) => {
-    const { data } = await axios.post(`${API}/auth/login`, { email, password });
-    if (data.access_token) {
-      saveTokens(data.access_token, data.refresh_token || null);
-    }
-    setUser(data.user);
-    return data.user;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return loadUser(data.user);
   };
 
   const register = async (firstName, lastName, email, password) => {
-    const { data } = await axios.post(`${API}/auth/register`, {
-      first_name: firstName,
-      last_name: lastName,
+    const { data, error } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        data: { first_name: firstName, last_name: lastName },
+      },
     });
-    if (data.access_token) {
-      saveTokens(data.access_token, data.refresh_token || null);
-    }
-    setUser(data.user);
-    return data.user;
+    if (error) throw error;
+    if (data.user) return loadUser(data.user);
+    return false;
   };
 
   const logout = async () => {
-    try {
-      await axios.post(`${API}/auth/logout`);
-    } catch {
-      // Ignore logout errors
-    }
-    clearTokens();
+    await supabase.auth.signOut();
     setUser(false);
   };
 
@@ -184,22 +100,24 @@ export function AuthProvider({ children }) {
   };
 
   const refreshUser = async () => {
-    try {
-      const { data } = await axios.get(`${API}/auth/me`);
-      setUser(data);
-      return data;
-    } catch {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setUser(false);
       return null;
     }
+    const profile = await fetchProfile(session.user.id).catch(() => null);
+    const merged = mergeAuthUser(session.user, profile);
+    setUser(merged);
+    return merged;
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      login, 
-      register, 
-      logout, 
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      register,
+      logout,
       updateUser,
       refreshUser,
       isAuthenticated: !!user && user !== false

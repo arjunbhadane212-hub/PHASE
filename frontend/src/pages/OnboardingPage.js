@@ -6,10 +6,8 @@ import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Progress } from '../components/ui/progress';
 import { Zap, Dumbbell, BookOpen, Brain, Scale, Rocket, Gamepad2, Target, Lock, BarChart3, Bell, Trophy, MessageSquare, Flame, Sparkles, Eye, Crosshair } from 'lucide-react';
-import axios from 'axios';
+import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
-
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const questions = [
   {
@@ -95,7 +93,21 @@ export default function OnboardingPage() {
   const question = questions[currentStep];
   const progress = ((currentStep + 1) / questions.length) * 100;
 
-  const handleSelect = async (optionId) => {
+  const completeOnboarding = async (mode) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ selected_mode: mode, onboarding_completed: true })
+        .eq('id', user.id);
+      if (error) throw error;
+      updateUser({ selected_mode: mode, onboarding_completed: true });
+    } catch (e) {
+      console.error('Failed to save onboarding', e);
+      toast.error('Could not save your preferences. Please try again.');
+    }
+  };
+
+  const handleSelect = (optionId) => {
     const newAnswers = { ...answers, [question.id]: optionId };
     setAnswers(newAnswers);
 
@@ -104,52 +116,23 @@ export default function OnboardingPage() {
       return; // Wait for text input
     }
 
-    // Save to backend
-    try {
-      const payload = { [question.id]: optionId };
-      if (question.id === 'download_reason' && optionId !== 'other') {
-        payload.download_reason_other = null;
-      }
-      const { data } = await axios.post(`${API}/users/onboarding`, payload);
-      
-      // Update auth state with the response so onboarding_completed is reflected
-      if (data && data.onboarding_completed) {
-        updateUser(data);
-      }
-    } catch (e) {
-      console.error('Failed to save onboarding', e);
-      if (e.response?.status === 401) {
-        toast.error('Session expired. Please log in again.');
-        return;
-      }
-    }
-
     // Move to next or finish
     if (currentStep < questions.length - 1) {
       setTimeout(() => setCurrentStep(currentStep + 1), 300);
     } else {
-      // Final step - show splash
+      // Final step - persist selected mode and mark onboarding complete
       setSelectedMode(optionId);
       setShowSplash(true);
-      
+      completeOnboarding(optionId);
+
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
     }
   };
 
-  const handleOtherSubmit = async () => {
+  const handleOtherSubmit = () => {
     if (!otherText.trim()) return;
-
-    try {
-      await axios.post(`${API}/users/onboarding`, {
-        download_reason: 'other',
-        download_reason_other: otherText
-      });
-    } catch (e) {
-      console.error('Failed to save onboarding', e);
-    }
-
     setCurrentStep(currentStep + 1);
   };
 
