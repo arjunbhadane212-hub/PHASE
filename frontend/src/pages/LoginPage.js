@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, formatApiErrorDetail } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -31,8 +31,7 @@ export default function LoginPage() {
         navigate('/dashboard');
       }
     } catch (e) {
-      const detail = e.response?.data?.detail;
-      setError(formatApiErrorDetail(detail) || 'Login failed. Please try again.');
+      setError(e?.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

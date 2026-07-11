@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 
+// NOTE: FastAPI-shaped error helper, still used by the password-reset and
+// settings flows that have not yet been migrated off the old backend.
+// Supabase auth errors (login/signup) are surfaced directly via e.message.
 export function formatApiErrorDetail(detail) {
   if (detail == null) return "Something went wrong. Please try again.";
   if (typeof detail === "string") return detail;

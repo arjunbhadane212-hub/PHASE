@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, formatApiErrorDetail } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -87,8 +87,7 @@ export default function SignupPage() {
       toast.success('Account created!');
       navigate('/onboarding');
     } catch (e) {
-      const detail = e.response?.data?.detail;
-      setError(formatApiErrorDetail(detail) || 'Registration failed. Please try again.');
+      setError(e?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
