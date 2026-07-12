@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, X, Zap } from 'lucide-react';
-import axios from 'axios';
-
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
+import { supabase } from '../lib/supabaseClient';
 
 export default function RoastNotification() {
   const [roasts, setRoasts] = useState([]);
@@ -12,9 +10,9 @@ export default function RoastNotification() {
   useEffect(() => {
     const check = async () => {
       try {
-        const { data } = await axios.get(`${API}/roasts/check`);
-        if (data.roasts?.length > 0) {
-          setRoasts(data.roasts.map((r, i) => ({ id: Date.now() + i, text: r })));
+        const { data } = await supabase.rpc('check_roast');
+        if (data?.roast) {
+          setRoasts(prev => [...prev, { id: Date.now(), text: data.roast }]);
         }
       } catch { /* ignore */ }
     };

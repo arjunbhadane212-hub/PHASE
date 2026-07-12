@@ -3,9 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { fireRoast } from './RoastNotification';
 import { toast } from 'sonner';
-import axios from 'axios';
-
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
+import { supabase } from '../lib/supabaseClient';
 
 export default function FocusSession({ habit, duration, onComplete, onAbandon }) {
   const totalSeconds = duration * 60;
@@ -66,20 +64,15 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
 
   const handleAbandon = useCallback(async () => {
     setAbandoning(true);
-    const minsElapsed = Math.floor((Date.now() - startTimeRef.current) / 60000);
     try {
-      const { data } = await axios.post(`${API}/session/abandon`, { mins_elapsed: minsElapsed });
-      if (data.roast) {
+      // Option A: fire the abandonment roast (within 5s). Gem/shield/consistency
+      // penalties are deferred to a dedicated game-state step.
+      const { data } = await supabase.rpc('check_roast', { p_event: 'abandon' });
+      if (data?.roast) {
         setTimeout(() => fireRoast(data.roast), 500);
       }
-      if (data.gems_deducted > 0) {
-        toast.error(`-${data.gems_deducted} gems`);
-      } else if (data.shield_consumed) {
-        toast(`Streak shield consumed`);
-      } else {
-        toast(`Session abandoned`);
-      }
     } catch { /* ignore */ }
+    toast('Session abandoned');
     onAbandon();
   }, [onAbandon]);
 
@@ -257,7 +250,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
               data-testid="abandon-modal"
             >
               <p className="text-base font-bold text-white mb-2">Abandon this session?</p>
-              <p className="text-sm text-zinc-500 mb-6">Your consistency score will drop. -30 gems.</p>
+              <p className="text-sm text-zinc-500 mb-6">This ends your session early.</p>
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => setShowAbandonModal(false)}
