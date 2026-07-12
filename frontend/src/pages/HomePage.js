@@ -14,6 +14,7 @@ import StreakCard from '../components/StreakCard';
 import XpPopAnimation from '../components/XpPopAnimation';
 import FocusSession from '../components/FocusSession';
 import axios from 'axios';
+import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
 
@@ -22,7 +23,7 @@ const API = process.env.REACT_APP_BACKEND_URL + '/api';
 export default function HomePage() {
   const { user, refreshUser } = useAuth();
   const { isGameMode } = useMode();
-  const { gems, streakRevives, streakShields, xpBoostUses, xpTripleBoostUses, xpQuadBoostUses, currentRoast, showRoast, dismissRoast, fetchGameStatus, applyStreakRevive, loading: gameLoading } = useGame();
+  const { streakRevives, streakShields, xpBoostUses, xpTripleBoostUses, xpQuadBoostUses, currentRoast, showRoast, dismissRoast, fetchGameStatus, applyStreakRevive, loading: gameLoading } = useGame();
   
   const boostMultiplier = xpQuadBoostUses > 0 ? 4 : xpTripleBoostUses > 0 ? 3 : xpBoostUses > 0 ? 2 : 0;
   
@@ -44,19 +45,43 @@ export default function HomePage() {
   };
 
   const fetchHabits = useCallback(async () => {
+    if (!user?.id) return;
     try {
-      const { data } = await axios.get(`${API}/habits/today`, { withCredentials: true });
-      if (Array.isArray(data)) {
-        setHabits(data);
-      } else {
-        console.error('Habits endpoint returned unexpected shape', data);
-      }
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const weekday = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }).toLowerCase();
+
+      const [{ data: allHabits, error: hErr }, { data: comps, error: cErr }] = await Promise.all([
+        supabase.from('habits').select('*').eq('user_id', user.id),
+        supabase
+          .from('habit_completions')
+          .select('habit_id')
+          .eq('user_id', user.id)
+          .eq('completed_date', todayStr),
+      ]);
+      if (hErr) throw hErr;
+      if (cErr) throw cErr;
+
+      const completedSet = new Set((comps || []).map(c => c.habit_id));
+      const scheduledToday = (allHabits || [])
+        .filter(h => {
+          const s = h.repeat_schedule || 'daily';
+          if (s === 'daily') return true;
+          if (s === 'weekdays') return !['saturday', 'sunday'].includes(weekday);
+          if (s === 'weekends') return ['saturday', 'sunday'].includes(weekday);
+          const custom = Array.isArray(h.custom_days) ? h.custom_days.map(d => String(d).toLowerCase()) : [];
+          return custom.includes(weekday);
+        })
+        // alias id -> habit_id so existing HabitCard markup keeps working
+        .map(h => ({ ...h, habit_id: h.id, completed_today: completedSet.has(h.id) }));
+
+      setHabits(scheduledToday);
     } catch (e) {
       console.error('Failed to fetch habits', e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchHabits();
@@ -65,33 +90,26 @@ export default function HomePage() {
   const handleCompleteHabit = async (habitId) => {
     setCompletingHabit(habitId);
     try {
-      const { data } = await axios.post(`${API}/habits/${habitId}/complete`, {}, { withCredentials: true });
-      
-      // Update local state
-      setHabits(prev => prev.map(h => 
-        h.habit_id === habitId ? { ...h, completed_today: true, current_streak: data.current_streak } : h
+      const { data, error } = await supabase.rpc('complete_habit', { p_habit_id: habitId });
+      if (error) throw error;
+
+      // Mark done locally
+      setHabits(prev => prev.map(h =>
+        h.habit_id === habitId ? { ...h, completed_today: true } : h
       ));
-      
-      // Refresh user and game data
+
+      // Pull fresh XP / gems / streak into the user object (XP bar, streak card)
       await refreshUser();
-      await fetchGameStatus();
-      
-      if (data.level_up) {
-        if (isGameMode) soundEngine.levelUp();
-        setLevelUpData(data);
-        setTimeout(() => setLevelUpData(null), 5000);
-      } else if (isGameMode) {
+
+      if (isGameMode) {
         soundEngine.habitComplete();
         xpIdRef.current += 1;
-        setXpEvents(prev => [...prev, { id: xpIdRef.current, amount: data.total_xp, boost: data.boost_active }]);
-      }
-
-      // Focus Mode: show gem toast
-      if (!isGameMode && data.gems_earned > 0) {
+        setXpEvents(prev => [...prev, { id: xpIdRef.current, amount: data.xp_earned, boost: false }]);
+      } else if (data.gems_earned > 0) {
         toast.success(`+${data.gems_earned} gems`, { icon: '💎', duration: 2000 });
       }
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Failed to complete habit');
+      toast.error(e?.message || 'Failed to complete habit');
     } finally {
       setCompletingHabit(null);
     }
@@ -201,7 +219,7 @@ export default function HomePage() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 glass-card cursor-default" data-testid="gems-display">
                   <Gem className={`w-4 h-4 ${isGameMode ? 'text-blue-400 animate-gem-shimmer' : 'text-purple-400'}`} />
-                  <span className="text-sm font-bold text-blue-300">{gems}</span>
+                  <span className="text-sm font-bold text-blue-300">{user?.gems ?? 0}</span>
                 </div>
                 {streakShields > 0 && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 glass-card" data-testid="shields-display">
@@ -551,6 +569,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
 }
 
 function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     habit_name: '',
     description: '',
@@ -561,13 +580,28 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
   });
   const [loading, setLoading] = useState(false);
 
+  const xpValues = { easy: 10, medium: 25, hard: 50 };
+  const gemValues = { easy: 5, medium: 10, hard: 20 };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.habit_name.trim()) return;
+    if (!formData.habit_name.trim() || !user?.id) return;
 
     setLoading(true);
     try {
-      await axios.post(`${API}/habits`, formData, { withCredentials: true });
+      const { error } = await supabase.from('habits').insert({
+        user_id: user.id,
+        habit_name: formData.habit_name.trim(),
+        description: formData.description || null,
+        time_of_day: formData.time_of_day,
+        difficulty: formData.difficulty,
+        xp_value: xpValues[formData.difficulty],
+        gem_value: gemValues[formData.difficulty],
+        repeat_schedule: formData.repeat_schedule,
+        session_duration: formData.session_duration || 15,
+      });
+      if (error) throw error;
+
       toast.success('Habit created!');
       onOpenChange(false);
       setFormData({
@@ -580,14 +614,11 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
       });
       onSuccess();
     } catch (e) {
-      toast.error('Failed to create habit');
+      toast.error(e?.message || 'Failed to create habit');
     } finally {
       setLoading(false);
     }
   };
-
-  const xpValues = { easy: 10, medium: 25, hard: 50 };
-  const gemValues = { easy: 5, medium: 10, hard: 20 };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
