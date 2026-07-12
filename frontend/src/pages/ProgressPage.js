@@ -4,9 +4,7 @@ import { useMode } from '../contexts/ModeContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { BarChart3, PieChart as PieChartIcon, TrendingUp, AreaChartIcon, Columns3, Gem, Zap, CheckSquare, Loader2 } from 'lucide-react';
-import axios from 'axios';
-
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
+import { supabase } from '../lib/supabaseClient';
 
 const CHART_TYPES = [
   { id: 'bar', icon: BarChart3, label: 'Bar' },
@@ -16,9 +14,11 @@ const CHART_TYPES = [
   { id: 'column', icon: Columns3 || BarChart3, label: 'Column' },
 ];
 
-const COLORS = { gems: '#A78BFA', xp: '#FBBF24', tasks: '#1B6AE4' };
+// Blue-only palette per CLAUDE.md color system (no purple, no yellow)
+const COLORS = { gems: '#60A5FA', xp: '#3B82F6', tasks: '#1B6AE4' };
 
 export default function ProgressPage() {
+  const { user } = useAuth();
   const { isGameMode } = useMode();
   const [range, setRange] = useState('weekly');
   const [chartType, setChartType] = useState('bar');
@@ -26,17 +26,70 @@ export default function ProgressPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
+    if (!user?.id) return;
     setLoading(true);
     try {
-      const endpoint = range === 'daily' ? 'daily' : range === 'monthly' ? 'monthly' : 'weekly';
-      const { data: res } = await axios.get(`${API}/progress/${endpoint}`, { withCredentials: true });
-      setData(res);
+      if (range === 'daily') {
+        const today = new Date().toISOString().slice(0, 10);
+        const [{ data: log }, { data: comps }] = await Promise.all([
+          supabase.from('daily_logs').select('*').eq('user_id', user.id).eq('log_date', today).maybeSingle(),
+          supabase.from('habit_completions').select('habits(time_of_day)').eq('user_id', user.id).eq('completed_date', today),
+        ]);
+        const slot = { morning: 0, afternoon: 0, night: 0 };
+        (comps || []).forEach(c => {
+          const t = c.habits?.time_of_day;
+          if (t && slot[t] !== undefined) slot[t] += 1;
+        });
+        setData({
+          xp_earned_today: log?.xp_earned_today ?? 0,
+          gems_earned_today: log?.gems_earned_today ?? 0,
+          completed_habits: Array.isArray(log?.habits_completed) ? log.habits_completed.length : (comps?.length ?? 0),
+          morning: { completed: slot.morning },
+          afternoon: { completed: slot.afternoon },
+          night: { completed: slot.night },
+        });
+      } else {
+        const days = range === 'monthly' ? 30 : 7;
+        const start = new Date();
+        start.setUTCDate(start.getUTCDate() - (days - 1));
+        const startStr = start.toISOString().slice(0, 10);
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        const { data: logs, error } = await supabase
+          .from('daily_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('log_date', startStr)
+          .lte('log_date', todayStr);
+        if (error) throw error;
+
+        const byDate = {};
+        (logs || []).forEach(l => { byDate[l.log_date] = l; });
+
+        const daily_data = [];
+        let total_xp = 0, total_gems = 0, total_tasks = 0;
+        for (let i = 0; i < days; i++) {
+          const d = new Date(start);
+          d.setUTCDate(start.getUTCDate() + i);
+          const ds = d.toISOString().slice(0, 10);
+          const l = byDate[ds];
+          const xp = l?.xp_earned_today ?? 0;
+          const gems = l?.gems_earned_today ?? 0;
+          const completed = Array.isArray(l?.habits_completed) ? l.habits_completed.length : 0;
+          total_xp += xp; total_gems += gems; total_tasks += completed;
+          const name = range === 'monthly'
+            ? d.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })
+            : d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+          daily_data.push({ day: name, xp, gems, completed });
+        }
+        setData({ total_xp, total_gems, total_tasks, daily_data });
+      }
     } catch (e) {
       console.error('Failed to fetch progress', e);
     } finally {
       setLoading(false);
     }
-  }, [range]);
+  }, [range, user?.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
