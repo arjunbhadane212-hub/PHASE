@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth, formatApiErrorDetail } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
+import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -302,15 +303,16 @@ function EditProfileDialog({ user, open, onOpenChange, onSuccess, isGameMode }) 
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.put(`${API}/users/profile`, {
-        first_name: firstName,
-        last_name: lastName
-      }, { withCredentials: true });
+      const { error } = await supabase
+        .from('users')
+        .update({ first_name: firstName, last_name: lastName })
+        .eq('id', user.id);
+      if (error) throw error;
       toast.success('Profile updated');
       onSuccess();
       onOpenChange(false);
     } catch (e) {
-      toast.error('Failed to update profile');
+      toast.error(e?.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -376,16 +378,17 @@ function ChangePasswordDialog({ open, onOpenChange, isGameMode }) {
     setError('');
     setLoading(true);
     try {
-      await axios.post(`${API}/users/change-password`, {
-        current_password: currentPassword,
-        new_password: newPassword
-      }, { withCredentials: true });
+      // Supabase Auth owns password management now. updateUser sets the new
+      // password for the currently-authenticated user; it relies on a valid
+      // (recent) session rather than verifying current_password.
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
       toast.success('Password changed');
       onOpenChange(false);
       setCurrentPassword('');
       setNewPassword('');
     } catch (e) {
-      setError(formatApiErrorDetail(e.response?.data?.detail) || 'Failed to change password');
+      setError(e?.message || 'Failed to change password');
     } finally {
       setLoading(false);
     }
@@ -464,11 +467,15 @@ function NotificationSettings({ user, isGameMode }) {
     setSettings(newSettings);
     setLoading(true);
     try {
-      await axios.put(`${API}/users/notification-settings`, newSettings, { withCredentials: true });
+      const { error } = await supabase
+        .from('users')
+        .update({ notification_settings: newSettings })
+        .eq('id', user.id);
+      if (error) throw error;
     } catch (e) {
       // Revert on error
       setSettings(settings);
-      toast.error('Failed to update settings');
+      toast.error(e?.message || 'Failed to update settings');
     } finally {
       setLoading(false);
     }
@@ -552,15 +559,20 @@ function ProfileCustomizationSection() {
   const handleEquip = async (type, key) => {
     setEquipping(`${type}-${key}`);
     try {
-      await axios.put(`${API}/profile/me/equip`, { type, key: key || null });
+      // Equip mechanism wired to Supabase; ownership validation skipped until
+      // Step 5's shop populates unlocked_*.
+      const column = `equipped_${type}`;
+      const { error } = await supabase.from('users').update({ [column]: key || null }).eq('id', user.id);
+      if (error) throw error;
       await refreshUser();
       if (type === 'title') {
+        // TODO(Step 5): titles catalog comes from the shop/inventory system
         const { data } = await axios.get(`${API}/profile/me/titles`);
         setTitles(data);
       }
       toast.success(`${type} ${key ? 'equipped' : 'removed'}!`);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Failed to equip');
+      toast.error(e?.message || 'Failed to equip');
     } finally { setEquipping(null); }
   };
 
@@ -691,19 +703,47 @@ function LightModeToggle() {
 
 
 function ProgressSection({ isGameMode }) {
+  const { user } = useAuth();
   const [daily, setDaily] = useState(null);
   const [weekly, setWeekly] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user?.id) return;
     const fetchProgress = async () => {
       try {
-        const [d, w] = await Promise.all([
-          axios.get(`${API}/progress/daily`, { withCredentials: true }),
-          axios.get(`${API}/progress/weekly`, { withCredentials: true })
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0, 10);
+        const weekday = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }).toLowerCase();
+        const weekStart = new Date(now);
+        weekStart.setUTCDate(now.getUTCDate() - 6);
+        const weekStartStr = weekStart.toISOString().slice(0, 10);
+
+        const [{ data: habits }, { data: todayLog }, { data: weekLogs }] = await Promise.all([
+          supabase.from('habits').select('repeat_schedule,custom_days').eq('user_id', user.id),
+          supabase.from('daily_logs').select('habits_completed').eq('user_id', user.id).eq('log_date', todayStr).maybeSingle(),
+          supabase.from('daily_logs').select('*').eq('user_id', user.id).gte('log_date', weekStartStr).lte('log_date', todayStr),
         ]);
-        setDaily(d.data);
-        setWeekly(w.data);
+
+        const scheduledToday = (habits || []).filter(h => {
+          const s = h.repeat_schedule || 'daily';
+          if (s === 'daily') return true;
+          if (s === 'weekdays') return !['saturday', 'sunday'].includes(weekday);
+          if (s === 'weekends') return ['saturday', 'sunday'].includes(weekday);
+          const custom = Array.isArray(h.custom_days) ? h.custom_days.map(d => String(d).toLowerCase()) : [];
+          return custom.includes(weekday);
+        }).length;
+
+        const completedToday = Array.isArray(todayLog?.habits_completed) ? todayLog.habits_completed.length : 0;
+        setDaily({ completed_habits: completedToday, total_habits: scheduledToday });
+
+        const logs = weekLogs || [];
+        const total_xp = logs.reduce((s, l) => s + (l.xp_earned_today || 0), 0);
+        const full_days = logs.filter(l => l.full_day_completion).length;
+        const totalCompleted = logs.reduce((s, l) => s + (Array.isArray(l.habits_completed) ? l.habits_completed.length : 0), 0);
+        // Approximate: today's scheduled count as the per-day baseline over 7 days
+        const completion_rate = scheduledToday > 0 ? Math.min(100, Math.round((totalCompleted / (scheduledToday * 7)) * 100)) : 0;
+        setWeekly({ completion_rate, total_xp, full_days });
       } catch {
         // ignore
       } finally {
@@ -711,7 +751,7 @@ function ProgressSection({ isGameMode }) {
       }
     };
     fetchProgress();
-  }, []);
+  }, [user?.id]);
 
   if (loading || !daily) return null;
 
@@ -762,12 +802,15 @@ function ProgressSection({ isGameMode }) {
 
 
 function ColorSettingsSection({ isGameMode }) {
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [colors, setColors] = useState(null);
   const [updating, setUpdating] = useState(null);
 
   const fetchColors = useCallback(async () => {
     try {
+      // TODO(Step 5): color catalog + owned flags come from the shop/inventory
+      // system, which isn't built yet. Until then this returns nothing and the
+      // section stays hidden.
       const { data } = await axios.get(`${API}/game/colors`);
       setColors(data);
     } catch { /* ignore */ }
@@ -778,11 +821,15 @@ function ColorSettingsSection({ isGameMode }) {
   const handleSelect = async (hex, type) => {
     setUpdating(`${type}-${hex}`);
     try {
-      await axios.put(`${API}/users/colors`, { color_hex: hex, color_type: type });
+      // Equip mechanism wired to Supabase. Ownership validation intentionally
+      // skipped for now (unlocked_* is populated by Step 5's shop).
+      const column = type === 'banner' ? 'selected_banner_color' : 'selected_main_color';
+      const { error } = await supabase.from('users').update({ [column]: hex }).eq('id', user.id);
+      if (error) throw error;
       await Promise.all([fetchColors(), refreshUser()]);
       toast.success('Color updated!');
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Failed to update');
+      toast.error(e?.message || 'Failed to update');
     } finally { setUpdating(null); }
   };
 

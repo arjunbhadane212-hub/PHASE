@@ -1,10 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import axios from 'axios';
+import { supabase } from '../lib/supabaseClient';
 
 const ModeContext = createContext(null);
-
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export function ModeProvider({ children }) {
   const { user, updateUser } = useAuth();
@@ -38,15 +36,19 @@ export function ModeProvider({ children }) {
   }, [user, mode]);
 
   const switchMode = async () => {
-    try {
-      const { data } = await axios.put(`${API}/users/mode`, {}, { withCredentials: true });
-      setMode(data.app_mode);
-      updateUser({ app_mode: data.app_mode });
-      return data.app_mode;
-    } catch (e) {
-      console.error('Failed to switch mode', e);
-      throw e;
+    if (!user?.id) return mode;
+    const newMode = mode === 'game' ? 'focus' : 'game';
+    const { error } = await supabase
+      .from('users')
+      .update({ app_mode: newMode })
+      .eq('id', user.id);
+    if (error) {
+      console.error('Failed to switch mode', error);
+      throw error;
     }
+    setMode(newMode);            // reflect immediately, no refresh needed
+    updateUser({ app_mode: newMode });
+    return newMode;
   };
 
   const isGameMode = mode === 'game';
