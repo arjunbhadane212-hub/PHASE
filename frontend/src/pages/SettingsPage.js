@@ -812,7 +812,12 @@ function ColorSettingsSection({ isGameMode }) {
       // system, which isn't built yet. Until then this returns nothing and the
       // section stays hidden.
       const { data } = await axios.get(`${API}/game/colors`);
-      setColors(data);
+      // Backend may be unconfigured (relative URL resolves to the SPA's HTML);
+      // only accept a well-formed payload, otherwise colors.*.map() crashes the
+      // whole Settings page. Malformed → stays null → section hides gracefully.
+      if (data && Array.isArray(data.banner_colors) && Array.isArray(data.main_colors)) {
+        setColors(data);
+      }
     } catch { /* ignore */ }
   }, []);
 

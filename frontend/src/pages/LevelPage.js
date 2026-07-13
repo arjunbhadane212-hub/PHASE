@@ -28,7 +28,9 @@ export default function LevelPage() {
   const fetchLevels = useCallback(async () => {
     try {
       const { data } = await axios.get(`${API}/levels`);
-      setLevels(data);
+      // Backend may be unconfigured (relative URL resolves to the SPA's HTML);
+      // never trust the shape — a non-array would crash levels.find below.
+      setLevels(Array.isArray(data) ? data : []);
     } catch {
       // ignore
     } finally {

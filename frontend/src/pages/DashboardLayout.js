@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMode } from '../contexts/ModeContext';
 import { Home, BarChart3, Trophy, ShoppingBag, Settings, User, Award } from 'lucide-react';
 import ProfilePanel from './MyProfilePage';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const allNavItems = [
   { to: '/dashboard', icon: Home, label: 'Home', end: true, modes: ['focus', 'game'] },
@@ -46,6 +47,7 @@ function MobileNavItem({ item, isGameMode }) {
 
 export default function DashboardLayout() {
   const { isGameMode } = useMode();
+  const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const currentMode = isGameMode ? 'game' : 'focus';
   const navItems = allNavItems.filter(item => item.modes.includes(currentMode));
@@ -88,7 +90,9 @@ export default function DashboardLayout() {
 
       {/* Main content */}
       <main className="md:ml-20 pb-32 md:pb-0 min-h-screen">
-        <Outlet />
+        <ErrorBoundary resetKey={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       {/* Mobile bottom nav */}

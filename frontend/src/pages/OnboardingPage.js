@@ -94,13 +94,26 @@ export default function OnboardingPage() {
   const progress = ((currentStep + 1) / questions.length) * 100;
 
   const completeOnboarding = async (mode) => {
+    // Persist every survey answer collected across the earlier steps, not just
+    // the mode. These live in `answers`/`otherText` by the time the final
+    // (mode-picker) step fires.
+    const payload = {
+      app_mode: mode,
+      onboarding_completed: true,
+      main_goal: answers.main_goal ?? null,
+      download_reason: answers.download_reason ?? null,
+      download_reason_other:
+        answers.download_reason === 'other' ? (otherText.trim() || null) : null,
+      consistency_level: answers.consistency_level ?? null,
+      accountability_style: answers.accountability_style ?? null,
+    };
     try {
       const { error } = await supabase
         .from('users')
-        .update({ app_mode: mode, onboarding_completed: true })
+        .update(payload)
         .eq('id', user.id);
       if (error) throw error;
-      updateUser({ app_mode: mode, onboarding_completed: true });
+      updateUser(payload);
     } catch (e) {
       console.error('Failed to save onboarding', e);
       toast.error('Could not save your preferences. Please try again.');

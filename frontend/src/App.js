@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ModeProvider } from "./contexts/ModeContext";
 import { GameProvider } from "./contexts/GameContext";
 import { Toaster } from "./components/ui/sonner";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -151,16 +152,18 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ModeProvider>
-          <GameProvider>
-            <AppRoutes />
-            <Toaster position="top-right" richColors />
-            <RoastNotification />
-            <RoastListener />
-          </GameProvider>
-        </ModeProvider>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <ModeProvider>
+            <GameProvider>
+              <AppRoutes />
+              <Toaster position="top-right" richColors />
+              <RoastNotification />
+              <RoastListener />
+            </GameProvider>
+          </ModeProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
