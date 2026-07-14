@@ -13,12 +13,19 @@ import { Plus, Check, Sunrise, Sun, Moon, Flame, Sparkles, Loader2, Gem, Heart, 
 import StreakCard from '../components/StreakCard';
 import XpPopAnimation from '../components/XpPopAnimation';
 import FocusSession from '../components/FocusSession';
-import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
 
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
+// Client's LOCAL calendar day (YYYY-MM-DD). The complete/uncomplete RPCs key
+// completions on this instead of the server's UTC day, so a habit finished near
+// local midnight lands on the right day. Server clamps it to +/-1 day of UTC.
+function localDateStr(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 export default function HomePage() {
   const { user, refreshUser } = useAuth();
@@ -48,8 +55,8 @@ export default function HomePage() {
     if (!user?.id) return;
     try {
       const now = new Date();
-      const todayStr = now.toISOString().slice(0, 10);
-      const weekday = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }).toLowerCase();
+      const todayStr = localDateStr(now);
+      const weekday = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
       const [{ data: allHabits, error: hErr }, { data: comps, error: cErr }] = await Promise.all([
         supabase.from('habits').select('*').eq('user_id', user.id),
@@ -90,7 +97,7 @@ export default function HomePage() {
   const handleCompleteHabit = async (habitId) => {
     setCompletingHabit(habitId);
     try {
-      const { data, error } = await supabase.rpc('complete_habit', { p_habit_id: habitId });
+      const { data, error } = await supabase.rpc('complete_habit', { p_habit_id: habitId, p_client_date: localDateStr() });
       if (error) throw error;
 
       // Mark done locally
@@ -117,15 +124,17 @@ export default function HomePage() {
 
   const handleUncompleteHabit = async (habitId) => {
     try {
-      await axios.post(`${API}/habits/${habitId}/uncomplete`, {}, { withCredentials: true });
-      setHabits(prev => prev.map(h => 
+      const { error } = await supabase.rpc('uncomplete_habit', { p_habit_id: habitId, p_client_date: localDateStr() });
+      if (error) throw error;
+      setHabits(prev => prev.map(h =>
         h.habit_id === habitId ? { ...h, completed_today: false } : h
       ));
+      // Pull reverted XP / gems / streak back into the user object
       await refreshUser();
       await fetchGameStatus();
       toast.info('Habit unchecked');
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Failed to uncomplete habit');
+      toast.error(e?.message || 'Failed to uncomplete habit');
     }
   };
 

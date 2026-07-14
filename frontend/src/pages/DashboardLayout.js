@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMode } from '../contexts/ModeContext';
-import { Home, BarChart3, Trophy, ShoppingBag, Settings, User, Award } from 'lucide-react';
+import { Home, BarChart3, Trophy, ShoppingBag, Settings, User } from 'lucide-react';
 import ProfilePanel from './MyProfilePage';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const allNavItems = [
   { to: '/dashboard', icon: Home, label: 'Home', end: true, modes: ['focus', 'game'] },
   { to: '/dashboard/progress', icon: BarChart3, label: 'Progress', modes: ['focus', 'game'] },
-  { to: '/dashboard/leaderboard', icon: Award, label: 'Ranks', modes: ['game'] },
+  // 'Ranks' (leaderboard) is an Update 2 feature — hidden from nav until built.
   { to: '/dashboard/level', icon: Trophy, label: 'Level', modes: ['game'] },
   { to: '/dashboard/shop', icon: ShoppingBag, label: 'Shop', modes: ['game'] },
   { to: '/dashboard/focus-shop', icon: ShoppingBag, label: 'Shop', modes: ['focus'] },
