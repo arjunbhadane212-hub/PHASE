@@ -30,8 +30,15 @@ function localDateStr(d = new Date()) {
 export default function HomePage() {
   const { user, refreshUser } = useAuth();
   const { isGameMode } = useMode();
-  const { streakRevives, streakShields, xpBoostUses, xpTripleBoostUses, xpQuadBoostUses, currentRoast, showRoast, dismissRoast, fetchGameStatus, applyStreakRevive, loading: gameLoading } = useGame();
-  
+  const { xpBoostUses, xpTripleBoostUses, xpQuadBoostUses, currentRoast, showRoast, dismissRoast, fetchGameStatus } = useGame();
+
+  // Streak Shield / Revive counts live on the Supabase users row (the working
+  // data path), not the legacy game-status backend.
+  const streakShields = user?.streak_shields ?? 0;
+  const streakRevives = user?.streak_revives ?? 0;
+  const [shieldBusy, setShieldBusy] = useState(false);
+  const [reviveBusy, setReviveBusy] = useState(false);
+
   const boostMultiplier = xpQuadBoostUses > 0 ? 4 : xpTripleBoostUses > 0 ? 3 : xpBoostUses > 0 ? 2 : 0;
   
   const [habits, setHabits] = useState([]);
@@ -62,14 +69,17 @@ export default function HomePage() {
         supabase.from('habits').select('*').eq('user_id', user.id),
         supabase
           .from('habit_completions')
-          .select('habit_id')
+          .select('habit_id, status')
           .eq('user_id', user.id)
           .eq('completed_date', todayStr),
       ]);
       if (hErr) throw hErr;
       if (cErr) throw cErr;
 
-      const completedSet = new Set((comps || []).map(c => c.habit_id));
+      // A 'failed' row (abandoned / tab-switched session) locks the habit for
+      // the day but is NOT a success — track it separately from real completions.
+      const completedSet = new Set((comps || []).filter(c => c.status !== 'failed').map(c => c.habit_id));
+      const failedSet = new Set((comps || []).filter(c => c.status === 'failed').map(c => c.habit_id));
       const scheduledToday = (allHabits || [])
         .filter(h => {
           const s = h.repeat_schedule || 'daily';
@@ -80,7 +90,7 @@ export default function HomePage() {
           return custom.includes(weekday);
         })
         // alias id -> habit_id so existing HabitCard markup keeps working
-        .map(h => ({ ...h, habit_id: h.id, completed_today: completedSet.has(h.id) }));
+        .map(h => ({ ...h, habit_id: h.id, completed_today: completedSet.has(h.id), failed_today: failedSet.has(h.id) }));
 
       setHabits(scheduledToday);
     } catch (e) {
@@ -139,12 +149,32 @@ export default function HomePage() {
   };
 
   const handleUseStreakRevive = async () => {
+    setReviveBusy(true);
     try {
-      const result = await applyStreakRevive();
-      toast.success(result.message);
+      const { data, error } = await supabase.rpc('use_streak_revive');
+      if (error) throw error;
+      toast.success(`Streak restored to ${data.current_streak}`);
       await refreshUser();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Failed to use streak revive');
+      toast.error(e?.message || 'Failed to use streak revive');
+    } finally {
+      setReviveBusy(false);
+    }
+  };
+
+  // Focus Mode home-screen Streak Shield purchase (500 gems) — the only
+  // shop-adjacent action in Focus Mode, per the locked decision.
+  const handleBuyFocusShield = async () => {
+    setShieldBusy(true);
+    try {
+      const { data, error } = await supabase.rpc('buy_focus_shield');
+      if (error) throw error;
+      toast.success('Streak Shield ready — one missed day covered');
+      await refreshUser();
+    } catch (e) {
+      toast.error(e?.message || 'Could not buy Streak Shield');
+    } finally {
+      setShieldBusy(false);
     }
   };
 
@@ -261,7 +291,7 @@ export default function HomePage() {
                   <Button
                     size="sm"
                     onClick={handleUseStreakRevive}
-                    disabled={gameLoading}
+                    disabled={reviveBusy}
                     className="bg-red-500/10 text-red-400 border border-red-500/15 hover:bg-red-500/20 text-xs rounded-xl"
                     data-testid="use-streak-revive-btn"
                   >
@@ -289,12 +319,40 @@ export default function HomePage() {
 
           {/* Streak Card */}
           <div className="mt-4">
-            <StreakCard 
-              streak={user?.current_streak || 0} 
+            <StreakCard
+              streak={user?.current_streak || 0}
               shieldsActive={streakShields}
               isGameMode={isGameMode}
             />
           </div>
+
+          {/* Focus Mode: Streak Shield button on the home screen (500 gems).
+              Locked decision — Focus Mode has no shop, this is its only purchase. */}
+          {!isGameMode && (
+            <div className="mt-4 p-4 rounded-2xl glass-card flex items-center gap-4" data-testid="focus-shield-card">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
+                <Shield className="w-5 h-5 text-[#60A5FA]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white">Streak Shield</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  {streakShields > 0
+                    ? `${streakShields} active · protects a missed day`
+                    : 'Protects your streak on a missed day'}
+                </p>
+              </div>
+              <Button
+                onClick={handleBuyFocusShield}
+                disabled={shieldBusy || (user?.gems ?? 0) < 500}
+                className="h-9 px-4 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm flex-shrink-0 disabled:opacity-40"
+                data-testid="buy-focus-shield-btn"
+              >
+                {shieldBusy
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> 500</span>}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Habits sections */}
@@ -379,7 +437,12 @@ export default function HomePage() {
               await handleCompleteHabit(focusSession.habit.habit_id);
               setFocusSession(null);
             }}
-            onAbandon={() => setFocusSession(null)}
+            onAbandon={async () => {
+              setFocusSession(null);
+              // Reflect the penalty (gems / streak / shield) and the failed habit.
+              await refreshUser();
+              await fetchHabits();
+            }}
           />
         )}
       </AnimatePresence>
@@ -483,8 +546,16 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
       </AnimatePresence>
 
       <div className="flex items-center gap-4">
-        {/* Focus Mode: Begin button instead of checkbox for uncompleted habits */}
-        {!isGameMode && !habit.completed_today ? (
+        {/* Failed today (abandoned / tab-switched) — locked, non-actionable. */}
+        {habit.failed_today ? (
+          <div
+            className="w-8 h-8 rounded-lg border-2 border-red-500/30 bg-red-500/10 flex items-center justify-center flex-shrink-0"
+            data-testid={`habit-failed-${habit.habit_id}`}
+          >
+            <X className="w-4 h-4 text-red-400" />
+          </div>
+        ) : !isGameMode && !habit.completed_today ? (
+          /* Focus Mode: Begin button instead of checkbox for uncompleted habits */
           <button
             onClick={() => onBeginSession(habit)}
             disabled={isCompleting}
@@ -517,10 +588,13 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className={`font-medium ${habit.completed_today ? 'text-zinc-400 line-through' : 'text-white'}`}>
+          <p className={`font-medium ${(habit.completed_today || habit.failed_today) ? 'text-zinc-400 line-through' : 'text-white'}`}>
             {habit.habit_name}
           </p>
           <div className="flex items-center gap-3 mt-1">
+            {habit.failed_today && (
+              <span className="text-xs text-red-400 font-medium">Failed today</span>
+            )}
             {isGameMode ? (
               <span className={`text-xs ${difficultyColors[habit.difficulty]}`}>
                 +{habit.xp_value} XP

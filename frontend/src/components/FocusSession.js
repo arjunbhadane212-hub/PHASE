@@ -13,6 +13,12 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   const [now, setNow] = useState(() => Date.now());
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [abandoning, setAbandoning] = useState(false);
+  // Guards for the tab-switch penalty (see the visibility effect below).
+  const penalizedRef = useRef(false);
+  const showModalRef = useRef(false);
+  useEffect(() => { showModalRef.current = showAbandonModal; }, [showAbandonModal]);
+
+  const habitId = habit.habit_id ?? habit.id;
 
   const elapsed = Math.min(totalSeconds, Math.floor((now - startTimeRef.current) / 1000));
   const secondsLeft = Math.max(0, totalSeconds - elapsed);
@@ -26,8 +32,9 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
     return () => clearInterval(id);
   }, [completed]);
 
-  // Page Visibility API: when tab/app returns to foreground, force an
-  // immediate recompute. NEVER triggers an abandon — backgrounding is benign.
+  // Page Visibility API (recompute): when the tab returns to the foreground,
+  // force an immediate recompute so the wall-clock timer catches up. This is
+  // separate from the penalty handler below and only refreshes the display.
   useEffect(() => {
     const onVis = () => {
       if (document.visibilityState === 'visible') {
@@ -43,6 +50,55 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       window.removeEventListener('pageshow', onVis);
     };
   }, []);
+
+  // Tab-switch / focus-loss penalty (section 5d). Leaving the tab while the
+  // timer runs is treated as WORSE than a deliberate abandon: the timer stops,
+  // the habit fails, and a larger gem penalty applies — automatically, with no
+  // confirmation modal (the point is that walking away gets punished).
+  useEffect(() => {
+    // Tunable: brief flickers (an OS notification stealing focus for an instant,
+    // a quick accidental alt-tab) shouldn't cost gems. Mirrors game_config
+    // focus_tab_switch_grace_seconds on the server.
+    const TAB_SWITCH_GRACE_MS = 3000;
+    let graceTimer = null;
+    const clearGrace = () => { if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; } };
+    // True once the wall-clock timer has already reached zero.
+    const naturallyDone = () => Date.now() - startTimeRef.current >= totalSeconds * 1000;
+
+    const penalize = async () => {
+      graceTimer = null;
+      if (penalizedRef.current) return;   // already penalized, or a manual abandon is running
+      if (showModalRef.current) return;   // resolving via the manual confirm modal instead
+      if (!document.hidden) return;       // returned during the grace window
+      if (naturallyDone()) return;        // session already finished — don't punish success
+      penalizedRef.current = true;
+      try {
+        const { data: pen } = await supabase.rpc('abandon_focus_session', {
+          p_habit_id: habitId, p_reason: 'tab_switch',
+        });
+        const { data } = await supabase.rpc('check_roast', { p_event: 'tab_switch' });
+        if (data?.roast) setTimeout(() => fireRoast(data.roast), 300);
+        toast(`You left the tab — session ended · -${pen?.penalty ?? 45} gems`);
+      } catch { /* ignore */ }
+      onAbandon();
+    };
+
+    const onHiddenChange = () => {
+      if (document.hidden) {
+        if (penalizedRef.current || showModalRef.current || naturallyDone()) return;
+        clearGrace();
+        graceTimer = setTimeout(penalize, TAB_SWITCH_GRACE_MS);
+      } else {
+        clearGrace();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onHiddenChange);
+    return () => {
+      clearGrace();
+      document.removeEventListener('visibilitychange', onHiddenChange);
+    };
+  }, [habitId, totalSeconds, onAbandon]);
 
   // Update page title with timer
   useEffect(() => {
@@ -64,17 +120,26 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
 
   const handleAbandon = useCallback(async () => {
     setAbandoning(true);
+    // Block the tab-switch handler from also firing if the tab loses focus
+    // while this confirmed-abandon flow is resolving.
+    penalizedRef.current = true;
+    let penalty = 30;
     try {
-      // Option A: fire the abandonment roast (within 5s). Gem/shield/consistency
-      // penalties are deferred to a dedicated game-state step.
+      // Confirmed abandonment penalty (now live, per section 5c): deduct gems,
+      // fail the habit, consume a Streak Shield if active (else break streak).
+      const { data: pen } = await supabase.rpc('abandon_focus_session', {
+        p_habit_id: habitId, p_reason: 'abandon',
+      });
+      if (pen?.penalty != null) penalty = pen.penalty;
+      // Roast within 5s — copy/timing already tuned, left as-is.
       const { data } = await supabase.rpc('check_roast', { p_event: 'abandon' });
       if (data?.roast) {
         setTimeout(() => fireRoast(data.roast), 500);
       }
     } catch { /* ignore */ }
-    toast('Session abandoned');
+    toast(`Session abandoned · -${penalty} gems`);
     onAbandon();
-  }, [onAbandon]);
+  }, [habitId, onAbandon]);
 
   // Build timer display string. Supports H:MM:SS for hour-long sessions.
   const hours = Math.floor(secondsLeft / 3600);

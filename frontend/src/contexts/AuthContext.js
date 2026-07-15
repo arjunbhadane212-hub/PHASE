@@ -44,6 +44,13 @@ export function AuthProvider({ children }) {
       setUser(false);
       return false;
     }
+    // Check-on-load streak settlement: there is no daily cron, so day-boundary
+    // logic runs here. evaluate_streak() breaks a lapsed streak, or consumes
+    // Streak Shields to bridge missed days. Idempotent + cheap; safe to await
+    // before reading the profile so the fetched row reflects the result.
+    try {
+      await supabase.rpc('evaluate_streak');
+    } catch { /* non-fatal — never block sign-in on this */ }
     let merged;
     try {
       const profile = await fetchProfile(authUser.id);

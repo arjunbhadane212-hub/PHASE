@@ -48,8 +48,9 @@ export default function ProgressPage() {
           afternoon: { completed: slot.afternoon },
           night: { completed: slot.night },
         });
-      } else {
-        const days = range === 'monthly' ? 30 : 7;
+      } else if (range === 'weekly') {
+        // Last 7 days, one bar per day (oldest -> newest, left -> right)
+        const days = 7;
         const start = new Date();
         start.setUTCDate(start.getUTCDate() - (days - 1));
         const startStr = start.toISOString().slice(0, 10);
@@ -77,10 +78,45 @@ export default function ProgressPage() {
           const gems = l?.gems_earned_today ?? 0;
           const completed = Array.isArray(l?.habits_completed) ? l.habits_completed.length : 0;
           total_xp += xp; total_gems += gems; total_tasks += completed;
-          const name = range === 'monthly'
-            ? d.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })
-            : d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+          const name = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
           daily_data.push({ day: name, xp, gems, completed });
+        }
+        setData({ total_xp, total_gems, total_tasks, daily_data });
+      } else {
+        // Monthly: last 6 calendar months, one bar per month
+        const MONTHS = 6;
+        const now = new Date();
+        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (MONTHS - 1), 1));
+        const startStr = start.toISOString().slice(0, 10);
+        const todayStr = now.toISOString().slice(0, 10);
+
+        const { data: logs, error } = await supabase
+          .from('daily_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('log_date', startStr)
+          .lte('log_date', todayStr);
+        if (error) throw error;
+
+        // Aggregate each day's log into its calendar month (YYYY-MM)
+        const byMonth = {};
+        (logs || []).forEach(l => {
+          const key = String(l.log_date).slice(0, 7);
+          if (!byMonth[key]) byMonth[key] = { xp: 0, gems: 0, tasks: 0 };
+          byMonth[key].xp += l.xp_earned_today ?? 0;
+          byMonth[key].gems += l.gems_earned_today ?? 0;
+          byMonth[key].tasks += Array.isArray(l.habits_completed) ? l.habits_completed.length : 0;
+        });
+
+        const daily_data = [];
+        let total_xp = 0, total_gems = 0, total_tasks = 0;
+        for (let i = 0; i < MONTHS; i++) {
+          const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + i, 1));
+          const key = d.toISOString().slice(0, 7);
+          const b = byMonth[key] || { xp: 0, gems: 0, tasks: 0 };
+          total_xp += b.xp; total_gems += b.gems; total_tasks += b.tasks;
+          const name = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+          daily_data.push({ day: name, xp: b.xp, gems: b.gems, completed: b.tasks });
         }
         setData({ total_xp, total_gems, total_tasks, daily_data });
       }
@@ -160,7 +196,7 @@ export default function ProgressPage() {
                 <motion.div key={chartType}
                   initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.25, ease: 'easeInOut' }}>
-                  <ChartRenderer type={chartType} data={chartData} range={range} />
+                  <ChartRenderer type={chartType} data={chartData} />
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -185,24 +221,31 @@ const TOOLTIP_STYLE = {
   contentStyle: { backgroundColor: '#0C1220', border: '1px solid #1A2438', borderRadius: '8px', color: '#fff', fontSize: '12px' },
 };
 
-function xAxisProps(range) {
-  if (range === 'monthly') {
-    return {
-      dataKey: 'name', stroke: '#52525B', fontSize: 10, tickLine: false, axisLine: false,
-      interval: 4,
-    };
-  }
-  return { dataKey: 'name', stroke: '#52525B', fontSize: 11, tickLine: false, axisLine: false };
+function xAxisProps() {
+  // Every category has few enough ticks (3 daily / 7 weekly / 6 monthly) to show all labels
+  return { dataKey: 'name', stroke: '#52525B', fontSize: 11, tickLine: false, axisLine: false, interval: 0 };
+}
+
+function EmptyChart() {
+  return (
+    <div className="flex flex-col items-center justify-center text-center" style={{ height: 260 }} data-testid="chart-empty">
+      <p className="text-sm text-zinc-400">No activity in this period yet</p>
+      <p className="text-xs text-zinc-600 mt-1">Complete habits to see your progress here.</p>
+    </div>
+  );
 }
 
 function yAxisProps() {
   return { stroke: '#52525B', fontSize: 11, tickLine: false, axisLine: false, allowDecimals: false };
 }
 
-function ChartRenderer({ type, data, range }) {
+function ChartRenderer({ type, data }) {
   const height = 260;
-  const xProps = xAxisProps(range);
+  const xProps = xAxisProps();
   const yProps = yAxisProps();
+
+  const hasData = Array.isArray(data) && data.some(d => (d.xp || 0) + (d.gems || 0) + (d.tasks || 0) > 0);
+  if (!hasData) return <EmptyChart />;
 
   if (type === 'pie') {
     const pieData = [
