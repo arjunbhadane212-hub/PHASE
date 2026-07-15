@@ -100,3 +100,6 @@ frontend/node_modules/.cache/default-development/9.pack
 credentials.json
 *.key
 .credentials
+
+# Claude Code local (machine-specific) settings
+.claude/settings.local.json
