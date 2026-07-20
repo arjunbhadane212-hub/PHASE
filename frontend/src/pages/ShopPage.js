@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import { useGame } from '../contexts/GameContext';
-import { Gem, Lock, Clock, Check, Zap, Palette, Crown, Diamond, Image, Sparkles, Frame, Star } from 'lucide-react';
+import { Gem, Lock, Clock, Check, Zap, Palette, Crown, Diamond, Image, Sparkles, Frame, Star, Swords } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
