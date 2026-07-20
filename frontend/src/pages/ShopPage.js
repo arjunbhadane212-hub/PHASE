@@ -9,13 +9,14 @@ import { soundEngine } from '../utils/SoundEngine';
 import MysteryBoxesHeader from '../components/MysteryBoxesHeader';
 import BoxDetailModal from '../components/BoxDetailModal';
 import BoxOpening from '../components/BoxOpening';
+import { supabase } from '../lib/supabaseClient';
 import axios from 'axios';
 
+// axios/API retained for Buy (Step 3) and box-open (Step 5), still on the old backend.
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const ITEM_IMAGES = { shield: '/shop-icons/shield_item.png', zap: '/shop-icons/lightning_boost.png' };
 const DEFAULT_IMAGE = '/shop-icons/crystal_cluster.png';
-const SPOTLIGHT_IMAGE = '/shop-icons/spotlight_crystal.png';
 
 const RARITY_BORDER = {
   common: 'border-blue-900/40 hover:border-blue-700/50',
@@ -28,24 +29,8 @@ const RARITY_BADGE_STYLE = {
   legendary: 'bg-amber-500/20 text-amber-400', mythic: 'bg-pink-500/20 text-pink-400',
 };
 
-function useCountdown(targetDate) {
-  const [timeLeft, setTimeLeft] = useState('');
-  useEffect(() => {
-    if (!targetDate) return;
-    const tick = () => {
-      const diff = new Date(targetDate) - new Date();
-      if (diff <= 0) { setTimeLeft('Restocking...'); return; }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      setTimeLeft(`${d}D ${h}h ${m}m`);
-    };
-    tick();
-    const interval = setInterval(tick, 60000);
-    return () => clearInterval(interval);
-  }, [targetDate]);
-  return timeLeft;
-}
+// Restock countdown removed with the fixed-catalog migration (Step 2a).
+// TODO: timed restock/rotation to be rebuilt in a future session.
 
 export default function ShopPage() {
   const { refreshUser } = useAuth();
@@ -55,24 +40,82 @@ export default function ShopPage() {
   const [openedBoxId, setOpenedBoxId] = useState(null);
   const [openingState, setOpeningState] = useState(null); // { boxId, items } once API resolves
   const [shopItems, setShopItems] = useState([]);
-  const [nextRestock, setNextRestock] = useState('');
   const [colors, setColors] = useState({ main_colors: [], banner_colors: [] });
   const [profileItems, setProfileItems] = useState({ icons: [], animations: [], banners: [], decorations: [], battles: [] });
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
-  const countdown = useCountdown(nextRestock);
 
+  // Step 2a (Supabase migration): the shop renders from the relational shop_items
+  // catalog + the user's inventory/equipped rows (all RLS-scoped to auth.uid()),
+  // grouped by category into the shapes the existing grids already expect.
+  // Visual assets (boost icons, anim/effect CSS) are graceful fallbacks here and
+  // get ported in their own approval-gated commits (Steps 2b/2c/2d).
   const fetchShop = useCallback(async () => {
     try {
-      const [shopResp, colorsResp, profileResp] = await Promise.all([
-        axios.get(`${API}/game/shop`),
-        axios.get(`${API}/game/colors`),
-        axios.get(`${API}/shop/profile-items`),
+      const { data: items, error } = await supabase.from('shop_items').select('*');
+      if (error) throw error;
+
+      const [{ data: inv }, { data: eq }] = await Promise.all([
+        supabase.from('user_inventory').select('shop_item_id, quantity'),
+        supabase.from('user_equipped').select('category, shop_item_id'),
       ]);
-      setShopItems(shopResp.data.items || []);
-      setNextRestock(shopResp.data.next_restock || '');
-      setColors(colorsResp.data);
-      setProfileItems(profileResp.data);
+      const ownedQty = {};
+      (inv || []).forEach((r) => { ownedQty[r.shop_item_id] = r.quantity; });
+      const equippedIds = new Set((eq || []).map((r) => r.shop_item_id));
+
+      const rows = items || [];
+      const byCat = (cat) => rows.filter((r) => r.category === cat);
+
+      // Boosts -> PowerUpsGrid. icon left undefined -> DEFAULT_IMAGE fallback
+      // (real per-item icons ported in Step 2b).
+      setShopItems(byCat('boost').map((r) => ({
+        id: r.id,
+        key: r.key,
+        name: r.name,
+        price: r.price_gems,
+        rarity: r.rarity,
+        icon: undefined,
+        owned: ownedQty[r.id] || 0,
+        max: r.max_owned || 1,
+      })));
+
+      // Colors -> ColorsGrid (hex swatch is real data).
+      const mapColor = (r) => ({
+        id: r.id,
+        key: r.key,
+        hex: r.hex_value,
+        name: r.name,
+        price: r.price_gems,
+        rarity: r.rarity,
+        owned: (ownedQty[r.id] || 0) > 0,
+        selected: equippedIds.has(r.id),
+      });
+      setColors({
+        main_colors: byCat('color_main').map(mapColor),
+        banner_colors: byCat('color_banner').map(mapColor),
+      });
+
+      // Anims/Banners/Effects -> ProfileItemsGrid / DecorationsGrid.
+      // Banner gradient is real data; anim css '' -> neutral preview (Step 2c);
+      // effect bg -> hex/gradient swatch fallback (Step 2d ports real classes).
+      const mapProfile = (r) => ({
+        id: r.id,
+        key: r.key,
+        name: r.name,
+        price: r.price_gems,
+        rarity: r.rarity,
+        owned: (ownedQty[r.id] || 0) > 0,
+        css: '',
+        gradient: r.gradient_value || null,
+        bg: r.gradient_value || r.hex_value || null,
+      });
+      setProfileItems({
+        icons: [],
+        battles: [],
+        animations: byCat('anim').map(mapProfile),
+        banners: byCat('banner').map(mapProfile),
+        decorations: byCat('effect').map(mapProfile),
+      });
     } catch { /* ignore */ } finally { setLoading(false); }
   }, []);
 
@@ -111,8 +154,6 @@ export default function ShopPage() {
     finally { setBuying(null); }
   };
 
-  const spotlightItem = shopItems.find(i => i.rarity === 'legendary') || shopItems[0];
-
   const TABS = [
     { id: 'powerups', icon: Zap, label: 'Boosts' },
     { id: 'colors', icon: Palette, label: 'Colors' },
@@ -130,9 +171,11 @@ export default function ShopPage() {
       <div className="flex items-center justify-between mb-4 sm:mb-6 relative z-10">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold font-['Satoshi'] text-white" data-testid="shop-title">Shop</h1>
+          {/* TODO: timed restock/rotation to be rebuilt in a future session.
+              Static full catalog for now (fixed-catalog migration, Step 2a). */}
           <div className="flex items-center gap-2 mt-1">
             <Clock className="w-3.5 h-3.5 text-zinc-500" />
-            <span className="text-xs text-zinc-500" data-testid="restock-timer">Restocks: {countdown || '...'}</span>
+            <span className="text-xs text-zinc-500" data-testid="restock-timer">Full catalog</span>
           </div>
         </div>
         <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-[#0C1220] border border-[#1A2438]" data-testid="shop-gem-balance">
@@ -343,8 +386,12 @@ function DecorationsGrid({ items, gems, buying, onBuy }) {
               style={{ background: '#0C1220' }}
               data-testid={`shop-deco-${item.key}`}
             >
-              {/* Full-width animated banner preview */}
-              <div className={`h-24 sm:h-28 w-full ${item.css}`} />
+              {/* Full-width animated banner preview.
+                  Step 2a fallback: hex/gradient swatch until effect CSS is ported (Step 2d). */}
+              <div
+                className={`h-24 sm:h-28 w-full ${item.css || ''}`}
+                style={item.css ? undefined : { background: item.bg || '#1F2937' }}
+              />
               <div className="p-3 flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-white">{item.name}</p>
