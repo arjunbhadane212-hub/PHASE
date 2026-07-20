@@ -10,12 +10,12 @@ import MysteryBoxesHeader from '../components/MysteryBoxesHeader';
 import BoxDetailModal from '../components/BoxDetailModal';
 import BoxOpening from '../components/BoxOpening';
 import { supabase } from '../lib/supabaseClient';
+import { boostIconFor } from '../data/shopIcons';
 import axios from 'axios';
 
 // axios/API retained for Buy (Step 3) and box-open (Step 5), still on the old backend.
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
-const ITEM_IMAGES = { shield: '/shop-icons/shield_item.png', zap: '/shop-icons/lightning_boost.png' };
 const DEFAULT_IMAGE = '/shop-icons/crystal_cluster.png';
 
 const RARITY_BORDER = {
@@ -66,15 +66,15 @@ export default function ShopPage() {
       const rows = items || [];
       const byCat = (cat) => rows.filter((r) => r.category === cat);
 
-      // Boosts -> PowerUpsGrid. icon left undefined -> DEFAULT_IMAGE fallback
-      // (real per-item icons ported in Step 2b).
+      // Boosts -> PowerUpsGrid. icon resolved from the ported boost-icon map
+      // (Step 2b; data/shopIcons.js), default crystal image on unknown key.
       setShopItems(byCat('boost').map((r) => ({
         id: r.id,
         key: r.key,
         name: r.name,
         price: r.price_gems,
         rarity: r.rarity,
-        icon: undefined,
+        icon: boostIconFor(r.key),
         owned: ownedQty[r.id] || 0,
         max: r.max_owned || 1,
       })));
@@ -275,7 +275,7 @@ function PowerUpsGrid({ items, gems, buying, onBuy }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid="powerups-grid">
       {items.map((item, idx) => {
-        const imgSrc = ITEM_IMAGES[item.icon] || DEFAULT_IMAGE;
+        const imgSrc = item.icon || DEFAULT_IMAGE;
         const border = RARITY_BORDER[item.rarity] || RARITY_BORDER.common;
         const isBuying = buying === item.id;
         const isFull = item.owned >= item.max;
