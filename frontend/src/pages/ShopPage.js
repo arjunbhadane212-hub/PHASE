@@ -12,6 +12,7 @@ import BoxOpening from '../components/BoxOpening';
 import { supabase } from '../lib/supabaseClient';
 import { boostIconFor } from '../data/shopIcons';
 import { animCssFor } from '../data/shopAnimations';
+import { effectCssFor } from '../data/shopEffects';
 import axios from 'axios';
 
 // axios/API retained for Buy (Step 3) and box-open (Step 5), still on the old backend.
@@ -97,9 +98,9 @@ export default function ShopPage() {
       });
 
       // Anims/Banners/Effects -> ProfileItemsGrid / DecorationsGrid.
-      // Anim css resolved from the ported class map (Step 2c; data/shopAnimations.js);
-      // banner gradient is real data; effect bg -> hex/gradient swatch fallback
-      // (Step 2d ports real effect classes).
+      // Anim css from data/shopAnimations.js (Step 2c); effect css from
+      // data/shopEffects.js (Step 2d); banner gradient is real data. Unknown
+      // keys fall back to '' -> hex/gradient swatch in the grids.
       const mapProfile = (r, css = '') => ({
         id: r.id,
         key: r.key,
@@ -116,7 +117,7 @@ export default function ShopPage() {
         battles: [],
         animations: byCat('anim').map((r) => mapProfile(r, animCssFor(r.key))),
         banners: byCat('banner').map((r) => mapProfile(r)),
-        decorations: byCat('effect').map((r) => mapProfile(r)),
+        decorations: byCat('effect').map((r) => mapProfile(r, effectCssFor(r.key))),
       });
     } catch { /* ignore */ } finally { setLoading(false); }
   }, []);
