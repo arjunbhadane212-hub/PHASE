@@ -43,3 +43,18 @@ being done inline. Nothing here is actioned without explicit approval.
 - Boost icons (Step 2b) reuse existing `public/shop-icons/` PNGs; `streak_revive`
   was assigned `hourglass_xp.png` (no old-catalog icon existed). Revisit if a
   dedicated revive icon is ever added.
+- **Rebuild anim/effect item previews on MyProfilePage + Shop** — old backend
+  synthesized `css_class`/`image_url`; new `shop_items` has none. Future visual
+  polish, not a migration blocker. (Step 4c state: `effect` previews DO resolve
+  via `data/shopEffects.js` → real `.deco-*`/`.profile-anim-*` classes; **`anim`
+  items have no css anywhere**, so animation entries render as plain labeled pills
+  and the avatar animation is inert. Wiring/equip works fully regardless.)
+- **Banner art ↔ shop key mismatch (MyProfilePage, Step 4c).** The banner SVG set
+  in `components/banners/PhaseBanners.js` uses keys `starter_/delta_/phase_*` (6 +
+  default), but `shop_items` banners use `banner_*` (12) — disjoint namespaces, so
+  equipped/owned banners can't resolve art by key. Step 4c added a by-key map
+  (`BANNER_KEY_TO_ART` in MyProfilePage) covering the 4 that have art
+  (`banner_circuit/grid/pulse/void_fracture`); the other 8 show a neutral name
+  placeholder. To finish: add real banner SVGs keyed to the 12 shop keys (or a
+  shared key→art map), then drop the placeholder. Equip/unequip already works for
+  all 12. **Category: future visual polish, not a migration blocker.**
