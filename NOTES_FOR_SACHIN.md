@@ -30,6 +30,15 @@ being done inline. Nothing here is actioned without explicit approval.
   future code reads `shop_items.metadata.css` directly, the DB values must be
   corrected there first.
 
+## Future features (not migration blockers)
+- **Profile Icons — build later.** There is no `icon` category in `shop_items`
+  and `equip_item`/`unequip_item` reject it, so the Settings "Icons" section is
+  dormant (rendered inert in Step 4b — makes zero calls). To ship it: add an
+  `icon` category to `shop_items`, seed icon items, extend `equip_item` /
+  `unequip_item` to accept `icon` (mirror `users.equipped_icon`), and re-enable
+  the Settings Icons block. `users.equipped_icon` / `unlocked_icons` columns are
+  left intact for this. **Category: future feature, not a migration blocker.**
+
 ## Deferred visual polish
 - Boost icons (Step 2b) reuse existing `public/shop-icons/` PNGs; `streak_revive`
   was assigned `hourglass_xp.png` (no old-catalog icon existed). Revisit if a

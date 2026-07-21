@@ -10,10 +10,7 @@ import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Separator } from '../components/ui/separator';
 import { User, Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Palette, Check, ExternalLink, Sun, Moon } from 'lucide-react';
-import axios from 'axios';
 import { toast } from 'sonner';
-
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -538,51 +535,65 @@ function NotificationSettings({ user, isGameMode }) {
 
 function ProfileCustomizationSection() {
   const { refreshUser, user } = useAuth();
-  const [titles, setTitles] = useState(null);
-  const [profileItems, setProfileItems] = useState(null);
+  const [owned, setOwned] = useState(null); // null = loading
   const [equipping, setEquipping] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [t, p] = await Promise.all([
-          axios.get(`${API}/profile/me/titles`),
-          axios.get(`${API}/shop/profile-items`),
-        ]);
-        setTitles(t.data);
-        setProfileItems(p.data);
-      } catch { /* ignore */ }
-    };
-    fetchData();
+  // Read owned equippables (title / anim / banner) from Supabase: shop_items +
+  // user_inventory, joined client-side (same pattern as ShopPage). Each item
+  // carries its real shop_items.id so equip_item can be called by id.
+  const fetchData = useCallback(async () => {
+    try {
+      const [{ data: items }, { data: inv }] = await Promise.all([
+        supabase.from('shop_items').select('id,key,name,category,rarity'),
+        supabase.from('user_inventory').select('shop_item_id'),
+      ]);
+      const ownedIds = new Set((inv || []).map((r) => r.shop_item_id));
+      const mine = (items || []).filter((i) => ownedIds.has(i.id));
+      setOwned({
+        titles: mine.filter((i) => i.category === 'title'),
+        anims: mine.filter((i) => i.category === 'anim'),
+        banners: mine.filter((i) => i.category === 'banner'),
+      });
+    } catch { setOwned({ titles: [], anims: [], banners: [] }); }
   }, []);
 
-  const handleEquip = async (type, key) => {
-    setEquipping(`${type}-${key}`);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Canonical only: equip/unequip go through the RPCs (no direct users.equipped_*
+  // writes). equip_item requires ownership; unequip_item clears the slot.
+  const CAT = { title: 'title', animation: 'anim', banner: 'banner' };
+  const handleEquip = async (type, item) => {
+    setEquipping(`${type}-${item.key}`);
     try {
-      // Equip mechanism wired to Supabase; ownership validation skipped until
-      // Step 5's shop populates unlocked_*.
-      const column = `equipped_${type}`;
-      const { error } = await supabase.from('users').update({ [column]: key || null }).eq('id', user.id);
+      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: item.id });
       if (error) throw error;
-      await refreshUser();
-      if (type === 'title') {
-        // TODO(Step 5): titles catalog comes from the shop/inventory system
-        const { data } = await axios.get(`${API}/profile/me/titles`);
-        setTitles(data);
-      }
-      toast.success(`${type} ${key ? 'equipped' : 'removed'}!`);
+      await Promise.all([refreshUser(), fetchData()]);
+      toast.success(`${type} equipped!`);
     } catch (e) {
       toast.error(e?.message || 'Failed to equip');
     } finally { setEquipping(null); }
   };
+  const handleUnequip = async (type) => {
+    setEquipping(`${type}-null`);
+    try {
+      const { error } = await supabase.rpc('unequip_item', { p_category: CAT[type] });
+      if (error) throw error;
+      await Promise.all([refreshUser(), fetchData()]);
+      toast.success(`${type} removed!`);
+    } catch (e) {
+      toast.error(e?.message || 'Failed');
+    } finally { setEquipping(null); }
+  };
 
-  if (!titles) return null;
+  if (!owned) return null;
 
-  const earnedTitles = titles.earned_titles || [];
-  const equippedTitle = titles.equipped_title;
-  const ownedIcons = (profileItems?.icons || []).filter(i => i.owned);
-  const ownedAnims = (profileItems?.animations || []).filter(a => a.owned);
-  const ownedBanners = (profileItems?.banners || []).filter(b => b.owned);
+  const earnedTitles = owned.titles;
+  const equippedTitle = user?.equipped_title;
+  // Icons dormant: no 'icon' category in shop_items yet (future feature — see
+  // NOTES_FOR_SACHIN.md). Always [] so the Icons block never renders / never calls.
+  const ownedIcons = [];
+  const ownedAnims = owned.anims;
+  const ownedBanners = owned.banners;
 
   return (
     <section className="mb-6" data-testid="profile-customization">
@@ -594,20 +605,22 @@ function ProfileCustomizationSection() {
           <p className="text-sm text-zinc-400 mb-2">Titles</p>
           <div className="flex flex-wrap gap-2">
             {equippedTitle && (
-              <button onClick={() => handleEquip('title', null)} className="text-xs px-3 py-1 rounded-full border border-red-500/20 text-red-400 hover:bg-red-500/10">Remove</button>
+              <button onClick={() => handleUnequip('title')} className="text-xs px-3 py-1 rounded-full border border-red-500/20 text-red-400 hover:bg-red-500/10">Remove</button>
             )}
             {earnedTitles.map(t => (
-              <button key={t.title} onClick={() => handleEquip('title', t.title)} disabled={equipping === `title-${t.title}`}
-                className={`text-xs font-bold px-3 py-1 rounded-full border transition-all title-${t.rarity} ${equippedTitle === t.title ? 'border-white/30 bg-white/5' : 'border-white/[0.06] hover:bg-white/5'}`}
-                data-testid={`equip-title-${t.title}`}>
-                {t.title} {equippedTitle === t.title && <Check className="w-3 h-3 inline ml-1" />}
+              <button key={t.key} onClick={() => handleEquip('title', t)} disabled={equipping === `title-${t.key}`}
+                className={`text-xs font-bold px-3 py-1 rounded-full border transition-all title-${t.rarity} ${equippedTitle === t.key ? 'border-white/30 bg-white/5' : 'border-white/[0.06] hover:bg-white/5'}`}
+                data-testid={`equip-title-${t.key}`}>
+                {t.name} {equippedTitle === t.key && <Check className="w-3 h-3 inline ml-1" />}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Icons */}
+      {/* Icons — DORMANT (future feature). No 'icon' category in shop_items and
+          equip_item rejects it, so ownedIcons is always [] and this never renders
+          or calls anything. Kept for when icons are added. See NOTES_FOR_SACHIN.md. */}
       {ownedIcons.length > 0 && (
         <div className="glass-card p-4 mb-3">
           <p className="text-sm text-zinc-400 mb-2">Icons</p>
@@ -628,9 +641,9 @@ function ProfileCustomizationSection() {
         <div className="glass-card p-4 mb-3">
           <p className="text-sm text-zinc-400 mb-2">Animations</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleEquip('animation', null)} className="text-xs px-3 py-1 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800">None</button>
+            <button onClick={() => handleUnequip('animation')} className="text-xs px-3 py-1 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800">None</button>
             {ownedAnims.map(a => (
-              <button key={a.key} onClick={() => handleEquip('animation', a.key)} disabled={equipping === `animation-${a.key}`}
+              <button key={a.key} onClick={() => handleEquip('animation', a)} disabled={equipping === `animation-${a.key}`}
                 className={`text-xs px-3 py-1 rounded-full border transition-all ${user?.equipped_animation === a.key ? 'border-blue-500/30 bg-blue-500/10 text-blue-400' : 'border-white/[0.06] text-zinc-300 hover:bg-white/5'}`}>
                 {a.name}
               </button>
@@ -644,9 +657,9 @@ function ProfileCustomizationSection() {
         <div className="glass-card p-4 mb-3">
           <p className="text-sm text-zinc-400 mb-2">Banners</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleEquip('banner', null)} className="text-xs px-3 py-1 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800">Default</button>
+            <button onClick={() => handleUnequip('banner')} className="text-xs px-3 py-1 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800">Default</button>
             {ownedBanners.map(b => (
-              <button key={b.key} onClick={() => handleEquip('banner', b.key)} disabled={equipping === `banner-${b.key}`}
+              <button key={b.key} onClick={() => handleEquip('banner', b)} disabled={equipping === `banner-${b.key}`}
                 className={`text-xs px-3 py-1 rounded-full border transition-all ${user?.equipped_banner === b.key ? 'border-blue-500/30 bg-blue-500/10 text-blue-400' : 'border-white/[0.06] text-zinc-300 hover:bg-white/5'}`}>
                 {b.name}
               </button>
@@ -806,32 +819,52 @@ function ColorSettingsSection({ isGameMode }) {
   const [colors, setColors] = useState(null);
   const [updating, setUpdating] = useState(null);
 
+  // Read the color catalog + ownership from Supabase (shop_items color_main/
+  // color_banner + user_inventory). Each color carries its shop_items.id; the
+  // `selected` flag mirrors the users.selected_*_color column equip_item writes.
   const fetchColors = useCallback(async () => {
     try {
-      // TODO(Step 5): color catalog + owned flags come from the shop/inventory
-      // system, which isn't built yet. Until then this returns nothing and the
-      // section stays hidden.
-      const { data } = await axios.get(`${API}/game/colors`);
-      // Backend may be unconfigured (relative URL resolves to the SPA's HTML);
-      // only accept a well-formed payload, otherwise colors.*.map() crashes the
-      // whole Settings page. Malformed → stays null → section hides gracefully.
-      if (data && Array.isArray(data.banner_colors) && Array.isArray(data.main_colors)) {
-        setColors(data);
-      }
-    } catch { /* ignore */ }
-  }, []);
+      const [{ data: items }, { data: inv }] = await Promise.all([
+        supabase.from('shop_items').select('id,name,category,hex_value')
+          .in('category', ['color_main', 'color_banner']),
+        supabase.from('user_inventory').select('shop_item_id'),
+      ]);
+      const ownedIds = new Set((inv || []).map((r) => r.shop_item_id));
+      const toColor = (i, selectedHex) => ({
+        id: i.id, hex: i.hex_value, name: i.name,
+        owned: ownedIds.has(i.id), selected: selectedHex === i.hex_value,
+      });
+      const rows = items || [];
+      setColors({
+        main_colors: rows.filter((i) => i.category === 'color_main').map((i) => toColor(i, user?.selected_main_color)),
+        banner_colors: rows.filter((i) => i.category === 'color_banner').map((i) => toColor(i, user?.selected_banner_color)),
+        selected_main: user?.selected_main_color,
+        selected_banner: user?.selected_banner_color,
+      });
+    } catch { /* ignore -> section stays hidden */ }
+  }, [user?.selected_main_color, user?.selected_banner_color]);
 
   useEffect(() => { fetchColors(); }, [fetchColors]);
 
-  const handleSelect = async (hex, type) => {
-    setUpdating(`${type}-${hex}`);
+  // Canonical only: owned swatch -> equip_item(id); Default (#1F2937) ->
+  // unequip_item(category). No direct users.selected_*_color writes.
+  const handleSelect = async (color, type) => {
+    setUpdating(`${type}-${color.hex}`);
     try {
-      // Equip mechanism wired to Supabase. Ownership validation intentionally
-      // skipped for now (unlocked_* is populated by Step 5's shop).
-      const column = type === 'banner' ? 'selected_banner_color' : 'selected_main_color';
-      const { error } = await supabase.from('users').update({ [column]: hex }).eq('id', user.id);
+      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: color.id });
       if (error) throw error;
-      await Promise.all([fetchColors(), refreshUser()]);
+      await Promise.all([refreshUser(), fetchColors()]);
+      toast.success('Color updated!');
+    } catch (e) {
+      toast.error(e?.message || 'Failed to update');
+    } finally { setUpdating(null); }
+  };
+  const handleReset = async (type) => {
+    setUpdating(`${type}-#1F2937`);
+    try {
+      const { error } = await supabase.rpc('unequip_item', { p_category: type === 'banner' ? 'color_banner' : 'color_main' });
+      if (error) throw error;
+      await Promise.all([refreshUser(), fetchColors()]);
       toast.success('Color updated!');
     } catch (e) {
       toast.error(e?.message || 'Failed to update');
@@ -848,9 +881,9 @@ function ColorSettingsSection({ isGameMode }) {
       <div className="mb-4">
         <p className="text-sm text-zinc-400 mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Banner Color</p>
         <div className="flex flex-wrap gap-2">
-          <ColorSwatch hex="#1F2937" name="Default" selected={colors.selected_banner === '#1F2937'} owned={true} onSelect={() => handleSelect('#1F2937', 'banner')} updating={updating === 'banner-#1F2937'} />
+          <ColorSwatch hex="#1F2937" name="Default" selected={colors.selected_banner === '#1F2937'} owned={true} onSelect={() => handleReset('banner')} updating={updating === 'banner-#1F2937'} />
           {colors.banner_colors.map(c => (
-            <ColorSwatch key={c.hex} hex={c.hex} name={c.name} selected={c.selected} owned={c.owned} onSelect={() => c.owned && handleSelect(c.hex, 'banner')} updating={updating === `banner-${c.hex}`} />
+            <ColorSwatch key={c.hex} hex={c.hex} name={c.name} selected={c.selected} owned={c.owned} onSelect={() => c.owned && handleSelect(c, 'banner')} updating={updating === `banner-${c.hex}`} />
           ))}
         </div>
       </div>
@@ -859,9 +892,9 @@ function ColorSettingsSection({ isGameMode }) {
       <div>
         <p className="text-sm text-zinc-400 mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Main Color</p>
         <div className="flex flex-wrap gap-2">
-          <ColorSwatch hex="#1F2937" name="Default" selected={colors.selected_main === '#1F2937'} owned={true} onSelect={() => handleSelect('#1F2937', 'main')} updating={updating === 'main-#1F2937'} />
+          <ColorSwatch hex="#1F2937" name="Default" selected={colors.selected_main === '#1F2937'} owned={true} onSelect={() => handleReset('main')} updating={updating === 'main-#1F2937'} />
           {colors.main_colors.map(c => (
-            <ColorSwatch key={c.hex} hex={c.hex} name={c.name} selected={c.selected} owned={c.owned} onSelect={() => c.owned && handleSelect(c.hex, 'main')} updating={updating === `main-${c.hex}`} />
+            <ColorSwatch key={c.hex} hex={c.hex} name={c.name} selected={c.selected} owned={c.owned} onSelect={() => c.owned && handleSelect(c, 'main')} updating={updating === `main-${c.hex}`} />
           ))}
         </div>
       </div>
