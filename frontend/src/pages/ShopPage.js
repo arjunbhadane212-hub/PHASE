@@ -124,37 +124,25 @@ export default function ShopPage() {
 
   useEffect(() => { fetchShop(); }, [fetchShop]);
 
-  const handleBuy = async (itemId) => {
-    setBuying(itemId);
+  // Step 3: every purchase goes through the canonical purchase_shop_item RPC
+  // (user derived server-side from auth.uid()). One handler for all buyable
+  // categories; each grid passes the item's shop_items.id. The button stays
+  // disabled while buying === id (fast double-click guard). NOTE: no server-side
+  // concurrency guard yet — see NOTES_FOR_SACHIN.md (pre-launch fix).
+  const handleBuy = async (shopItemId) => {
+    setBuying(shopItemId);
     try {
-      const { data } = await axios.post(`${API}/game/shop/buy/${itemId}`);
+      const { data, error } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: shopItemId });
+      if (error) throw error;
       soundEngine.purchase();
-      toast.success(data.message);
+      const verb = (data.category === 'color_main' || data.category === 'color_banner') ? 'Unlocked' : 'Purchased';
+      toast.success(`${verb} ${data.name}!`);
       await Promise.all([fetchShop(), fetchGameStatus(), refreshUser()]);
-    } catch (e) { toast.error(e.response?.data?.detail || 'Purchase failed'); }
-    finally { setBuying(null); }
-  };
-
-  const handleBuyColor = async (hex, type) => {
-    setBuying(`color-${hex}`);
-    try {
-      const { data } = await axios.post(`${API}/game/shop/buy-color`, { color_hex: hex, color_type: type });
-      soundEngine.purchase();
-      toast.success(data.message);
-      await Promise.all([fetchShop(), fetchGameStatus(), refreshUser()]);
-    } catch (e) { toast.error(e.response?.data?.detail || 'Purchase failed'); }
-    finally { setBuying(null); }
-  };
-
-  const handleBuyProfileItem = async (key, type) => {
-    setBuying(`${type}-${key}`);
-    try {
-      const { data } = await axios.post(`${API}/shop/buy-profile-item`, { key, type });
-      soundEngine.purchase();
-      toast.success(data.message);
-      await Promise.all([fetchShop(), fetchGameStatus(), refreshUser()]);
-    } catch (e) { toast.error(e.response?.data?.detail || 'Purchase failed'); }
-    finally { setBuying(null); }
+    } catch (e) {
+      toast.error(e?.message || 'Purchase failed');
+    } finally {
+      setBuying(null);
+    }
   };
 
   const TABS = [
@@ -244,13 +232,13 @@ export default function ShopPage() {
         ) : tab === 'powerups' ? (
           <PowerUpsGrid items={shopItems} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : tab === 'colors' ? (
-          <ColorsGrid colors={colors} gems={gems} buying={buying} onBuyColor={handleBuyColor} />
+          <ColorsGrid colors={colors} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : tab === 'anims' ? (
-          <ProfileItemsGrid items={profileItems.animations} type="animation" gems={gems} buying={buying} onBuy={handleBuyProfileItem} />
+          <ProfileItemsGrid items={profileItems.animations} type="animation" gems={gems} buying={buying} onBuy={handleBuy} />
         ) : tab === 'banners' ? (
-          <ProfileItemsGrid items={profileItems.banners} type="banner" gems={gems} buying={buying} onBuy={handleBuyProfileItem} />
+          <ProfileItemsGrid items={profileItems.banners} type="banner" gems={gems} buying={buying} onBuy={handleBuy} />
         ) : tab === 'decos' ? (
-          <DecorationsGrid items={profileItems.decorations || []} gems={gems} buying={buying} onBuy={handleBuyProfileItem} />
+          <DecorationsGrid items={profileItems.decorations || []} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : (
           <div className="flex items-center justify-center py-16" data-testid="titles-placeholder">
             <p className="text-sm text-white/50">Titles coming soon</p>
@@ -301,7 +289,7 @@ function PowerUpsGrid({ items, gems, buying, onBuy }) {
   );
 }
 
-function ColorsGrid({ colors, gems, buying, onBuyColor }) {
+function ColorsGrid({ colors, gems, buying, onBuy }) {
   const allColors = [...colors.main_colors.map(c => ({ ...c, colorType: 'main' })), ...colors.banner_colors.map(c => ({ ...c, colorType: 'banner' }))];
   const order = { mythic: -1, legendary: 0, rare: 1, common: 2 };
   const sorted = [...allColors].sort((a, b) => (order[a.rarity] ?? 2) - (order[b.rarity] ?? 2));
@@ -309,10 +297,10 @@ function ColorsGrid({ colors, gems, buying, onBuyColor }) {
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid="colors-grid">
       {sorted.map((color) => {
         const border = RARITY_BORDER[color.rarity] || RARITY_BORDER.common;
-        const isBuying = buying === `color-${color.hex}`;
+        const isBuying = buying === color.id;
         const canAfford = (gems ?? 0) >= color.price;
         return (
-          <button key={`${color.colorType}-${color.hex}`} onClick={() => !color.owned && canAfford && !isBuying && onBuyColor(color.hex, color.colorType)} disabled={color.owned || !canAfford || isBuying}
+          <button key={`${color.colorType}-${color.hex}`} onClick={() => !color.owned && canAfford && !isBuying && onBuy(color.id)} disabled={color.owned || !canAfford || isBuying}
             className={`relative p-3 sm:p-5 rounded-2xl border transition-all hover-lift text-center group ${border}`}
             style={{ background: '#0C1220' }} data-testid={`color-${color.hex}`}>
             {color.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[color.rarity] || ''}`}>{color.rarity.toUpperCase()}</div>}
@@ -338,11 +326,11 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid={`${type}-grid`}>
       {sorted.map((item) => {
         const border = RARITY_BORDER[item.rarity] || RARITY_BORDER.common;
-        const isBuying = buying === `${type}-${item.key}`;
+        const isBuying = buying === item.id;
         const canAfford = (gems ?? 0) >= item.price;
         const animClass = type === 'animation' ? item.css || '' : '';
         return (
-          <button key={item.key} onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.key, type)} disabled={item.owned || !canAfford || isBuying}
+          <button key={item.key} onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.id)} disabled={item.owned || !canAfford || isBuying}
             className={`relative p-3 sm:p-5 rounded-2xl border transition-all hover-lift text-center group ${border}`}
             style={{ background: '#0C1220' }} data-testid={`shop-${type}-${item.key}`}>
             {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
@@ -378,12 +366,12 @@ function DecorationsGrid({ items, gems, buying, onBuy }) {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="decorations-grid">
         {items.map((item) => {
-          const isBuying = buying === `decoration-${item.key}`;
+          const isBuying = buying === item.id;
           const canAfford = (gems ?? 0) >= item.price;
           return (
             <button
               key={item.key}
-              onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.key, 'decoration')}
+              onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.id)}
               disabled={item.owned || !canAfford || isBuying}
               className="relative rounded-2xl border border-[#1A2438] overflow-hidden transition-all hover-lift text-left group"
               style={{ background: '#0C1220' }}
