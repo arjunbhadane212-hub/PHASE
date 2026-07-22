@@ -13,12 +13,21 @@ import { supabase } from '../lib/supabaseClient';
 import { boostIconFor } from '../data/shopIcons';
 import { animCssFor } from '../data/shopAnimations';
 import { effectCssFor } from '../data/shopEffects';
-import axios from 'axios';
-
-// axios/API retained for Buy (Step 3) and box-open (Step 5), still on the old backend.
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const DEFAULT_IMAGE = '/shop-icons/crystal_cluster.png';
+
+// Map a shop_items.rarity to the 3 reveal/display tiers (legendary+mythic -> ultra).
+const rarityToTier = (r) => (r === 'common' ? 'common' : r === 'rare' ? 'rare' : 'ultra');
+
+// Adapt open_loot_box's returned items to the shape BoxOpening consumes.
+// Duplicates render as a "+N gems" refund card (type:'gems'); real drops as items.
+const adaptRolledItems = (items) => (items || []).map((it) => (
+  it.duplicate
+    ? { tier: rarityToTier(it.rarity), type: 'gems', amount: it.refund, name: it.name, duplicate: true }
+    : { tier: rarityToTier(it.rarity), type: 'item', name: it.name, item_key: it.item_key, category: it.category }
+));
+
+const BOX_LABELS = { starter: 'STARTER', delta: 'DELTA', phase: 'PHASE' };
 
 const RARITY_BORDER = {
   common: 'border-blue-900/40 hover:border-blue-700/50',
@@ -44,6 +53,7 @@ export default function ShopPage() {
   const [shopItems, setShopItems] = useState([]);
   const [colors, setColors] = useState({ main_colors: [], banner_colors: [] });
   const [profileItems, setProfileItems] = useState({ icons: [], animations: [], banners: [], decorations: [], battles: [] });
+  const [boxData, setBoxData] = useState({ byKey: {}, keyToId: {} });
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
 
@@ -57,9 +67,11 @@ export default function ShopPage() {
       const { data: items, error } = await supabase.from('shop_items').select('*');
       if (error) throw error;
 
-      const [{ data: inv }, { data: eq }] = await Promise.all([
+      const [{ data: inv }, { data: eq }, { data: lboxes }, { data: droptab }] = await Promise.all([
         supabase.from('user_inventory').select('shop_item_id, quantity'),
         supabase.from('user_equipped').select('category, shop_item_id'),
+        supabase.from('loot_boxes').select('id, key, name, price_gems, items_per_open'),
+        supabase.from('loot_box_drop_table').select('loot_box_id, shop_item_id, weight'),
       ]);
       const ownedQty = {};
       (inv || []).forEach((r) => { ownedQty[r.shop_item_id] = r.quantity; });
@@ -119,6 +131,41 @@ export default function ShopPage() {
         banners: byCat('banner').map((r) => mapProfile(r)),
         decorations: byCat('effect').map((r) => mapProfile(r, effectCssFor(r.key))),
       });
+
+      // Loot boxes: build the box metadata + drop-rate pool the modal shows,
+      // straight from loot_boxes + loot_box_drop_table so the displayed odds and
+      // items-per-open match what open_loot_box actually rolls.
+      // percent = weight / sum(weight) within a box.
+      const itemById = {};
+      rows.forEach((r) => { itemById[r.id] = r; });
+      const byKey = {}; const keyToId = {};
+      (lboxes || []).forEach((b) => {
+        keyToId[b.key] = b.id;
+        const drops = (droptab || [])
+          .filter((d) => d.loot_box_id === b.id)
+          .sort((a, z) => Number(z.weight) - Number(a.weight));
+        const sumW = drops.reduce((s, d) => s + Number(d.weight), 0) || 1;
+        const pool = drops.map((d) => {
+          const it = itemById[d.shop_item_id] || {};
+          return {
+            id: it.key || d.shop_item_id,
+            name: it.name || it.key || 'Item',
+            tier: rarityToTier(it.rarity),
+            percent: (Number(d.weight) / sumW) * 100,
+          };
+        });
+        const tiers = ['common', 'rare', 'ultra'].filter((t) => pool.some((p) => p.tier === t));
+        byKey[b.key] = {
+          id: b.key,
+          name: b.name,
+          label: BOX_LABELS[b.key] || (b.key || '').toUpperCase(),
+          cost: b.price_gems,
+          dropsPerOpen: b.items_per_open,
+          tiers,
+          pool,
+        };
+      });
+      setBoxData({ byKey, keyToId });
     } catch { /* ignore */ } finally { setLoading(false); }
   }, []);
 
@@ -187,16 +234,19 @@ export default function ShopPage() {
 
       {/* Box detail modal (data-driven; opening flow handled in next prompt) */}
       <BoxDetailModal
-        boxId={openedBoxId}
+        box={openedBoxId ? boxData.byKey[openedBoxId] : null}
         userGems={gems ?? 0}
         onClose={() => setOpenedBoxId(null)}
         onOpen={async (id) => {
+          const lootBoxId = boxData.keyToId[id];
+          if (!lootBoxId) { toast.error('Could not open box'); return; }
           try {
-            const { data } = await axios.post(`${API}/game/boxes/open/${id}`);
+            const { data, error } = await supabase.rpc('open_loot_box', { p_loot_box_id: lootBoxId });
+            if (error) throw error;
             setOpenedBoxId(null);
-            setOpeningState({ boxId: id, items: data.items });
+            setOpeningState({ boxId: id, items: adaptRolledItems(data.items) });
           } catch (e) {
-            toast.error(e.response?.data?.detail || 'Could not open box');
+            toast.error(e?.message || 'Could not open box');
           }
         }}
       />

@@ -11,9 +11,12 @@ being done inline. Nothing here is actioned without explicit approval.
       on the `users` row (and re-check gems + quantity) inside the RPC. The client
       button-disable (`isBuying`) covers the normal fast double-click but NOT true
       concurrency (multi-tab / programmatic). **Category: pre-launch, security/economy.**
-- [ ] **`open_loot_box` almost certainly has the same gap** — verify and apply the
-      same `SELECT ... FOR UPDATE` + re-check pattern before launch. (Confirm when
-      Step 5 wires loot boxes.) **Category: pre-launch, security/economy.**
+- [ ] **`open_loot_box` has the same gap — CONFIRMED (Step 5).** Its body does
+      read-then-write on gems (`select gems into v_gems; if v_gems < price raise;
+      update users set gems = gems - price`) with no row lock, so concurrent opens
+      can both pass the gems check and overspend. Apply the same `SELECT ... FOR
+      UPDATE` + re-check before launch. RPC left unmodified this step per scope.
+      **Category: pre-launch, security/economy.**
 
 ## REQUIRED before we call the migration "done"
 - [ ] **Run a REAL build + deploy of each step's branch state.** There is no local
@@ -49,6 +52,12 @@ being done inline. Nothing here is actioned without explicit approval.
   via `data/shopEffects.js` → real `.deco-*`/`.profile-anim-*` classes; **`anim`
   items have no css anywhere**, so animation entries render as plain labeled pills
   and the avatar animation is inert. Wiring/equip works fully regardless.)
+- **Loot box reveal ignores per-item art (Step 5).** `BoxOpening` renders each
+  rolled item as a generic tier-colored icon + name; it does not use the `hex`/
+  `gradient` that `open_loot_box` returns for color/banner drops. This is the
+  pre-existing reveal behavior (no regression) — logged as future polish: render
+  a real swatch/preview per reward. Invent nothing until the art exists.
+  **Category: future visual polish, not a migration blocker.**
 - **Banner art ↔ shop key mismatch (MyProfilePage, Step 4c).** The banner SVG set
   in `components/banners/PhaseBanners.js` uses keys `starter_/delta_/phase_*` (6 +
   default), but `shop_items` banners use `banner_*` (12) — disjoint namespaces, so

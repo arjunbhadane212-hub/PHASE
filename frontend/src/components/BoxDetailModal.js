@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronDown, Gem, Star, Lock } from 'lucide-react';
-import { BOXES_BY_ID, groupPoolByTier, TIER_META } from '../data/boxDrops';
+import { groupPoolByTier, TIER_META } from '../data/boxDrops';
 
 // =============================================================================
 // Large box illustration — scaled-up version of the header card icon.
@@ -149,8 +149,7 @@ function DropRatesSection({ box }) {
 // =============================================================================
 // Main modal
 // =============================================================================
-export default function BoxDetailModal({ boxId, onClose, onOpen, userGems = 0 }) {
-  const box = boxId ? BOXES_BY_ID[boxId] : null;
+export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
   const [showRates, setShowRates] = useState(false);
 
   // Lock body scroll while open
@@ -162,7 +161,7 @@ export default function BoxDetailModal({ boxId, onClose, onOpen, userGems = 0 })
   }, [box]);
 
   // Reset collapsible when switching boxes
-  useEffect(() => { setShowRates(false); }, [boxId]);
+  useEffect(() => { setShowRates(false); }, [box?.id]);
 
   // ESC closes
   useEffect(() => {
@@ -236,7 +235,7 @@ export default function BoxDetailModal({ boxId, onClose, onOpen, userGems = 0 })
                 pointerEvents: 'auto',
               }}
               onClick={(e) => e.stopPropagation()}
-              data-testid={`box-detail-modal-${boxId}`}
+              data-testid={`box-detail-modal-${box?.id}`}
             >
             {/* Close button */}
             <button
