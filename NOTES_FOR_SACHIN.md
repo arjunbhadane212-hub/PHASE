@@ -55,6 +55,24 @@ being done inline. Nothing here is actioned without explicit approval.
   the Settings Icons block. `users.equipped_icon` / `unlocked_icons` columns are
   left intact for this. **Category: future feature, not a migration blocker.**
 
+## Step 7 (Levels) — deferred / out-of-scope
+- [ ] **Pro gating for ranks 6–10 not implemented.** CLAUDE.md locks ranks 6–10
+      behind Pro, but there is NO Pro/subscription/entitlement column or logic
+      anywhere in Supabase or the frontend. Step 7 shows the full 1–10 ladder to
+      everyone (no lock). Gate ranks 6–10 when a Pro/entitlement system actually
+      exists (monetization step). **Category: future feature, not a blocker.**
+- [ ] **`AdminPage.js` reads/writes a non-existent `users.current_level`.** The
+      admin panel (lines ~216/237/254/285) references `current_level`, a column
+      that was never created in Supabase (level is derived and stored in `rank`).
+      Admin level-set is a no-op/error. Left as-is per Step 7 scope — repoint the
+      admin panel to `rank`/`current_xp` in a later admin cleanup.
+- [ ] **`SettingsPage.js` still has broad pre-existing purple** (avatar bg,
+      notification switches `data-[state=checked]:bg-purple-600`, dialog buttons)
+      from the Step 4b migration — outside the Step 7 level touch-area. Belongs to
+      the dedicated purple-sweep task (`session-tasks/02-purple-sweep.md`).
+- Note: `users.longest_streak_ever` is also a phantom read in some pages (column
+      doesn't exist) — unrelated to levels; flag for the streak/profile step.
+
 ## Deferred visual polish
 - Boost icons (Step 2b) reuse existing `public/shop-icons/` PNGs; `streak_revive`
   was assigned `hourglass_xp.png` (no old-catalog icon existed). Revisit if a
