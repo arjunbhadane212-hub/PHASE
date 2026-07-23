@@ -18,6 +18,19 @@ being done inline. Nothing here is actioned without explicit approval.
       UPDATE` + re-check before launch. RPC left unmodified this step per scope.
       **Category: pre-launch, security/economy.**
 
+## Focus Mode bugs (found in Step 6 preview testing — DEDICATED STEP after Step 7 + Public Profile)
+- [ ] **Timer-completed habits give no gems.** Completing a habit via the Focus
+      Mode timer flow awards no gems. Investigate whether the Focus completion path
+      calls `complete_habit` at all (vs a different/no-op path), and what the
+      intended Focus reward is (CLAUDE.md: Focus Mode has no XP/levels — but gems
+      are the shared economy and were expected here). **Not touched in Step 6.**
+- [ ] **Streak Shield re-charges 500 gems on every return to the home screen.**
+      Buying the home-screen Streak Shield (`buy_focus_shield`, 500g) appears to
+      re-fire on each navigation back to home, draining gems repeatedly. Likely the
+      purchase runs on mount/render instead of only on an explicit button click, or
+      the handler is wired to an effect. Audit HomePage's shield button wiring.
+      **Not touched in Step 6.**
+
 ## REQUIRED before we call the migration "done"
 - [ ] **Run a REAL build + deploy of each step's branch state.** There is no local
       Node/yarn on this machine, so per-step verification is eyeball-only. (Step 2
