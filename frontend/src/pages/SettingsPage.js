@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Separator } from '../components/ui/separator';
 import { User, Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Palette, Check, ExternalLink, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
+import { rankInfo } from '../data/levels';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -101,7 +102,7 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-zinc-500">Highest Level</p>
-                    <p className="text-lg sm:text-xl font-bold text-white">{user?.highest_level_reached || 1}</p>
+                    <p className="text-lg sm:text-xl font-bold text-white">{user?.highest_level_reached || 1} — {rankInfo(user?.highest_level_reached || 1).name}</p>
                   </div>
                 </>
               )}
