@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Trophy, Flame, Target, Calendar, ArrowLeft, Shield, Sparkles } from 'lucide-react';
 import { PhaseBanner, bannerComponents } from '../components/banners/PhaseBanners';
 import axios from 'axios';
+import { rankInfo, levelForXp } from '../data/levels';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
@@ -59,6 +60,9 @@ export default function PublicProfilePage() {
   const equippedIcon = profile?.equipped_icon;
   const equippedDeco = profile?.equipped_decoration;
   const earnedTitles = profile?.earned_titles || [];
+  // Level from the stored rank (fallback: derive from XP). NOTE: this page still
+  // fetches from the dead /profile backend — Public Profile migration is its own step.
+  const level = profile?.rank || levelForXp(profile?.current_xp || 0);
 
   const animClass = equippedAnim?.css || '';
   const decoClass = equippedDeco?.css || '';
@@ -140,7 +144,7 @@ export default function PublicProfilePage() {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20" data-testid="profile-level-pill">
               <Trophy className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-xs font-medium text-blue-400">
-                Level {profile?.current_level} -- {profile?.level_name}
+                Level {level} — {rankInfo(level).name}
               </span>
             </div>
           </div>
@@ -152,7 +156,7 @@ export default function PublicProfilePage() {
         <div className="grid grid-cols-2 gap-3 mb-6" data-testid="profile-stats">
           <StatCard icon={<Target className="w-4 h-4 text-blue-400" />} label="Total XP" value={profile?.total_xp_all_time?.toLocaleString() || '0'} />
           <StatCard icon={<Flame className="w-4 h-4 text-orange-400" />} label="Current Streak" value={`${profile?.current_streak || 0} days`} />
-          <StatCard icon={<Shield className="w-4 h-4 text-purple-400" />} label="Longest Streak" value={`${profile?.longest_streak_ever || 0} days`} />
+          <StatCard icon={<Shield className="w-4 h-4 text-blue-400" />} label="Longest Streak" value={`${profile?.longest_streak_ever || 0} days`} />
           <StatCard icon={<Calendar className="w-4 h-4 text-emerald-400" />} label="Habits Done" value={profile?.total_habits_completed?.toLocaleString() || '0'} />
         </div>
 
