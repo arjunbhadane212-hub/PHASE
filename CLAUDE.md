@@ -106,6 +106,7 @@ The deep-work, distraction-free experience. Completely separate emotional tone.
   - Session duration: 5–60 minutes per habit, default 15 minutes
 - Platform behavior: Live Activity (iOS), Foreground Service (Android), persistent top bar (browser)
 - **Only in-Focus-Mode purchase:** Streak Shield button on home screen (500 gems) — NOT inside the timer, NOT in a shop screen
+- **OVERRIDE (Sachin, Step 6): Focus Mode keeps a shop screen, REVIVE-ONLY (Streak Revive via purchase_shop_item). XP doublers remain banned in Focus. This intentionally overrides the 'No shop in Focus' locked rule — do not revert.**
 - Roast notifications: **quiet, personal, disappointed tone** (never trash-talk in Focus Mode)
 
 ### Focus Mode Abandonment Penalty
