@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import { useGame } from '../contexts/GameContext';
+import { rankInfo, levelForXp } from '../data/levels';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -122,6 +123,9 @@ export default function HomePage() {
         soundEngine.habitComplete();
         xpIdRef.current += 1;
         setXpEvents(prev => [...prev, { id: xpIdRef.current, amount: data.xp_earned, boost: false }]);
+        if (data.level_up) {
+          setLevelUpData({ level: data.rank, level_name: data.rank_name, level_up_gems: data.level_up_gems });
+        }
       } else if (data.gems_earned > 0) {
         toast.success(`+${data.gems_earned} gems`, { icon: '💎', duration: 2000 });
       }
@@ -183,26 +187,13 @@ export default function HomePage() {
   const nightHabits = habits.filter(h => h.time_of_day === 'night');
 
   const currentXP = user?.current_xp || 0;
-  const currentLevel = user?.current_level || 1;
-  const levelName = user?.level_name || 'Rookie';
-  
-  // Calculate XP progress
-  const levelRanges = [
-    { level: 1, min: 0, max: 100 },
-    { level: 2, min: 101, max: 250 },
-    { level: 3, min: 251, max: 500 },
-    { level: 4, min: 501, max: 900 },
-    { level: 5, min: 901, max: 1400 },
-    { level: 6, min: 1401, max: 2100 },
-    { level: 7, min: 2101, max: 3000 },
-    { level: 8, min: 3001, max: 4200 },
-    { level: 9, min: 4201, max: 6000 },
-    { level: 10, min: 6001, max: 999999 },
-  ];
-  const currentLevelInfo = levelRanges.find(l => l.level === currentLevel) || levelRanges[0];
-  const xpInLevel = currentXP - currentLevelInfo.min;
-  const xpNeeded = currentLevelInfo.max - currentLevelInfo.min;
-  const xpProgress = Math.min((xpInLevel / xpNeeded) * 100, 100);
+  // Level is stored in users.rank (computed by complete_habit); fall back to XP.
+  const currentLevel = user?.rank || levelForXp(currentXP);
+  const currentLevelInfo = rankInfo(currentLevel);
+  const levelName = currentLevelInfo.name;
+  const xpInLevel = currentXP - currentLevelInfo.min_xp;
+  const xpNeeded = currentLevelInfo.max_xp - currentLevelInfo.min_xp;
+  const xpProgress = xpNeeded > 0 ? Math.min((xpInLevel / xpNeeded) * 100, 100) : 100;
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 pb-24 md:pb-8" data-testid="home-page">
@@ -304,7 +295,7 @@ export default function HomePage() {
               <div className="mt-3 sm:mt-4" data-testid="xp-progress">
                 <div className="flex items-center justify-between text-xs sm:text-sm mb-1.5 sm:mb-2">
                   <span className="text-zinc-400">{currentXP} XP</span>
-                  <span className="text-zinc-500">{currentLevelInfo.max === 999999 ? 'MAX' : `${currentLevelInfo.max} XP`}</span>
+                  <span className="text-zinc-500">{currentLevelInfo.max_xp === 999999 ? 'MAX' : `${currentLevelInfo.max_xp} XP`}</span>
                 </div>
                 <div className="h-2.5 bg-zinc-800/60 rounded-full overflow-hidden">
                   <div 
@@ -828,7 +819,6 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
 
 
 const CONFETTI_COLORS_LEVEL = ['#1B6AE4', '#FFD700', '#7B2FBE', '#00D4AA'];
-const RARITY_COLORS_LEVEL = { common: '#A1A1AA', rare: '#1B6AE4', legendary: '#FFD700' };
 
 function LevelUpCelebration({ data, onDismiss }) {
   const canvasRef = useRef(null);
@@ -929,8 +919,7 @@ function LevelUpCelebration({ data, onDismiss }) {
     } catch { /* silent */ }
   }, []);
 
-  const rewardDesc = data.level_rewards?.description;
-  const rewardRarity = data.level_rewards?.rarity || 'common';
+  const rewardGems = data.level_up_gems || 0;
 
   return (
     <motion.div
@@ -977,24 +966,17 @@ function LevelUpCelebration({ data, onDismiss }) {
           {data.level_name}
         </motion.p>
 
-        {/* Reward display */}
-        {rewardDesc && (
+        {/* Reward display — flat +50 gems per level-up (Step 7) */}
+        {rewardGems > 0 && (
           <motion.div
             initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 1.0 }}
-            className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl border"
-            style={{
-              backgroundColor: '#0C1220',
-              borderColor: RARITY_COLORS_LEVEL[rewardRarity] || '#1A2438',
-              boxShadow: `0 0 20px ${(RARITY_COLORS_LEVEL[rewardRarity] || '#1A2438')}40`,
-            }}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl border"
+            style={{ backgroundColor: '#0C1220', borderColor: '#1B6AE4', boxShadow: '0 0 20px rgba(27,106,228,0.25)' }}
             data-testid="level-reward"
           >
-            <span className="text-xs font-bold uppercase px-2 py-0.5 rounded-full"
-              style={{ color: RARITY_COLORS_LEVEL[rewardRarity], backgroundColor: `${RARITY_COLORS_LEVEL[rewardRarity]}20` }}>
-              {rewardRarity}
-            </span>
-            <span className="text-sm font-medium text-white">{rewardDesc}</span>
+            <Gem className="w-4 h-4 text-[#4D8EF0]" />
+            <span className="text-sm font-medium text-white">+{rewardGems} Gems</span>
           </motion.div>
         )}
 
