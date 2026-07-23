@@ -30,7 +30,7 @@ function localDateStr(d = new Date()) {
 export default function HomePage() {
   const { user, refreshUser } = useAuth();
   const { isGameMode } = useMode();
-  const { xpBoostUses, xpTripleBoostUses, xpQuadBoostUses, currentRoast, showRoast, dismissRoast, fetchGameStatus } = useGame();
+  const { activeBoostMultiplier, currentRoast, showRoast, dismissRoast, fetchGameStatus } = useGame();
 
   // Streak Shield / Revive counts live on the Supabase users row (the working
   // data path), not the legacy game-status backend.
@@ -39,7 +39,7 @@ export default function HomePage() {
   const [shieldBusy, setShieldBusy] = useState(false);
   const [reviveBusy, setReviveBusy] = useState(false);
 
-  const boostMultiplier = xpQuadBoostUses > 0 ? 4 : xpTripleBoostUses > 0 ? 3 : xpBoostUses > 0 ? 2 : 0;
+  const boostMultiplier = activeBoostMultiplier > 1 ? activeBoostMultiplier : 0;
   
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -9,7 +9,7 @@ const GameContext = createContext(null);
 // flows through refreshUser().
 //
 // Deferred to their own later steps (intentionally NOT wired here yet):
-//  - Boost counts (xp*BoostUses) — boosts step (map to boost_inventory jsonb).
+//  - XP boost — LIVE (Step 6): active_boost_multiplier/expires_at on the profile.
 //  - shopItems / buying — Step 2/3 (shop_items + purchase_shop_item RPC).
 //  - Roasts (fetchRoast) — roast step (check_roast RPC).
 export function GameProvider({ children }) {
@@ -20,12 +20,14 @@ export function GameProvider({ children }) {
   const streakRevives = user?.streak_revives ?? 0;
   const streakShields = user?.streak_shields ?? 0;
 
-  // Boosts: not migrated yet. Exposed as 0 so consumers keep building unchanged.
-  const xpBoostUses = 0;
-  const xpTripleBoostUses = 0;
-  const xpQuadBoostUses = 0;
-  const xpPentaBoostUses = 0;
-  const xpHexaBoostUses = 0;
+  // XP boost (Step 6): duration-based active boost lives on the Supabase profile
+  // (active_boost_multiplier + active_boost_expires_at — written by buy_xp_boost,
+  // read by complete_habit). Expose the *effective* active state: 1x / null when
+  // none or expired, so consumers don't re-check expiry.
+  const boostExpired = !user?.active_boost_expires_at
+    || new Date(user.active_boost_expires_at) <= new Date();
+  const activeBoostMultiplier = boostExpired ? 1 : (user?.active_boost_multiplier ?? 1);
+  const activeBoostExpiresAt = boostExpired ? null : user.active_boost_expires_at;
 
   // Roast UI state — wired to the check_roast RPC in a later step.
   const [currentRoast, setCurrentRoast] = useState(null);
@@ -44,7 +46,7 @@ export function GameProvider({ children }) {
   return (
     <GameContext.Provider value={{
       gems, streakRevives, streakShields,
-      xpBoostUses, xpTripleBoostUses, xpQuadBoostUses, xpPentaBoostUses, xpHexaBoostUses,
+      activeBoostMultiplier, activeBoostExpiresAt,
       currentRoast, showRoast, dismissRoast,
       fetchGameStatus, fetchRoast,
       shopItems: [],

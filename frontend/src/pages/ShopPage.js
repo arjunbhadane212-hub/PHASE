@@ -46,7 +46,7 @@ const RARITY_BADGE_STYLE = {
 export default function ShopPage() {
   const { refreshUser } = useAuth();
   const { isGameMode } = useMode();
-  const { gems, fetchGameStatus } = useGame();
+  const { gems, fetchGameStatus, activeBoostMultiplier } = useGame();
   const [tab, setTab] = useState('powerups');
   const [openedBoxId, setOpenedBoxId] = useState(null);
   const [openingState, setOpeningState] = useState(null); // { boxId, items } once API resolves
@@ -91,6 +91,10 @@ export default function ShopPage() {
         icon: boostIconFor(r.key),
         owned: ownedQty[r.id] || 0,
         max: r.max_owned || 1,
+        // XP boosts are duration-based consumables: activated via buy_xp_boost,
+        // not held in inventory. shield/revive stay count-based via purchase_shop_item.
+        isXpBoost: (r.key || '').startsWith('boost_xp_'),
+        multiplier: r.metadata?.multiplier ?? null,
       })));
 
       // Colors -> ColorsGrid (hex swatch is real data).
@@ -192,6 +196,24 @@ export default function ShopPage() {
     }
   };
 
+  // Step 6: XP boosts activate via the canonical buy_xp_boost RPC (duration-based,
+  // no inventory/cap). Higher multiplier wins; the RPC rejects a weaker boost while
+  // a stronger one is active — surfaced as a toast. Shield/revive stay on handleBuy.
+  const handleActivateBoost = async (shopItemId) => {
+    setBuying(shopItemId);
+    try {
+      const { data, error } = await supabase.rpc('buy_xp_boost', { p_shop_item_id: shopItemId });
+      if (error) throw error;
+      soundEngine.purchase();
+      toast.success(`x${data.bought_multiplier} XP Boost active for 24h!`);
+      await Promise.all([fetchShop(), fetchGameStatus(), refreshUser()]);
+    } catch (e) {
+      toast.error(e?.message || 'Could not activate boost');
+    } finally {
+      setBuying(null);
+    }
+  };
+
   const TABS = [
     { id: 'powerups', icon: Zap, label: 'Boosts' },
     { id: 'colors', icon: Palette, label: 'Colors' },
@@ -280,7 +302,7 @@ export default function ShopPage() {
         {loading ? (
           <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
         ) : tab === 'powerups' ? (
-          <PowerUpsGrid items={shopItems} gems={gems} buying={buying} onBuy={handleBuy} />
+          <PowerUpsGrid items={shopItems} gems={gems} buying={buying} onBuy={handleBuy} onActivate={handleActivateBoost} activeMultiplier={activeBoostMultiplier} />
         ) : tab === 'colors' ? (
           <ColorsGrid colors={colors} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : tab === 'anims' ? (
@@ -312,15 +334,40 @@ export default function ShopPage() {
   );
 }
 
-function PowerUpsGrid({ items, gems, buying, onBuy }) {
+function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid="powerups-grid">
       {items.map((item, idx) => {
         const imgSrc = item.icon || DEFAULT_IMAGE;
         const border = RARITY_BORDER[item.rarity] || RARITY_BORDER.common;
         const isBuying = buying === item.id;
-        const isFull = item.owned >= item.max;
         const canAfford = (gems ?? 0) >= item.price;
+
+        // XP boosts: duration-based -> Activate 24h / Active, via buy_xp_boost.
+        if (item.isXpBoost) {
+          const isActive = item.multiplier > 1 && activeMultiplier === item.multiplier;
+          return (
+            <button key={`${idx}-${item.id}`}
+              onClick={() => !isActive && canAfford && !isBuying && onActivate(item.id)}
+              disabled={isActive || !canAfford || isBuying}
+              className={`relative p-3 sm:p-5 rounded-2xl border transition-all hover-lift text-center group ${border} ${isActive ? 'ring-1 ring-[#3B82F6]/40' : !canAfford ? 'opacity-60' : ''}`}
+              style={{ background: '#0C1220' }} data-testid={`shop-item-${item.id}`}>
+              {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
+              <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
+                <img src={imgSrc} alt={item.name} className="w-full h-full object-contain transition-transform group-hover:scale-110" />
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-white mb-0.5 truncate">{item.name}</p>
+              <p className="text-[9px] sm:text-[10px] text-zinc-600 mb-1.5 sm:mb-2.5">24h duration</p>
+              {isBuying ? <div className="w-4 h-4 mx-auto border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /> :
+               isActive ? <span className="flex items-center justify-center gap-1 text-[10px] sm:text-xs font-medium text-[#4D8EF0]"><Zap className="w-3 h-3" /> Active</span> :
+               !canAfford ? <span className="text-[10px] sm:text-xs text-zinc-600">Not enough</span> :
+               <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold text-blue-400"><Gem className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {item.price}</span>}
+            </button>
+          );
+        }
+
+        // Count-based (streak_shield / streak_revive): unchanged, via purchase_shop_item.
+        const isFull = item.owned >= item.max;
         return (
           <button key={`${idx}-${item.id}`} onClick={() => !isFull && canAfford && !isBuying && onBuy(item.id)} disabled={isFull || !canAfford || isBuying}
             className={`relative p-3 sm:p-5 rounded-2xl border transition-all hover-lift text-center group ${border} ${isFull ? 'opacity-40' : !canAfford ? 'opacity-60' : ''}`}
