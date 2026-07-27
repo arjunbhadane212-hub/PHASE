@@ -1,263 +1,248 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Clock, Zap, Star, Crown, Shield, Flame, ChevronUp } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Clock, Lock, Users, ChevronRight } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
+import { useMode } from '../contexts/ModeContext';
+import TierEmblem from '../components/TierEmblem';
+import { tierInfo, ZONE_COLORS } from '../data/leaderboardTiers';
 
-const TIERS = [
-  { key: 'bronze', name: 'Bronze', color: '#cd7f32', bg: 'linear-gradient(135deg, #3d2000 0%, #cd7f32 100%)', icon: Shield, min: 0 },
-  { key: 'silver', name: 'Silver', color: '#c0c0c0', bg: 'linear-gradient(135deg, #2a2a30 0%, #c0c0c0 100%)', icon: Shield, min: 500 },
-  { key: 'gold', name: 'Gold', color: '#ffd700', bg: 'linear-gradient(135deg, #3d3000 0%, #ffd700 100%)', icon: Trophy, min: 1000 },
-  { key: 'platinum', name: 'Platinum', color: '#e5e4e2', bg: 'linear-gradient(135deg, #2a2a35 0%, #e5e4e2 100%)', icon: Trophy, min: 2000 },
-  { key: 'diamond', name: 'Diamond', color: '#b9f2ff', bg: 'linear-gradient(135deg, #0a2a35 0%, #b9f2ff 100%)', icon: Crown, min: 3500 },
-  { key: 'masters', name: 'Masters', color: '#a855f7', bg: 'linear-gradient(135deg, #1a0035 0%, #a855f7 100%)', icon: Crown, min: 5000 },
-  { key: 'legends', name: 'Legends', color: '#ff4500', bg: 'linear-gradient(135deg, #3d0a00 0%, #ff4500 100%)', icon: Star, min: 8000 },
-];
+const PROMO_FLOOR = 150; // must mirror game_config.lb_period_xp_floor
 
-const MOCK_USERS = [
-  { id: 1, name: 'ShadowBlade', trophies: 2450, avatar: '#7c3aed', wins: 142, club: 'Dark Legion' },
-  { id: 2, name: 'PhoenixRise', trophies: 2180, avatar: '#ef4444', wins: 128, club: 'Fire Hawks' },
-  { id: 3, name: 'StormKnight', trophies: 1950, avatar: '#3b82f6', wins: 115, club: 'Thunder Co' },
-  { id: 4, name: 'CrystalMage', trophies: 1720, avatar: '#06b6d4', wins: 98, club: '' },
-  { id: 5, name: 'IronWill', trophies: 1540, avatar: '#f59e0b', wins: 87, club: 'Steel Clan' },
-  { id: 6, name: 'You', trophies: 1380, avatar: '#1B6AE4', wins: 72, club: '', isUser: true },
-  { id: 7, name: 'NightHawk', trophies: 1200, avatar: '#64748b', wins: 64, club: '' },
-  { id: 8, name: 'FireStorm', trophies: 980, avatar: '#dc2626', wins: 51, club: 'Blaze' },
-  { id: 9, name: 'ArcticFox', trophies: 750, avatar: '#67e8f9', wins: 38, club: '' },
-  { id: 10, name: 'DarkMatter', trophies: 520, avatar: '#4b0082', wins: 22, club: '' },
-];
-
-function getTier(trophies) {
-  for (let i = TIERS.length - 1; i >= 0; i--) {
-    if (trophies >= TIERS[i].min) return TIERS[i];
-  }
-  return TIERS[0];
-}
-
-function useCountdown() {
-  const [time, setTime] = useState('');
+function useCountdown(endsAt) {
+  const [label, setLabel] = useState('');
   useEffect(() => {
+    if (!endsAt) return;
+    const end = new Date(endsAt).getTime();
     const tick = () => {
-      const now = new Date();
-      const next = new Date(now);
-      next.setDate(now.getDate() + (7 - now.getDay()) % 7 + 7);
-      next.setHours(0, 0, 0, 0);
-      const diff = next - now;
-      setTime(`${Math.floor(diff / 86400000)}d ${Math.floor((diff % 86400000) / 3600000)}h`);
+      const diff = end - Date.now();
+      if (diff <= 0) { setLabel('ending soon'); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setLabel(d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`);
     };
     tick();
     const i = setInterval(tick, 60000);
     return () => clearInterval(i);
-  }, []);
-  return time;
+  }, [endsAt]);
+  return label;
+}
+
+function initials(name) {
+  if (!name) return 'PH';
+  return name.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || 'PH';
 }
 
 export default function LeaderboardPage() {
-  const [users, setUsers] = useState(MOCK_USERS);
-  const [rankBanner, setRankBanner] = useState(null);
-  const countdown = useCountdown();
+  const { user } = useAuth();
+  const { isGameMode } = useMode();
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const currentUser = users.find(u => u.isUser);
-  const userRank = users.findIndex(u => u.isUser) + 1;
-  const userTier = getTier(currentUser?.trophies || 0);
-  const TierIcon = userTier.icon;
+  const isPro = !!user?.is_pro;
 
-  const handleEarnXP = () => {
-    setUsers(prev => {
-      const updated = prev.map(u => u.isUser ? { ...u, trophies: u.trophies + 200 } : u);
-      const sorted = [...updated].sort((a, b) => b.trophies - a.trophies);
-      const oldRank = prev.findIndex(u => u.isUser) + 1;
-      const newRank = sorted.findIndex(u => u.isUser) + 1;
-      if (newRank < oldRank) {
-        const passed = prev[newRank - 1];
-        setRankBanner({ name: passed.name, rank: newRank });
-        setTimeout(() => setRankBanner(null), 3500);
+  useEffect(() => {
+    if (!isGameMode) { setLoading(false); return; }
+    let active = true;
+    (async () => {
+      setLoading(true); setError(null);
+      try {
+        const { data: res, error: rpcErr } = await supabase.rpc('get_leaderboard');
+        if (rpcErr) throw rpcErr;
+        if (active) setData(res);
+      } catch (e) {
+        if (active) setError(e?.message || 'Could not load the leaderboard');
+      } finally {
+        if (active) setLoading(false);
       }
-      return sorted;
-    });
+    })();
+    return () => { active = false; };
+  }, [isGameMode]);
+
+  const countdown = useCountdown(data?.ends_at);
+  const tier = useMemo(() => tierInfo(data?.tier ?? user?.leaderboard_tier ?? 1), [data, user]);
+
+  // Focus mode: the league is a Game Mode feature.
+  if (!isGameMode) {
+    return (
+      <Shell>
+        <div className="text-center pt-24 px-6">
+          <p className="text-lg font-bold text-white mb-1">The League is a Game Mode feature</p>
+          <p className="text-sm text-zinc-500">Switch to Game Mode to compete in weekly leagues.</p>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Shell>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (error) {
+    return (
+      <Shell>
+        <div className="text-center pt-24 px-6">
+          <p className="text-zinc-400">{error}</p>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (!data || data.status === 'not_in_league') {
+    return (
+      <Shell>
+        <div className="text-center pt-16 px-6" data-testid="leaderboard-empty">
+          <div className="mx-auto mb-5" style={{ width: 104 }}>
+            <TierEmblem tier={user?.leaderboard_tier ?? 1} size={104} />
+          </div>
+          <p className="text-lg font-bold text-white mb-1">Your league starts soon</p>
+          <p className="text-sm text-zinc-500 max-w-xs mx-auto">
+            You'll be placed in a {tier.key} group with 14 others at the start of the next weekly period. Keep earning XP.
+          </p>
+        </div>
+      </Shell>
+    );
+  }
+
+  const rows = Array.isArray(data.rows) ? data.rows : [];
+  const promo = rows.filter(r => r.zone === 'promotion');
+  const hold = rows.filter(r => r.zone === 'holding');
+  const demo = rows.filter(r => r.zone === 'demotion');
+
+  const Row = ({ r }) => {
+    const zoneColor = r.zone === 'promotion' ? ZONE_COLORS.promotion
+      : r.zone === 'demotion' ? ZONE_COLORS.demotion : '#ffffff';
+    const belowFloor = r.zone === 'promotion' && r.period_xp < PROMO_FLOOR;
+    const clickable = !!r.username;
+    return (
+      <motion.button
+        layout
+        type="button"
+        disabled={!clickable}
+        onClick={() => clickable && navigate(`/profile/${r.username}`)}
+        className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-left transition-colors"
+        style={{
+          background: r.is_me
+            ? 'linear-gradient(0deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03)), #1a1a24'
+            : 'rgba(255,255,255,0.03)',
+          border: r.is_me ? `1px solid ${tier.a}` : '1px solid rgba(255,255,255,0.06)',
+          boxShadow: r.is_me ? `0 0 0 1px ${tier.a}, 0 0 22px -6px ${tier.a}` : 'none',
+          cursor: clickable ? 'pointer' : 'default',
+        }}
+        data-testid={`leaderboard-row-${r.rank}`}
+      >
+        <span className="w-6 text-center text-sm font-extrabold text-zinc-500 tabular-nums">{r.rank}</span>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-extrabold text-white flex-shrink-0"
+          style={{ backgroundColor: r.main_color || '#374151', boxShadow: `0 0 0 2px ${tier.a}55` }}>
+          {initials(r.display_name)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-bold text-white truncate">{r.display_name || 'Phase user'}</p>
+            {r.is_me && (
+              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md" style={{ background: tier.a, color: '#0a0a0f' }}>YOU</span>
+            )}
+          </div>
+          {belowFloor && (
+            <p className="text-[10px] text-zinc-500 mt-0.5">needs {PROMO_FLOOR - r.period_xp} more XP to promote</p>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[15px] font-extrabold tabular-nums" style={{ color: zoneColor }}>
+            {Number(r.period_xp).toLocaleString()}
+          </span>
+          <span className="text-[10px] text-zinc-600 font-semibold">XP</span>
+          {clickable && <ChevronRight className="w-4 h-4 text-zinc-700" strokeWidth={2} />}
+        </div>
+      </motion.button>
+    );
+  };
+
+  const ZoneHead = ({ kind, label }) => {
+    const color = kind === 'promotion' ? ZONE_COLORS.promotion : kind === 'demotion' ? ZONE_COLORS.demotion : '#4b4e59';
+    return (
+      <div className="flex items-center gap-2.5 mt-5 mb-2 px-1">
+        <span className="text-[11px] font-extrabold tracking-[0.16em] uppercase" style={{ color }}>{label}</span>
+        <span className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${color}66, transparent)` }} />
+      </div>
+    );
   };
 
   return (
-    <div className="min-h-screen pb-32 md:pb-8" style={{ background: '#0d0b1a' }} data-testid="leaderboard-page">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0" style={{ background: userTier.bg, opacity: 0.15 }} />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0d0b1a]" />
-        <div className="relative max-w-xl mx-auto px-4 pt-6 pb-8 text-center">
-          {/* Tier Badge */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl mb-4"
-            style={{ background: `${userTier.color}15`, border: `2px solid ${userTier.color}40` }}
-          >
-            <TierIcon className="w-5 h-5" style={{ color: userTier.color }} />
-            <span className="text-sm font-black tracking-wide" style={{ color: userTier.color }}>{userTier.name}</span>
-          </motion.div>
-
-          {/* Trophy count */}
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Trophy className="w-7 h-7 text-[#ffd700]" />
-              <span className="text-4xl font-black text-white" style={{ fontFamily: "'Satoshi', sans-serif" }}>
-                {currentUser?.trophies?.toLocaleString()}
-              </span>
-            </div>
-            <p className="text-xs text-zinc-500">Your Trophies</p>
-          </motion.div>
-
-          {/* Timer + info */}
-          <div className="flex items-center justify-center gap-4 mt-4 text-[11px]">
-            <span className="flex items-center gap-1 text-zinc-500"><Clock className="w-3 h-3" /> Resets {countdown}</span>
-            <span className="text-zinc-700">|</span>
-            <span className="text-emerald-500/70">Top 3 promote</span>
-            <span className="text-zinc-700">|</span>
-            <span className="text-red-500/70">Bottom 3 demote</span>
+    <Shell>
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/[0.06]" style={{ background: '#14141c' }} data-testid="leaderboard-hero">
+        <div className="absolute inset-0" style={{ background: `radial-gradient(120% 90% at 50% -20%, ${tier.a}66, transparent 62%)`, opacity: 0.5 }} />
+        <div className="relative text-center px-4 pt-6 pb-5">
+          <div className="mx-auto mb-1" style={{ width: 112 }}>
+            <TierEmblem tier={data.tier} size={112} />
+          </div>
+          <h1 className="text-2xl font-extrabold" style={{ color: tier.a, fontFamily: "'Satoshi', sans-serif" }}>{tier.key} League</h1>
+          <div className="flex items-center justify-center gap-2 flex-wrap mt-2.5 text-xs text-zinc-400">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06]">
+              Group <span className="text-white font-bold tabular-nums">{data.group_index + 1}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06]">
+              <Users className="w-3 h-3" /> <span className="text-white font-bold tabular-nums">{data.member_count}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06]">
+              <Clock className="w-3 h-3" /> resets in <span className="text-white font-bold tabular-nums">{countdown}</span>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Rank-up banner */}
-      <AnimatePresence>
-        {rankBanner && (
-          <motion.div
-            initial={{ opacity: 0, y: -30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-            className="max-w-xl mx-auto px-4 mb-3"
-          >
-            <div className="p-3 rounded-2xl flex items-center gap-3 text-sm"
-              style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(139,92,246,0.1))', border: '1px solid rgba(168,85,247,0.3)' }}>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.3)' }}>
-                <ChevronUp className="w-5 h-5 text-purple-300" />
-              </div>
-              <span className="text-white font-medium">Passed <strong className="text-purple-300">{rankBanner.name}</strong> — now <strong className="text-[#ffd700]">#{rankBanner.rank}</strong>!</span>
+      {/* Standings (Pro-gated) */}
+      <div className="relative mt-2">
+        <div style={!isPro ? { filter: 'blur(5px) saturate(0.8)', opacity: 0.55, pointerEvents: 'none', userSelect: 'none' } : undefined}>
+          {promo.length > 0 && <ZoneHead kind="promotion" label={`Promotion zone · top ${data.promote_count}`} />}
+          <div className="flex flex-col gap-1.5">{promo.map(r => <Row key={r.rank} r={r} />)}</div>
+
+          {hold.length > 0 && <ZoneHead kind="holding" label="Holding" />}
+          <div className="flex flex-col gap-1.5">{hold.map(r => <Row key={r.rank} r={r} />)}</div>
+
+          {demo.length > 0 && <ZoneHead kind="demotion" label={`Demotion zone · bottom ${data.demote_count}`} />}
+          <div className="flex flex-col gap-1.5">{demo.map(r => <Row key={r.rank} r={r} />)}</div>
+        </div>
+
+        {!isPro && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6"
+            style={{ background: 'radial-gradient(80% 80% at 50% 40%, rgba(10,14,20,0.55), rgba(10,14,20,0.9))' }}
+            data-testid="leaderboard-pro-gate">
+            <Lock className="w-7 h-7 text-zinc-400" strokeWidth={2} />
+            <div>
+              <p className="text-base font-extrabold text-white">See where you really rank</p>
+              <p className="text-xs text-zinc-400 mt-1 max-w-[240px]">Full league standings, promotions and rivals are a Phase Pro feature.</p>
             </div>
-          </motion.div>
+            <button
+              onClick={() => navigate('/dashboard/shop')}
+              className="mt-1 px-5 py-2 rounded-xl text-sm font-extrabold text-white"
+              style={{ background: '#3B82F6', boxShadow: '0 0 18px -4px #60A5FA' }}
+              data-testid="leaderboard-upsell-cta"
+            >
+              Unlock with Pro
+            </button>
+          </div>
         )}
-      </AnimatePresence>
-
-      {/* Top 3 Podium */}
-      <div className="max-w-xl mx-auto px-4 mb-4">
-        <div className="flex items-end justify-center gap-3 mb-6">
-          {[users[1], users[0], users[2]].map((u, idx) => {
-            if (!u) return null;
-            const pos = [2, 1, 3][idx];
-            const heights = ['h-20', 'h-28', 'h-16'];
-            const colors = ['#c0c0c0', '#ffd700', '#cd7f32'];
-            const sizes = ['w-14 h-14', 'w-18 h-18', 'w-12 h-12'];
-            const textSizes = ['text-lg', 'text-2xl', 'text-base'];
-            return (
-              <motion.div key={u.id} className="flex flex-col items-center"
-                initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 * idx }}>
-                {/* Avatar */}
-                <div className="relative mb-2">
-                  {pos === 1 && <Crown className="w-6 h-6 text-[#ffd700] absolute -top-5 left-1/2 -translate-x-1/2" />}
-                  <div className={`${sizes[idx]} rounded-2xl flex items-center justify-center text-white font-black text-sm`}
-                    style={{
-                      backgroundColor: u.avatar,
-                      border: `3px solid ${colors[idx]}`,
-                      boxShadow: `0 0 20px ${colors[idx]}30`,
-                      width: pos === 1 ? '72px' : pos === 2 ? '56px' : '48px',
-                      height: pos === 1 ? '72px' : pos === 2 ? '56px' : '48px',
-                    }}>
-                    {u.name.slice(0, 2).toUpperCase()}
-                  </div>
-                </div>
-                <p className="text-xs font-bold text-white truncate max-w-[80px]">{u.name}</p>
-                <p className={`${textSizes[idx]} font-black`} style={{ color: colors[idx] }}>{u.trophies.toLocaleString()}</p>
-                {/* Podium bar */}
-                <div className={`${heights[idx]} w-20 rounded-t-xl mt-1`}
-                  style={{ background: `linear-gradient(180deg, ${colors[idx]}30 0%, ${colors[idx]}08 100%)`, border: `1px solid ${colors[idx]}25`, borderBottom: 'none' }}>
-                  <div className="text-center pt-2">
-                    <span className="text-2xl font-black" style={{ color: colors[idx] }}>{pos}</span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
       </div>
+    </Shell>
+  );
+}
 
-      {/* Full Rankings List */}
-      <div className="max-w-xl mx-auto px-4">
-        <div className="space-y-1.5" data-testid="leaderboard-list">
-          {users.slice(3).map((user, i) => {
-            const rank = i + 4;
-            const tier = getTier(user.trophies);
-            const isPromoLine = rank === 4;
-
-            return (
-              <div key={user.id}>
-                {isPromoLine && (
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(168,85,247,0.3), transparent)' }} />
-                  </div>
-                )}
-                <motion.div
-                  layout
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl relative"
-                  style={{
-                    background: user.isUser
-                      ? 'linear-gradient(135deg, rgba(27,106,228,0.12), rgba(139,92,246,0.08))'
-                      : 'rgba(255,255,255,0.03)',
-                    border: user.isUser
-                      ? '1.5px solid rgba(27,106,228,0.4)'
-                      : '1px solid rgba(255,255,255,0.05)',
-                  }}
-                  data-testid={`leaderboard-row-${rank}`}
-                >
-                  {/* Rank */}
-                  <span className="text-sm font-black w-7 text-center text-zinc-600">{rank}</span>
-
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black text-white flex-shrink-0"
-                    style={{ backgroundColor: user.avatar, border: `2px solid ${tier.color}30` }}>
-                    {user.name.slice(0, 2).toUpperCase()}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-white truncate">{user.name}</p>
-                      {user.isUser && (
-                        <span className="text-[9px] font-black px-2 py-0.5 rounded-lg" style={{ background: 'rgba(27,106,228,0.3)', color: '#4D8EF0' }}>YOU</span>
-                      )}
-                    </div>
-                    {user.club && <p className="text-[10px] text-zinc-600">{user.club}</p>}
-                  </div>
-
-                  {/* Trophies */}
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <Trophy className="w-4 h-4" style={{ color: tier.color }} />
-                    <span className="text-sm font-black text-white">{user.trophies.toLocaleString()}</span>
-                  </div>
-
-                  {/* Rank-up badge */}
-                  <AnimatePresence>
-                    {user.isUser && rankBanner && (
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0 }}
-                        className="absolute -top-2 -right-1 text-[9px] font-black px-2 py-0.5 rounded-xl shadow-lg"
-                        style={{ background: 'linear-gradient(135deg, #a855f7, #7c3aed)', color: 'white' }}
-                      >
-                        +1
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Earn XP */}
-        <div className="mt-8 text-center pb-4">
-          <Button onClick={handleEarnXP} data-testid="earn-xp-btn"
-            className="px-8 py-3 text-sm font-black gap-2 rounded-2xl"
-            style={{ background: 'linear-gradient(135deg, #ffd700, #f59e0b)', color: '#1a1000', border: 'none' }}>
-            <Zap className="w-4 h-4" /> EARN TROPHIES
-          </Button>
-          <p className="text-[10px] text-zinc-700 mt-2">+200 trophies per tap</p>
-        </div>
-      </div>
+function Shell({ children }) {
+  return (
+    <div className="min-h-screen pb-28 md:pb-10" style={{ background: '#0A0E14' }} data-testid="leaderboard-page">
+      <div className="max-w-xl mx-auto px-4 pt-5">{children}</div>
     </div>
   );
 }

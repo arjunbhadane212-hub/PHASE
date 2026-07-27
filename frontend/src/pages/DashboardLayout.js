@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMode } from '../contexts/ModeContext';
-import { Home, BarChart3, Trophy, ShoppingBag, Settings, User } from 'lucide-react';
+import { Home, BarChart3, Trophy, Crown, ShoppingBag, Settings, User } from 'lucide-react';
 import ProfilePanel from './MyProfilePage';
+import PeriodResultModal from '../components/PeriodResultModal';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const allNavItems = [
   { to: '/dashboard', icon: Home, label: 'Home', end: true, modes: ['focus', 'game'] },
   { to: '/dashboard/progress', icon: BarChart3, label: 'Progress', modes: ['focus', 'game'] },
-  // 'Ranks' (leaderboard) is an Update 2 feature — hidden from nav until built.
   { to: '/dashboard/level', icon: Trophy, label: 'Level', modes: ['game'] },
+  { to: '/dashboard/leaderboard', icon: Crown, label: 'League', modes: ['game'] },
   { to: '/dashboard/shop', icon: ShoppingBag, label: 'Shop', modes: ['game'] },
   { to: '/dashboard/focus-shop', icon: ShoppingBag, label: 'Shop', modes: ['focus'] },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings', modes: ['focus', 'game'] },
@@ -118,6 +119,9 @@ export default function DashboardLayout() {
 
       {/* Profile side panel */}
       <ProfilePanel open={profileOpen} onClose={() => setProfileOpen(false)} />
+
+      {/* End-of-period league result (shows once per closed period, game mode) */}
+      <PeriodResultModal />
     </div>
   );
 }

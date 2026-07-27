@@ -4,6 +4,8 @@ import { Flame, Target, CalendarCheck, ArrowLeft } from 'lucide-react';
 import { PhaseBanner } from '../components/banners/PhaseBanners';
 import { supabase } from '../lib/supabaseClient';
 import { rankInfo } from '../data/levels';
+import TierEmblem from '../components/TierEmblem';
+import { tierInfo, tierNumByName } from '../data/leaderboardTiers';
 
 // Shop banner keys (banner_*) -> the hardcoded banner SVG set. Same map as
 // MyProfilePage (Step 4c); the 4 with art render, others fall back to default.
@@ -72,6 +74,15 @@ export default function PublicProfilePage() {
     ? new Date(profile.member_since).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : '';
   const ownedTitles = Array.isArray(profile.owned_titles) ? profile.owned_titles : [];
+  const lbTier = tierInfo(profile.leaderboard_tier || 1);
+  const lbTierName = profile.leaderboard_tier_name || lbTier.key;
+  const weekXp = profile.current_period_xp;
+  const history = Array.isArray(profile.period_history) ? profile.period_history : [];
+  const RESULT_STYLE = {
+    promoted: { label: 'Promoted', color: '#22c55e' },
+    demoted:  { label: 'Relegated', color: '#ef4444' },
+    held:     { label: 'Held', color: '#7d818f' },
+  };
 
   return (
     <div className="min-h-screen bg-[#06080F]" data-testid="public-profile-page">
@@ -126,6 +137,13 @@ export default function PublicProfilePage() {
             data-testid="profile-streak-pill">
             <Flame className="w-3.5 h-3.5" /> {streak} day{streak === 1 ? '' : 's'}
           </span>
+          <span className="inline-flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full text-xs font-bold"
+            style={{ background: `${lbTier.a}1f`, border: `1px solid ${lbTier.a}55`, color: lbTier.a }}
+            data-testid="profile-league-pill">
+            <TierEmblem tier={profile.leaderboard_tier || 1} size={20} glow={false} />
+            {lbTierName}
+            {weekXp != null && <span className="text-white/80 font-extrabold tabular-nums">· {Number(weekXp).toLocaleString()} XP this week</span>}
+          </span>
         </div>
 
         {/* Streak Hero Widget */}
@@ -159,6 +177,31 @@ export default function PublicProfilePage() {
                   {t.name}
                 </span>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent league results */}
+        {history.length > 0 && (
+          <div className="mb-6" data-testid="profile-league-history">
+            <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Recent leagues</h3>
+            <div className="flex flex-col gap-1.5">
+              {history.map((h, i) => {
+                const rs = RESULT_STYLE[h.result] || RESULT_STYLE.held;
+                const when = h.ends_at ? new Date(h.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+                return (
+                  <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#0F1525] border border-[#182038]">
+                    <TierEmblem tier={tierNumByName(h.tier_name)} size={26} glow={false} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{h.tier_name || 'League'}</p>
+                      <p className="text-[11px] text-zinc-500">Rank #{h.final_rank ?? '-'} · {Number(h.period_xp ?? 0).toLocaleString()} XP · {when}</p>
+                    </div>
+                    <span className="text-[10px] font-extrabold px-2 py-1 rounded-lg" style={{ background: `${rs.color}22`, color: rs.color }}>
+                      {rs.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
