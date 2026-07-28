@@ -265,6 +265,12 @@ Update 4:             Seasonal drops
 
 **Rule:** Never ship Update 1–4 features early just because they're ready. Each update is a marketing moment. Sequencing is intentional.
 
+**Status exception — Weekly League (leaderboard) is BUILT** (Arjun-approved, July 2026). Backend + UI are live: `get_leaderboard()` / `get_period_result()` RPCs, `pg_cron` weekly reset (Mon 00:00 UTC), League nav item in Game Mode. See `supabase/migrations/README_leaderboard.md`. Notes:
+- It is **Game Mode only** — Focus Mode earns no league XP and is never grouped.
+- It uses its **own** 10-tier ladder (Bronze→Prime) in `users.leaderboard_tier`, separate from the XP-level ladder in `users.rank`. Tier 9 "Apex" here is a name collision with rank 10 "Apex" — unrelated systems.
+- Tier badges use a **per-tier saturated palette** (incl. purples/pinks) from the leaderboard design spec. This is a deliberate, approved exception to the no-purple rule, scoped to league tier emblems only — the rest of the app stays blue.
+- Standings are Pro-gated (`users.is_pro`); free users see the blurred upsell.
+
 ---
 
 ## Active Bugs — Fix These, Don't Make Them Worse
