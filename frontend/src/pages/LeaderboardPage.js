@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import TierEmblem from '../components/TierEmblem';
+import ProfilePopout, { useProfilePopout } from '../components/profile/ProfilePopout';
 import { tierInfo, ZONE_COLORS } from '../data/leaderboardTiers';
 
 const PROMO_FLOOR = 150; // must mirror game_config.lb_period_xp_floor
@@ -39,6 +40,7 @@ export default function LeaderboardPage() {
   const { user } = useAuth();
   const { isGameMode } = useMode();
   const navigate = useNavigate();
+  const popout = useProfilePopout();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -129,7 +131,7 @@ export default function LeaderboardPage() {
         layout
         type="button"
         disabled={!clickable}
-        onClick={() => clickable && navigate(`/profile/${r.username}`)}
+        onClick={() => clickable && popout.open(r.username)}
         className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-left transition-colors"
         style={{
           background: r.is_me
@@ -180,6 +182,8 @@ export default function LeaderboardPage() {
 
   return (
     <Shell>
+      <ProfilePopout {...popout.props} />
+
       {/* Hero */}
       <div className="relative overflow-hidden rounded-3xl border border-white/[0.06]" style={{ background: '#14141c' }} data-testid="leaderboard-hero">
         <div className="absolute inset-0" style={{ background: `radial-gradient(120% 90% at 50% -20%, ${tier.a}66, transparent 62%)`, opacity: 0.5 }} />

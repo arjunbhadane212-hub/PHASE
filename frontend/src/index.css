@@ -614,15 +614,22 @@ input:focus, textarea:focus, select:focus {
 .profile-anim-inferno { animation: pa-inferno 3s ease-in-out infinite }
 .profile-anim-divine { animation: pa-divine 4s ease-in-out infinite }
 
-/* Title rarity shimmer effects (Brawl Stars style) */
-.title-common { color: #A1A1AA; }
-.title-rare { color: #3B82F6; text-shadow: 0 0 6px rgba(59,130,246,0.4); }
-.title-epic { color: #A855F7; text-shadow: 0 0 8px rgba(168,85,247,0.5); }
-.title-legendary { color: #FBBF24; text-shadow: 0 0 10px rgba(251,191,36,0.5); animation: title-shine-gold 3s ease-in-out infinite; }
-.title-mythic { background: linear-gradient(90deg, #f97316, #fbbf24, #a855f7, #ec4899, #f97316); background-size: 300% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: title-mythic-shift 3s linear infinite; text-shadow: none; filter: drop-shadow(0 0 6px rgba(249,115,22,0.4)); }
-
-@keyframes title-shine-gold { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.4)} }
-@keyframes title-mythic-shift { 0%{background-position:0% 50%} 100%{background-position:300% 50%} }
+/* Legacy title rarity classes -> the Delta/Phase tier treatments.
+   The old .title-mythic gradient contained purple (#a855f7) and pink (#ec4899),
+   which violates the locked blue-only rule; the tier styles replace it.
+   Definitions live in the PROFILE FLEX BADGES block at the end of this file. */
+.title-common    { color: #9AA4B2; text-shadow: 0 0 6px rgba(154,164,178,0.25); }
+.title-rare,
+.title-epic,
+.title-legendary { color: #7FB4F5; text-shadow: 0 0 9px rgba(59,130,246,0.55); }
+.title-mythic,
+.title-ultra {
+  background: linear-gradient(90deg, #1D4ED8, #60A5FA, #FFFFFF, #FDE68A, #FBBF24, #FFFFFF, #1D4ED8);
+  background-size: 320% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: title-phase-arc 4.5s linear infinite, title-phase-bloom 2.6s ease-in-out infinite;
+}
 
 
 /* ===== AVATAR DECORATIONS — Full-width animated banners (Discord Profile Effects style) ===== */
@@ -683,3 +690,154 @@ input:focus, textarea:focus, select:focus {
 .deco-divine-wings{background:linear-gradient(135deg,#1a1000,#fbbf24 20%,#fff 40%,#fbbf24 55%,#fff 70%,#1a1000);background-size:400% 400%;animation:deco-move 6s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-obsidian-edge{background:linear-gradient(135deg,#000,#1a1a1a 25%,#333 45%,#1a1a1a 55%,#000);background-size:300% 300%;animation:deco-move 8s ease infinite}
 .deco-supernova-burst{background:radial-gradient(ellipse at center,#fff 0%,#fbbf24 10%,#f97316 20%,#a855f7 35%,#7c3aed 50%,#1a0033 75%,#000);background-size:200% 200%;animation:deco-move 5s ease infinite,deco-pulse-bg 2.5s ease-in-out infinite}
+
+
+/* ===================================================================
+   PROFILE FLEX BADGES — public profile rework (Aug 2026)
+   Badge chrome is driven entirely by CSS custom properties set inline
+   per badge: --bg (badge hue), --bg2 (partner hue), --glow (0..1 intensity).
+   No diagonal linear gradients (banned) — radial + axis-aligned only.
+   =================================================================== */
+
+.flexbadge {
+  --bg: #3B82F6;
+  --bg2: #60A5FA;
+  --glow: 0.6;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: #fff;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--bg) 55%, transparent);
+  background:
+    radial-gradient(120% 160% at 50% -40%, color-mix(in srgb, var(--bg) 42%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0));
+  background-color: #0C111B;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--bg) 22%, transparent),
+    0 0 calc(18px * var(--glow)) calc(-4px + 2px * var(--glow)) var(--bg),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: box-shadow .25s ease, transform .25s ease;
+}
+.flexbadge:hover { transform: translateY(-1px); }
+
+/* Edge-lit top hairline that fades from both sides. */
+.flexbadge::before {
+  content: '';
+  position: absolute; inset: 0 0 auto 0; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--bg2) 85%, transparent), transparent);
+  opacity: calc(0.35 + 0.6 * var(--glow));
+  pointer-events: none;
+}
+
+/* Sheen sweep — the "expensive metal" pass. Only on charged badges. */
+.flexbadge--sheen::after {
+  content: '';
+  position: absolute; inset: -40% -60%;
+  background: linear-gradient(90deg, transparent 42%, rgba(255,255,255,0.5) 50%, transparent 58%);
+  transform: translateX(-120%);
+  animation: fb-sheen 4.5s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+@keyframes fb-sheen {
+  0%, 62% { transform: translateX(-120%); }
+  86%, 100% { transform: translateX(120%); }
+}
+
+/* Halo — a living outer bloom for high-intensity badges. */
+.flexbadge--halo { animation: fb-halo 3.2s ease-in-out infinite; }
+@keyframes fb-halo {
+  0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--bg) 30%, transparent),
+                         0 0 calc(20px * var(--glow)) -2px var(--bg),
+                         inset 0 1px 0 rgba(255,255,255,0.10); }
+  50%      { box-shadow: 0 0 0 1px color-mix(in srgb, var(--bg) 55%, transparent),
+                         0 0 calc(40px * var(--glow)) 0px var(--bg),
+                         0 0 calc(70px * var(--glow)) -10px var(--bg2),
+                         inset 0 1px 0 rgba(255,255,255,0.16); }
+}
+
+.flexbadge__label { color: #fff; text-shadow: 0 0 10px color-mix(in srgb, var(--bg) 70%, transparent); }
+.flexbadge__value { color: var(--bg2); font-weight: 900; font-variant-numeric: tabular-nums; }
+.flexbadge__icon  { color: var(--bg2); filter: drop-shadow(0 0 6px var(--bg)); flex: none; }
+
+/* Apex / 100-day / Phase-tier: white-hot core text. */
+.flexbadge--incandescent .flexbadge__label,
+.flexbadge--incandescent .flexbadge__value {
+  color: #fff;
+  text-shadow: 0 0 6px #fff, 0 0 16px var(--bg), 0 0 30px var(--bg2);
+}
+
+/* ===== Title tier treatments (Delta / Phase), per box-titles spec ===== */
+/* Tunable so the final FX spec can drop in without a rebuild. */
+:root {
+  --title-glow-radius: 14px;
+  --title-gradient-duration: 4.5s;
+}
+
+.title-style-starter {
+  color: #9AA4B2;
+  text-shadow: 0 0 6px rgba(154,164,178,0.25);
+}
+/* Delta — flat steel-blue, static glow, no animation. Solid and earned. */
+.title-style-delta {
+  color: #7FB4F5;
+  text-shadow: 0 0 calc(var(--title-glow-radius) * 0.6) rgba(59,130,246,0.55);
+}
+/* Phase — animated deep blue -> white-hot -> gold. No purple, ever. */
+.title-style-phase {
+  background: linear-gradient(90deg, #1D4ED8, #60A5FA, #FFFFFF, #FDE68A, #FBBF24, #FFFFFF, #1D4ED8);
+  background-size: 320% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: title-phase-arc var(--title-gradient-duration) linear infinite,
+             title-phase-bloom 2.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(96,165,250,0.55));
+}
+@keyframes title-phase-arc  { 0% { background-position: 0% 50%; } 100% { background-position: 320% 50%; } }
+@keyframes title-phase-bloom {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(96,165,250,0.45)); }
+  50%      { filter: drop-shadow(0 0 calc(var(--title-glow-radius)) rgba(251,191,36,0.65))
+                     drop-shadow(0 0 calc(var(--title-glow-radius) * 1.8) rgba(96,165,250,0.4)); }
+}
+
+/* Streak hero flame — heat scales with the tier. */
+@keyframes streak-breathe {
+  0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 8px var(--bg)); }
+  50%      { transform: scale(1.07); filter: drop-shadow(0 0 22px var(--bg)) drop-shadow(0 0 40px var(--bg2)); }
+}
+.streak-flame-alive { animation: streak-breathe 2.4s ease-in-out infinite; transform-origin: center; }
+
+/* Ambient stage glow behind the profile header. */
+@keyframes profile-ambient {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.06); }
+}
+.profile-ambient { animation: profile-ambient 7s ease-in-out infinite; }
+
+/* Avatar rank ring bloom. */
+@keyframes avatar-ring-bloom {
+  0%, 100% { box-shadow: 0 0 18px -2px var(--bg), inset 0 0 12px -6px var(--bg); }
+  50%      { box-shadow: 0 0 34px 2px var(--bg), 0 0 70px -12px var(--bg2), inset 0 0 12px -4px var(--bg); }
+}
+.avatar-ring-alive { animation: avatar-ring-bloom 3.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flexbadge--sheen::after,
+  .flexbadge--halo,
+  .streak-flame-alive,
+  .profile-ambient,
+  .avatar-ring-alive,
+  .title-style-phase { animation: none !important; }
+  .title-style-phase { background-position: 40% 50%; }
+}
