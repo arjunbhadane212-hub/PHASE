@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import { Link } from 'react-router-dom';
-import { Flame, Target, Calendar, Shield, ExternalLink, Check, ChevronDown, ChevronUp, Gem, X } from 'lucide-react';
+import { Target, Calendar, Shield, ExternalLink, Check, ChevronDown, ChevronUp, Gem, X } from 'lucide-react';
 import { PhaseBanner } from '../components/banners/PhaseBanners';
+import { FlameGlyph } from '../components/profile/Sigil';
+import { TitleBadge } from '../components/profile/FlexBadge';
+import { streakTier } from '../data/profileIdentity';
 import { supabase } from '../lib/supabaseClient';
 import { effectCssFor } from '../data/shopEffects';
 import { toast } from 'sonner';
@@ -33,7 +36,7 @@ export default function ProfilePanel({ open, onClose }) {
     if (!open || !user?.id) return;
     try {
       const [{ data: items }, { data: inv }] = await Promise.all([
-        supabase.from('shop_items').select('id,key,name,category,rarity,gradient_value'),
+        supabase.from('shop_items').select('id,key,name,category,rarity,rarity_style,gradient_value'),
         supabase.from('user_inventory').select('shop_item_id'),
       ]);
       const ownedIds = new Set((inv || []).map((r) => r.shop_item_id));
@@ -147,7 +150,13 @@ export default function ProfilePanel({ open, onClose }) {
           {/* Title */}
           {equippedTitle && (
             <div className="mb-3">
-              <span className={`text-sm font-black title-${titleRarity}`}>{equippedTitleObj?.name || equippedTitle}</span>
+              <TitleBadge
+                name={equippedTitleObj?.name || equippedTitle}
+                sourceStyle={equippedTitleObj?.rarity_style}
+                rarityTier={titleRarity}
+                rarity={titleRarity}
+                size="sm"
+              />
             </div>
           )}
 
@@ -162,7 +171,7 @@ export default function ProfilePanel({ open, onClose }) {
           {/* Stats */}
           <div className="grid grid-cols-4 gap-2 mb-5">
             <StatBox icon={<Target className="w-4 h-4 text-[#4D8EF0]" />} value={user?.total_xp_all_time || 0} label="XP" />
-            <StatBox icon={<Flame className="w-4 h-4 text-orange-400" />} value={user?.current_streak || 0} label="Streak" />
+            <StatBox icon={<FlameGlyph stage={streakTier(user?.current_streak).flame} size={16} style={{ color: '#4D8EF0' }} />} value={user?.current_streak || 0} label="Streak" />
             <StatBox icon={<Shield className="w-4 h-4 text-[#3B82F6]" />} value={user?.longest_streak_ever || 0} label="Best" />
             <StatBox icon={<Calendar className="w-4 h-4 text-emerald-400" />} value={user?.total_habits_completed || 0} label="Done" />
           </div>
@@ -177,7 +186,11 @@ export default function ProfilePanel({ open, onClose }) {
             {earnedTitles.length === 0 ? <Empty text="Earn titles through streaks & buy from the Shop." /> : (
               <div className="flex flex-wrap gap-1.5">
                 {equippedTitle && <Pill label="Remove" onClick={() => handleUnequip('title')} loading={equipping === 'title-null'} variant="remove" />}
-                {earnedTitles.map(t => <Pill key={t.key} label={t.name} active={equippedTitle === t.key} onClick={() => handleEquip('title', t)} loading={equipping === `title-${t.key}`} className={`title-${t.rarity}`} />)}
+                {earnedTitles.map(t => (
+                  <Pill key={t.key} active={equippedTitle === t.key} onClick={() => handleEquip('title', t)}
+                    loading={equipping === `title-${t.key}`}
+                    label={<TitleBadge name={t.name} sourceStyle={t.rarity_style} rarityTier={t.rarity} rarity={t.rarity} size="sm" />} />
+                ))}
               </div>
             )}
           </Section>

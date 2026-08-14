@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=general-sans@400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -196,9 +197,11 @@ code {
 }
 
 /* Animations */
+/* Purple (139,92,246) here was template contamination — blue is the only brand
+   colour. Swapped to #3B82F6 per the locked colour system. */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 12px rgba(139, 92, 246, 0.25); }
-  50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
+  0%, 100% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.25); }
+  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
 }
 
 @keyframes float {
@@ -614,22 +617,10 @@ input:focus, textarea:focus, select:focus {
 .profile-anim-inferno { animation: pa-inferno 3s ease-in-out infinite }
 .profile-anim-divine { animation: pa-divine 4s ease-in-out infinite }
 
-/* Legacy title rarity classes -> the Delta/Phase tier treatments.
-   The old .title-mythic gradient contained purple (#a855f7) and pink (#ec4899),
-   which violates the locked blue-only rule; the tier styles replace it.
-   Definitions live in the PROFILE FLEX BADGES block at the end of this file. */
-.title-common    { color: #9AA4B2; text-shadow: 0 0 6px rgba(154,164,178,0.25); }
-.title-rare,
-.title-epic,
-.title-legendary { color: #7FB4F5; text-shadow: 0 0 9px rgba(59,130,246,0.55); }
-.title-mythic,
-.title-ultra {
-  background: linear-gradient(90deg, #1D4ED8, #60A5FA, #FFFFFF, #FDE68A, #FBBF24, #FFFFFF, #1D4ED8);
-  background-size: 320% 100%;
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-  animation: title-phase-arc 4.5s linear infinite, title-phase-bloom 2.6s ease-in-out infinite;
-}
+/* The legacy .title-{rarity} text classes are gone. There is now exactly one
+   title implementation — <TitleBadge> in components/profile/FlexBadge.js,
+   rendering the plate systems defined at the end of this file. SettingsPage and
+   MyProfilePage were migrated onto it so there is no third copy. */
 
 
 /* ===== AVATAR DECORATIONS — Full-width animated banners (Discord Profile Effects style) ===== */
@@ -776,40 +767,374 @@ input:focus, textarea:focus, select:focus {
   text-shadow: 0 0 6px #fff, 0 0 16px var(--bg), 0 0 30px var(--bg2);
 }
 
-/* ===== Title tier treatments (Delta / Phase), per box-titles spec ===== */
-/* Tunable so the final FX spec can drop in without a rebuild. */
-:root {
-  --title-glow-radius: 14px;
-  --title-gradient-duration: 4.5s;
+/* ===================================================================
+   TITLE PLATES — one silhouette per title SOURCE (Aug 2026)
+   Source picks the FORM, rarity picks the INTENSITY. The governing rule:
+   a source must be identifiable in silhouette with the colour stripped
+   out. Glow is the last 10%, never the mechanism.
+
+   Every plate scales through one multiplier, --tp-s, set per source and
+   per size in components/profile/TitlePlate.js, so all five land at the
+   same height (~26 / ~31 / ~42px for sm / md / lg). That is what fixes
+   the equipped-title proportions bug — the equipped slot renders at md
+   and sits level with the rank/streak/standing pills beside it.
+
+   Inline vars per plate: --tp-s (scale) --tp-a / --tp-b (rarity hues)
+   --tp-glow (0..1 intensity) --tp-name (streak/hours label size).
+   =================================================================== */
+
+.tp { --tp-s: 1; --tp-glow: 0.4; display: inline-flex; align-items: center; gap: 8px; vertical-align: middle; }
+
+/* Tier stamp — the rarity word, never the loudest thing on the plate. */
+.tp-stamp {
+  font: 600 8px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--tp-a) 62%, transparent);
 }
 
-.title-style-starter {
-  color: #9AA4B2;
-  text-shadow: 0 0 6px rgba(154,164,178,0.25);
+/* ── Starter — issued, muted, no glow. A tag, not a trophy. ─────────────── */
+.tp-starter {
+  display: inline-flex; align-items: center; gap: calc(7px * var(--tp-s));
+  padding: calc(5px * var(--tp-s)) calc(12px * var(--tp-s)) calc(5px * var(--tp-s)) calc(9px * var(--tp-s));
+  border-radius: calc(7px * var(--tp-s));
+  background: #0A0E16; border: 1px solid #1A2231; color: #727E92;
 }
-/* Delta — flat steel-blue, static glow, no animation. Solid and earned. */
-.title-style-delta {
-  color: #7FB4F5;
-  text-shadow: 0 0 calc(var(--title-glow-radius) * 0.6) rgba(59,130,246,0.55);
+.tp-starter .tp-name {
+  font-family: 'General Sans', sans-serif; font-weight: 500; line-height: 1;
+  font-size: calc(11px * var(--tp-s)); letter-spacing: 0.20em;
+  text-transform: uppercase; color: #8894A8; white-space: nowrap;
 }
-/* Phase — animated deep blue -> white-hot -> gold. No purple, ever. */
-.title-style-phase {
-  background: linear-gradient(90deg, #1D4ED8, #60A5FA, #FFFFFF, #FDE68A, #FBBF24, #FFFFFF, #1D4ED8);
-  background-size: 320% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  animation: title-phase-arc var(--title-gradient-duration) linear infinite,
-             title-phase-bloom 2.6s ease-in-out infinite;
-  filter: drop-shadow(0 0 8px rgba(96,165,250,0.55));
+
+/* ── Delta — machined steel plate, chamfered top-left / bottom-right.
+      The chamfer is the silhouette; the bevel is a vertical 180deg ramp
+      (diagonal gradients stay banned). ──────────────────────────────────── */
+.tp-delta-o {
+  --chf: calc(9px * var(--tp-s));
+  display: inline-block; padding: 1px;
+  background: linear-gradient(180deg, #38537A, #1B2A40);
+  clip-path: polygon(var(--chf) 0, 100% 0, 100% calc(100% - var(--chf)),
+                     calc(100% - var(--chf)) 100%, 0 100%, 0 var(--chf));
+  /* drop-shadow, not box-shadow — a clip-path clips box-shadow away. */
+  filter: drop-shadow(0 0 calc(10px * var(--tp-s) * var(--tp-glow)) rgba(59,130,246,0.75));
 }
-@keyframes title-phase-arc  { 0% { background-position: 0% 50%; } 100% { background-position: 320% 50%; } }
-@keyframes title-phase-bloom {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(96,165,250,0.45)); }
-  50%      { filter: drop-shadow(0 0 calc(var(--title-glow-radius)) rgba(251,191,36,0.65))
-                     drop-shadow(0 0 calc(var(--title-glow-radius) * 1.8) rgba(96,165,250,0.4)); }
+.tp-delta {
+  --chf: calc(8px * var(--tp-s));
+  display: inline-flex; align-items: stretch; background: #0C121C;
+  clip-path: polygon(var(--chf) 0, 100% 0, 100% calc(100% - var(--chf)),
+                     calc(100% - var(--chf)) 100%, 0 100%, 0 var(--chf));
 }
+.tp-delta-well {
+  display: flex; align-items: center; color: #4E8FDB;
+  padding: 0 calc(9px * var(--tp-s)) 0 calc(11px * var(--tp-s));
+  background: #101927; border-right: 1px solid #1E2E45;
+}
+.tp-delta .tp-name {
+  display: flex; align-items: center; white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; line-height: 1;
+  font-size: calc(12.5px * var(--tp-s)); letter-spacing: 0.13em;
+  text-transform: uppercase; color: #B4D2F7;
+  padding: calc(9px * var(--tp-s)) calc(10px * var(--tp-s)) calc(9px * var(--tp-s)) calc(11px * var(--tp-s));
+  text-shadow: 0 0 10px rgba(59,130,246,0.4);
+}
+.tp-delta .tp-tag {
+  align-self: center; padding-right: calc(11px * var(--tp-s));
+  font-family: 'JetBrains Mono', monospace; font-weight: 600; line-height: 1;
+  font-size: calc(8px * var(--tp-s)); letter-spacing: 0.18em;
+  text-transform: uppercase; color: #3A5478;
+}
+
+/* ── Phase — royal frame, filleted corners, solid gold. NO hue cycling:
+      one hue (#F4CE73), a breathing shadow, one sheen pass. ─────────────── */
+.tp-phase {
+  position: relative; display: inline-block; overflow: hidden;
+  padding: calc(3px * var(--tp-s)); border-radius: 3px; background: #080B12;
+  border: 1px solid rgba(251,191,36,0.30);
+  box-shadow: 0 0 calc(34px * var(--tp-s) * var(--tp-glow)) calc(-14px * var(--tp-s)) rgba(251,191,36,0.7);
+}
+.tp-phase-in {
+  position: relative; display: inline-flex; align-items: center;
+  gap: calc(11px * var(--tp-s));
+  padding: calc(8px * var(--tp-s)) calc(15px * var(--tp-s));
+  border-radius: 1px; border: 1px solid rgba(251,191,36,0.16);
+  background: radial-gradient(120% 180% at 50% 0%, rgba(251,191,36,0.08), transparent 70%);
+}
+.tp-phase-well {
+  display: flex; align-items: center; justify-content: center;
+  width: calc(26px * var(--tp-s)); height: calc(26px * var(--tp-s));
+  color: #F2C45A; border: 1px solid rgba(251,191,36,0.28);
+  transform: rotate(45deg); flex: none;
+}
+.tp-phase-well svg { transform: rotate(-45deg); }
+.tp-wing { font-size: calc(6px * var(--tp-s)); line-height: 1; color: rgba(251,191,36,0.5); }
+.tp-phase-name {
+  font-family: 'Bodoni Moda', serif; font-weight: 600; line-height: 1;
+  font-size: calc(20px * var(--tp-s)); letter-spacing: 0.045em;
+  color: #F4CE73; white-space: nowrap;
+  animation: goldbreathe 3.4s ease-in-out infinite;
+}
+@keyframes goldbreathe {
+  0%, 100% { text-shadow: 0 0 8px rgba(251,191,36,0.35); }
+  50%      { text-shadow: 0 0 16px rgba(251,191,36,0.7), 0 0 30px rgba(251,191,36,0.25); }
+}
+.tp-phase::after {
+  content: ''; position: absolute; inset: -40% -60%; pointer-events: none;
+  mix-blend-mode: screen;
+  background: linear-gradient(90deg, transparent 44%, rgba(255,244,214,0.30) 50%, transparent 56%);
+  transform: translateX(-120%); animation: tp-sheen 6s ease-in-out infinite;
+}
+@keyframes tp-sheen { 0%, 66% { transform: translateX(-120%); } 90%, 100% { transform: translateX(120%); } }
+.tp-fil { position: absolute; width: calc(7px * var(--tp-s)); height: calc(7px * var(--tp-s));
+  border: 1px solid rgba(251,191,36,0.6); }
+.tp-fil.tl { top: -1px; left: -1px;  border-right: 0; border-bottom: 0; }
+.tp-fil.tr { top: -1px; right: -1px; border-left: 0;  border-bottom: 0; }
+.tp-fil.bl { bottom: -1px; left: -1px;  border-right: 0; border-top: 0; }
+.tp-fil.br { bottom: -1px; right: -1px; border-left: 0;  border-top: 0; }
+
+/* ── Streak — flame silhouette, never a rectangle. The plate gains a lick
+      per rarity tier; motion is organic and continuous, never an impact.
+      Fire that hasn't gone out. ─────────────────────────────────────────── */
+.tp-streak, .tp-hours { display: inline-flex; align-items: center; gap: calc(10px * var(--tp-s)); }
+
+.streak-plate {
+  position: relative; flex: none;
+  width: calc(76px * var(--tp-s)); height: calc(76px * var(--tp-s));
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tp-a);
+  /* streak-breathe reads --bg/--bg2; bridge them to the rarity hues. */
+  --bg: var(--tp-a); --bg2: var(--tp-b);
+  background: radial-gradient(120% 140% at 50% 20%,
+    color-mix(in srgb, var(--tp-a) 26%, transparent), #0A0E16 72%);
+  /* drop-shadow follows the clipped silhouette; box-shadow would be cut off. */
+  filter: drop-shadow(0 0 calc(15px * var(--tp-s) * var(--tp-glow)) var(--tp-a));
+}
+.streak-plate-common    { clip-path: polygon(50% 0%, 78% 22%, 88% 55%, 68% 100%, 32% 100%, 12% 55%, 22% 22%); }
+.streak-plate-rare      { clip-path: polygon(50% 0%, 74% 14%, 92% 46%, 84% 78%, 62% 100%, 38% 100%, 16% 78%, 8% 46%, 26% 14%); }
+.streak-plate-epic      { clip-path: polygon(50% 0%, 66% 8%, 82% 10%, 94% 40%, 90% 68%, 70% 100%, 30% 100%, 10% 68%, 6% 40%, 18% 10%, 34% 8%); }
+.streak-plate-legendary { clip-path: polygon(50% 0%, 60% 6%, 72% 6%, 86% 24%, 96% 44%, 92% 70%, 74% 96%, 62% 100%, 38% 100%, 26% 96%, 8% 70%, 4% 44%, 14% 24%, 28% 6%, 40% 6%); }
+.streak-plate-mythic    { clip-path: polygon(50% 0%, 56% 4%, 66% 4%, 74% 12%, 84% 12%, 92% 28%, 98% 46%, 94% 66%, 96% 80%, 80% 96%, 66% 100%, 58% 96%, 42% 96%, 34% 100%, 20% 96%, 4% 80%, 6% 66%, 2% 46%, 8% 28%, 16% 12%, 26% 12%, 34% 4%, 44% 4%); }
+
+/* ── Hours — filling clock dial. Ring fill is literal to rarity; the sweep
+      is mechanical, slow and inevitable. Time passing, not an event
+      happening — the deliberate opposite of a box title's impact motion. ── */
+.clock-plate {
+  position: relative; flex: none; border-radius: 50%;
+  width: calc(76px * var(--tp-s)); height: calc(76px * var(--tp-s));
+  display: flex; align-items: center; justify-content: center;
+  background: #0A0E16; color: var(--tp-a);
+  border: 1px solid color-mix(in srgb, var(--tp-a) 27%, transparent);
+  box-shadow: 0 0 calc(28px * var(--tp-s) * var(--tp-glow)) calc(-8px * var(--tp-s)) var(--tp-a);
+}
+.clock-plate > svg.dial {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transform: rotate(-90deg); pointer-events: none;
+}
+.clock-plate > .clock-glyph { position: relative; z-index: 1; }
+@keyframes hours-second-hand { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.hours-sweep {
+  animation: hours-second-hand var(--sweep-duration, 6s) linear infinite;
+  transform-origin: 38px 38px;
+}
+
+/* Streak/hours names sit beside their plate, so they are sized by badge size
+   (--tp-name) rather than by plate scale. The two fonts are a second
+   silhouette cue: humanist grotesk for heat, monospace for machinery. */
+.tp-src-name { line-height: 1; white-space: nowrap; color: var(--tp-a); }
+.tp-streak-name {
+  font-family: 'General Sans', sans-serif; font-weight: 800;
+  font-size: var(--tp-name); letter-spacing: 0.10em; text-transform: uppercase;
+  text-shadow: 0 0 calc(10px * var(--tp-glow)) var(--tp-a);
+}
+.tp-hours-name {
+  font-family: 'JetBrains Mono', monospace; font-weight: 600;
+  font-size: calc(var(--tp-name) * 0.94); letter-spacing: 0.14em; text-transform: uppercase;
+  text-shadow: 0 0 calc(8px * var(--tp-glow)) var(--tp-a);
+}
+
+/* ===================================================================
+   TITLE SIGILS — one animated outline mark per box title.
+   Markup lives in data/titleSigils.js; the class on the <svg> selects
+   the loop. Hard rule: a sigil never renders blank at any frame — if a
+   stroke animates fully out, something static stays behind it.
+
+   transform-box is view-box (NOT fill-box): every `transform-origin:
+   12px 12px` in the sigil markup means "the centre of the 24×24 design
+   space". Under fill-box those px would be measured from each element's
+   own bounding box, which throws rotations and orbits off-canvas. The
+   few marks that scale about themselves get an explicit origin below.
+   =================================================================== */
+svg.sg * { transform-box: view-box; }
+@media (prefers-reduced-motion: reduce) { svg.sg * { animation: none !important; } }
+
+/* Delta */
+.sg-enforcer .a{animation:sg-enf 2.6s ease-in-out infinite}
+.sg-enforcer .b{animation:sg-enf 2.6s ease-in-out infinite .32s}
+@keyframes sg-enf{0%,60%,100%{opacity:.35;transform:translateY(1.2px)}
+  25%{opacity:1;transform:translateY(-1.2px)}}
+.sg-vandal .c{animation:sg-crack 3.2s ease-out infinite}
+.sg-vandal .c2{animation:sg-crack 3.2s ease-out infinite .5s}
+@keyframes sg-crack{0%{stroke-dashoffset:10}30%,80%{stroke-dashoffset:0}
+  92%,100%{stroke-dashoffset:10;opacity:0}}
+.sg-hollow .o{animation:sg-hollowpulse 2.8s ease-in-out infinite;transform-origin:12px 12px}
+.sg-hollow .v{animation:sg-hollowvoid 5.5s ease-in-out infinite}
+@keyframes sg-hollowpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.94)}}
+@keyframes sg-hollowvoid{0%,100%{opacity:.2;transform:rotate(0) scale(.7)}
+  50%{opacity:1;transform:rotate(90deg) scale(1)}}
+.sg-menace .dr{animation:sg-drip 2.9s cubic-bezier(.5,0,.9,.4) infinite;transform-origin:12px 19px}
+@keyframes sg-drip{0%,45%{opacity:0;transform:translateY(-2px) scale(.5)}
+  58%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(5px) scale(.8)}}
+.sg-phantom .gh{animation:sg-float 3.4s ease-in-out infinite}
+.sg-phantom .bd{animation:sg-hem 3.4s ease-in-out infinite}
+.sg-phantom .ec{animation:sg-echo 3.4s ease-in-out infinite;transform-origin:12px 13px}
+.sg-phantom .ey{animation:sg-blink 3.4s steps(1,end) infinite}
+@keyframes sg-float{0%,100%{transform:translateY(-.9px)}50%{transform:translateY(.9px)}}
+@keyframes sg-hem{0%,100%{d:path("M4.5 20.5 V10.5 A7.5 7.5 0 0 1 19.5 10.5 V20.5 L17 18.4 L14.5 20.5 L12 18.4 L9.5 20.5 L7 18.4 Z")}
+  50%{d:path("M4.5 20.5 V10.5 A7.5 7.5 0 0 1 19.5 10.5 V18.4 L17 20.5 L14.5 18.4 L12 20.5 L9.5 18.4 L7 20.5 Z")}}
+@keyframes sg-echo{0%,70%{opacity:0;transform:translateY(0) scale(1)}
+  85%{opacity:.32;transform:translateY(2.2px) scale(1.06)}
+  100%{opacity:0;transform:translateY(3.4px) scale(1.1)}}
+@keyframes sg-blink{0%,92%{opacity:1}93%,96%{opacity:.1}97%,100%{opacity:1}}
+.sg-savage .h1{animation:sg-swipe 2.4s ease-in infinite}
+.sg-savage .h2{animation:sg-swipe 2.4s ease-in infinite .09s}
+.sg-savage .h3{animation:sg-swipe 2.4s ease-in infinite .18s}
+@keyframes sg-swipe{0%{stroke-dashoffset:26;opacity:0}12%{opacity:.9}
+  46%{stroke-dashoffset:-8;opacity:0}100%{stroke-dashoffset:-8;opacity:0}}
+.sg-grinder .g{animation:sg-grind 4s cubic-bezier(.35,0,.25,1) infinite}
+@keyframes sg-grind{0%{transform:rotate(0)}45%,55%{transform:rotate(45deg)}100%{transform:rotate(90deg)}}
+.sg-heavy .an{animation:sg-thud 2.8s cubic-bezier(.7,0,.3,1) infinite}
+.sg-heavy .sh{animation:sg-shock 2.8s ease-out infinite;transform-origin:12px 23px}
+@keyframes sg-thud{0%,55%{transform:translateY(-1.4px)}64%{transform:translateY(.7px)}
+  70%{transform:translateY(0)}100%{transform:translateY(-1.4px)}}
+@keyframes sg-shock{0%,58%{opacity:0;transform:scale(.6)}66%{opacity:1;transform:scale(1)}
+  82%,100%{opacity:0;transform:scale(1.3)}}
+.sg-stray .tr{animation:sg-dash 2.2s linear infinite}
+.sg-stray .ar{animation:sg-stray 3.4s ease-in-out infinite}
+@keyframes sg-dash{to{stroke-dashoffset:-11}}
+@keyframes sg-stray{0%,100%{transform:translate(-1.2px,1.2px)}50%{transform:translate(1.2px,-1.2px)}}
+.sg-rebel .l{animation:sg-snapl 3s cubic-bezier(.6,0,.2,1) infinite}
+.sg-rebel .r{animation:sg-snapr 3s cubic-bezier(.6,0,.2,1) infinite}
+.sg-rebel .sp{animation:sg-snapk 3s linear infinite}
+@keyframes sg-snapl{0%,40%{transform:translate(.9px,.9px)}52%{transform:translate(-1.6px,-1.6px)}100%{transform:translate(.9px,.9px)}}
+@keyframes sg-snapr{0%,40%{transform:translate(-.9px,-.9px)}52%{transform:translate(1.6px,1.6px)}100%{transform:translate(-.9px,-.9px)}}
+@keyframes sg-snapk{0%,44%{opacity:0}50%{opacity:1}60%,100%{opacity:0}}
+.sg-drifter .nd{animation:sg-wob 5s ease-in-out infinite}
+.sg-drifter .w1{animation:sg-wind 3s ease-in-out infinite}
+.sg-drifter .w2{animation:sg-wind 3s ease-in-out infinite 1.5s}
+@keyframes sg-wob{0%,100%{transform:rotate(-13deg)}35%{transform:rotate(9deg)}65%{transform:rotate(-4deg)}}
+@keyframes sg-wind{0%,100%{opacity:.25;transform:translateX(-1px)}50%{opacity:.9;transform:translateX(1px)}}
+.sg-grit .gl{animation:sg-glint 3.6s ease-in-out infinite;stroke-dasharray:5 30}
+@keyframes sg-glint{0%,55%{opacity:0;stroke-dashoffset:24}
+  70%{opacity:.85}85%,100%{opacity:0;stroke-dashoffset:-14}}
+.sg-zero .sl{animation:sg-strike 2.6s cubic-bezier(.2,.8,.3,1) infinite}
+@keyframes sg-strike{0%{stroke-dashoffset:16}18%,74%{stroke-dashoffset:0}
+  88%,100%{stroke-dashoffset:-16}}
+
+/* Phase */
+.sg-god .ha{animation:sg-orbit 4.2s linear infinite}
+.sg-god .cr{animation:sg-reign 3s ease-in-out infinite}
+.sg-god .hr{animation:sg-hrb 3s ease-in-out infinite;transform-origin:12px 2.6px}
+@keyframes sg-orbit{to{transform:rotate(360deg)}}
+@keyframes sg-reign{0%,100%{opacity:.72}50%{opacity:1}}
+@keyframes sg-hrb{0%,100%{opacity:.28;transform:scaleX(.86)}50%{opacity:.75;transform:scaleX(1.12)}}
+.sg-antihero .st{animation:sg-invert 5s cubic-bezier(.6,0,.3,1) infinite}
+.sg-antihero .ct{animation:sg-cut 5s ease-in-out infinite}
+@keyframes sg-invert{0%,38%{transform:rotateX(0)}50%,88%{transform:rotateX(180deg)}100%{transform:rotateX(0)}}
+@keyframes sg-cut{0%,30%{opacity:.35;transform:scaleX(.7)}44%{opacity:1;transform:scaleX(1)}
+  60%,100%{opacity:.35;transform:scaleX(.7)}}
+.sg-anomaly .q1{animation:sg-gl1 2.4s steps(1,end) infinite}
+.sg-anomaly .q2{animation:sg-gl2 2.4s steps(1,end) infinite}
+@keyframes sg-gl1{0%,62%{transform:translate(0,0);opacity:1}
+  66%{transform:translate(-1.6px,1px);opacity:.55}70%{transform:translate(1.2px,-.8px)}
+  74%,100%{transform:translate(0,0);opacity:1}}
+@keyframes sg-gl2{0%,64%{transform:translate(0,0)}
+  68%{transform:translate(1.8px,-1.2px);opacity:.5}72%{transform:translate(-1px,.6px)}
+  76%,100%{transform:translate(0,0);opacity:1}}
+.sg-havoc .ry{animation:sg-burst 2.2s ease-in-out infinite}
+.sg-havoc .co{animation:sg-core 2.2s ease-in-out infinite;transform-origin:12px 12px}
+/* Peak scale is 1.0, not 1.08: rotating 45deg already pushes the ray tips
+   toward the corners, and 1.08 clipped them against the viewBox at max burst. */
+@keyframes sg-burst{0%,100%{transform:rotate(0) scale(.9);opacity:.6}
+  50%{transform:rotate(45deg) scale(1);opacity:1}}
+@keyframes sg-core{0%,100%{transform:scale(.82)}50%{transform:scale(1.15)}}
+.sg-despair .dp{animation:sg-sink 3.2s cubic-bezier(.5,0,.7,.4) infinite}
+@keyframes sg-sink{0%{opacity:0;transform:translateY(-3.5px)}
+  22%{opacity:1}70%{opacity:1;transform:translateY(0)}
+  88%,100%{opacity:0;transform:translateY(2.5px)}}
+.sg-malice .gm{animation:sg-gleam 3s ease-in-out infinite}
+@keyframes sg-gleam{0%,50%{opacity:0;transform:translateY(-3px)}
+  64%{opacity:.95}80%,100%{opacity:0;transform:translateY(6px)}}
+.sg-wrath .bo{animation:sg-strobe 2.4s steps(1,end) infinite}
+.sg-wrath .sk{animation:sg-sparks 2.4s steps(1,end) infinite;transform-origin:12px 11px}
+@keyframes sg-strobe{0%,58%{opacity:.5}60%{opacity:1}63%{opacity:.35}
+  66%{opacity:1}72%{opacity:.9}100%{opacity:.5}}
+@keyframes sg-sparks{0%,58%{opacity:0;transform:scale(.6)}62%{opacity:1;transform:scale(1)}
+  78%,100%{opacity:0;transform:scale(1.25)}}
+.sg-exec .ax{animation:sg-swing 3.4s cubic-bezier(.5,0,.4,1) infinite}
+@keyframes sg-swing{0%,55%{transform:rotate(-13deg)}70%{transform:rotate(7deg)}
+  80%{transform:rotate(-3deg)}100%{transform:rotate(-13deg)}}
+.sg-nightfall .mn{animation:sg-descend 6s ease-in-out infinite}
+.sg-nightfall .s1{animation:sg-twinkle 2.6s ease-in-out infinite;transform-origin:5.5px 5px}
+.sg-nightfall .s2{animation:sg-twinkle 2.6s ease-in-out infinite .9s;transform-origin:20px 8.5px}
+.sg-nightfall .s3{animation:sg-twinkle 2.6s ease-in-out infinite 1.7s;transform-origin:8px 15px}
+@keyframes sg-descend{0%,100%{transform:translateY(-1.3px)}50%{transform:translateY(1.3px)}}
+@keyframes sg-twinkle{0%,100%{opacity:.15;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+.sg-vengeance .b1{animation:sg-sc1 3s cubic-bezier(.5,0,.3,1) infinite}
+.sg-vengeance .b2{animation:sg-sc2 3s cubic-bezier(.5,0,.3,1) infinite}
+@keyframes sg-sc1{0%,100%{transform:rotate(-9deg)}45%{transform:rotate(4deg)}}
+@keyframes sg-sc2{0%,100%{transform:rotate(9deg)}45%{transform:rotate(-4deg)}}
+.sg-untouchable .o1{animation:sg-ring 3.4s ease-out infinite;transform-origin:12px 12px}
+.sg-untouchable .o2{animation:sg-ring 3.4s ease-out infinite 1.7s;transform-origin:12px 12px}
+@keyframes sg-ring{0%{opacity:.85;transform:scale(.72) rotate(0)}
+  100%{opacity:0;transform:scale(1.16) rotate(16deg)}}
+.sg-cataclysm .t1{animation:sg-trail 2.8s ease-in infinite}
+.sg-cataclysm .t2{animation:sg-trail 2.8s ease-in infinite .12s}
+.sg-cataclysm .rk{animation:sg-fall 2.8s ease-in infinite;transform-origin:13px 12.5px}
+.sg-cataclysm .im{animation:sg-impact 2.8s ease-out infinite;transform-origin:12px 18.75px}
+@keyframes sg-trail{0%{stroke-dashoffset:10;opacity:0}20%{opacity:1}
+  62%{stroke-dashoffset:0;opacity:.9}75%,100%{opacity:0}}
+@keyframes sg-fall{0%{transform:translate(4px,-5px) scale(.7);opacity:0}
+  22%{opacity:1}66%{transform:translate(0,0) scale(1)}
+  78%{transform:translate(-1px,3px) scale(.9);opacity:0}100%{opacity:0}}
+@keyframes sg-impact{0%,66%{opacity:0;transform:scale(.5)}74%{opacity:1;transform:scale(1)}
+  92%,100%{opacity:0;transform:scale(1.4)}}
+.sg-ruin .pt{animation:sg-crumble 4.4s ease-in-out infinite}
+.sg-ruin .pb{animation:sg-tilt 4.4s ease-in-out infinite;transform-origin:15px 9px}
+.sg-ruin .db{animation:sg-fallaway 4.4s ease-in infinite;transform-origin:15.5px 12.5px}
+@keyframes sg-crumble{0%,100%{transform:translateX(0)}50%{transform:translateX(-.7px)}}
+@keyframes sg-tilt{0%,60%{transform:rotate(0)}80%{transform:rotate(7deg)}100%{transform:rotate(0)}}
+@keyframes sg-fallaway{0%,55%{opacity:1;transform:translate(0,0) rotate(0)}
+  85%{opacity:0;transform:translate(1.5px,4px) rotate(28deg)}100%{opacity:0}}
+
+/* Shared — appear in more than one box tier. */
+.sg-overkill .v1{animation:sg-cas 1.9s ease-in-out infinite}
+.sg-overkill .v2{animation:sg-cas 1.9s ease-in-out infinite .16s}
+.sg-overkill .x{animation:sg-xp 1.9s ease-in-out infinite .32s;transform-origin:19.5px 12.5px}
+@keyframes sg-cas{0%,70%,100%{opacity:.35;transform:translateX(-1px)}
+  30%{opacity:1;transform:translateX(1px)}}
+@keyframes sg-xp{0%,70%,100%{opacity:.4;transform:scale(.85)}30%{opacity:1;transform:scale(1.12)}}
+.sg-vermin .tl{animation:sg-whip 2.1s ease-in-out infinite;transform-origin:16px 13.5px}
+@keyframes sg-whip{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(11deg)}}
+.sg-relentless .inf{animation:sg-loop 3s linear infinite}
+.sg-relentless .ar{animation:sg-nudge 3s ease-in-out infinite}
+@keyframes sg-loop{to{stroke-dashoffset:-48}}
+@keyframes sg-nudge{0%,100%{transform:translateX(-.8px);opacity:.5}50%{transform:translateX(.8px);opacity:1}}
+
+/* Starter */
+.sg-sprout .lf{animation:sg-sway 4s ease-in-out infinite;transform-origin:12px 11px}
+.sg-sprout .rf{animation:sg-sway 4s ease-in-out infinite 2s;transform-origin:12px 12.5px}
+@keyframes sg-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.sg-cinder .cd{animation:sg-smoulder 3s ease-in-out infinite;transform-origin:12px 16px}
+@keyframes sg-smoulder{0%,100%{opacity:.55;transform:scaleY(.95)}50%{opacity:1;transform:scaleY(1.04)}}
+.sg-pace .l1{animation:sg-step 1.8s ease-in-out infinite}
+.sg-pace .l2{animation:sg-step 1.8s ease-in-out infinite .12s}
+.sg-pace .l3{animation:sg-step 1.8s ease-in-out infinite .24s}
+@keyframes sg-step{0%,100%{transform:translateX(-1.4px);opacity:.45}50%{transform:translateX(1.4px);opacity:1}}
+.sg-drift .w1{animation:sg-swell 4.2s ease-in-out infinite}
+.sg-drift .w2{animation:sg-swell 4.2s ease-in-out infinite 2.1s}
+@keyframes sg-swell{0%,100%{transform:translateX(-1.6px)}50%{transform:translateX(1.6px)}}
+.sg-spark .sp{animation:sg-twink 2.4s ease-in-out infinite;transform-origin:12px 11.5px}
+@keyframes sg-twink{0%,100%{transform:scale(.88) rotate(0);opacity:.55}
+  50%{transform:scale(1.08) rotate(18deg);opacity:1}}
 
 /* Streak hero flame — heat scales with the tier. */
 @keyframes streak-breathe {
@@ -838,6 +1163,11 @@ input:focus, textarea:focus, select:focus {
   .streak-flame-alive,
   .profile-ambient,
   .avatar-ring-alive,
-  .title-style-phase { animation: none !important; }
-  .title-style-phase { background-position: 40% 50%; }
+  .tp-phase-name,
+  .tp-phase::after,
+  .hours-sweep { animation: none !important; }
+  /* Motion off, meaning intact: the Phase sheen parks off-frame, the gold
+     keeps a static bloom, and the dial keeps its rarity fill in place. */
+  .tp-phase::after { transform: translateX(-120%); }
+  .tp-phase-name { text-shadow: 0 0 12px rgba(251,191,36,0.5); }
 }

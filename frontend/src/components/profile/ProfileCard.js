@@ -2,9 +2,10 @@
 // Discord-style popout. Everything it renders comes from get_public_profile —
 // there are no placeholder badges, and every number is live at fetch time.
 
-import { Flame, Target, CalendarCheck, Sparkles, ArrowUpRight, Clock } from 'lucide-react';
+import { Target, CalendarCheck, Sparkles, ArrowUpRight, Clock } from 'lucide-react';
 import { PhaseBanner } from '../banners/PhaseBanners';
 import TierEmblem from '../TierEmblem';
+import { FlameGlyph } from './Sigil';
 import { rankInfo } from '../../data/levels';
 import { tierNumByName } from '../../data/leaderboardTiers';
 import { streakTier, levelBadge, alpha, titleStyle, styleFromRarity } from '../../data/profileIdentity';
@@ -114,12 +115,18 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
           </h1>
           <p className="text-sm text-zinc-500 mt-0.5">@{profile.username}</p>
           {profile.equipped_title_name && (
+            {/* Equipped slot renders at md (~31px tall) so it sits level with
+                the rank/streak/standing pills in the row below — it used to
+                render at the collection's showcase scale (214×42px), over 2×
+                its neighbours. The collection grid keeps the showcase size. */}
             <div className="mt-2.5" data-testid="profile-equipped-title">
               <TitleBadge
                 name={profile.equipped_title_name}
+                sourceStyle={profile.equipped_title_style}
+                rarityTier={profile.equipped_title_rarity}
                 style={titleKey}
                 rarity={profile.equipped_title_rarity}
-                size={compact ? 'md' : 'lg'}
+                size={compact ? 'sm' : 'md'}
                 showTier={!compact}
               />
             </div>
@@ -173,10 +180,11 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
             '--bg': s.a, '--bg2': s.b,
           }}
           data-testid="streak-hero">
-          <Flame
-            className={`flex-shrink-0 ${compact ? 'w-10 h-10' : 'w-14 h-14'} ${s.glow >= 0.55 ? 'streak-flame-alive' : ''}`}
+          <FlameGlyph
+            stage={s.flame}
+            size={compact ? 40 : 56}
+            className={`flex-shrink-0 ${s.glow >= 0.55 ? 'streak-flame-alive' : ''}`}
             style={{ color: s.a, filter: s.alive ? `drop-shadow(0 0 ${Math.round(18 * s.glow)}px ${s.a})` : 'none' }}
-            strokeWidth={2}
           />
           <div className="min-w-0">
             <p className={`font-black text-white font-['Satoshi'] leading-none ${compact ? 'text-3xl' : 'text-5xl sm:text-6xl'}`}
@@ -198,7 +206,10 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
         {/* Secondary stats — quiet on purpose, blue iconography only. */}
         <div className="grid grid-cols-3 gap-2.5 mb-4" data-testid="profile-stats">
           <Stat icon={<Target className="w-4 h-4 text-[#4D8EF0]" strokeWidth={2} />} label="Total XP" value={(profile.total_xp_all_time || 0).toLocaleString()} />
-          <Stat icon={<Flame className="w-4 h-4 text-[#4D8EF0]" strokeWidth={2} />} label="Best Streak" value={`${profile.longest_streak_ever || 0}`} />
+          <Stat
+            icon={<FlameGlyph stage={streakTier(profile.longest_streak_ever).flame} size={16} style={{ color: '#4D8EF0' }} />}
+            label="Best Streak" value={`${profile.longest_streak_ever || 0}`}
+          />
           <Stat icon={<CalendarCheck className="w-4 h-4 text-[#4D8EF0]" strokeWidth={2} />} label="Habits Done" value={(profile.total_habits_completed || 0).toLocaleString()} />
         </div>
 
@@ -231,7 +242,8 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
             />
             <div className="flex flex-wrap gap-2">
               {(compact ? ownedTitles.slice(0, 6) : ownedTitles).map(t => (
-                <TitleBadge key={t.key} name={t.name} style={t.style} rarity={t.rarity} size="sm" />
+                <TitleBadge key={t.key} name={t.name} sourceStyle={t.style} rarityTier={t.rarity}
+                  style={t.style} rarity={t.rarity} size={compact ? 'md' : 'lg'} />
               ))}
               {compact && ownedTitles.length > 6 && (
                 <span className="text-[11px] font-bold text-zinc-600 self-center">+{ownedTitles.length - 6} more</span>

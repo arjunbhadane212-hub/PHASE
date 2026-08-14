@@ -4,9 +4,12 @@
 // Nothing here hardcodes "this badge is special" — the data decides, so a
 // demotion or a broken streak genuinely cools the pixel output on next render.
 
-import { Flame, Trophy, Globe2, Crown, ChevronsUp, ChevronsDown, Minus } from 'lucide-react';
+import { Trophy, Globe2, Crown, ChevronsUp, ChevronsDown, Minus } from 'lucide-react';
 import TierEmblem from '../TierEmblem';
-import { streakTier, levelBadge, standingBadge, globalBadge, titleStyle, styleFromRarity } from '../../data/profileIdentity';
+import { FlameGlyph } from './Sigil';
+import TitlePlate from './TitlePlate';
+import { streakTier, levelBadge, standingBadge, globalBadge, titleStyle, styleFromRarity, normalizeRarity } from '../../data/profileIdentity';
+import { RARITY_GLOW, STREAK_RARITY_PLACEHOLDER, HOURS_RARITY_PLACEHOLDER } from '../../data/titleRarityPlaceholder';
 
 export default function FlexBadge({ spec, icon, label, value, sub, size = 'md', className = '', style, title, ...rest }) {
   const cls = [
@@ -58,7 +61,11 @@ export function StreakBadge({ days, size = 'md' }) {
     <FlexBadge
       spec={s} size={size}
       title={s.alive ? `${s.days}-day streak · ${s.label} tier` : 'No active streak'}
-      icon={<Flame className={`flexbadge__icon w-3.5 h-3.5 ${s.alive && s.glow >= 0.8 ? 'streak-flame-alive' : ''}`} strokeWidth={2} />}
+      icon={<FlameGlyph
+        stage={s.flame}
+        size={14}
+        className={`flexbadge__icon ${s.alive && s.glow >= 0.8 ? 'streak-flame-alive' : ''}`}
+      />}
       label={s.alive ? `${s.days}` : '0'}
       value={s.days === 1 ? 'DAY' : 'DAYS'}
       data-testid="badge-streak"
@@ -124,26 +131,46 @@ export function GlobalRankBadge({ rank, total, size = 'md' }) {
   );
 }
 
-/* ── Title ───────────────────────────────────────────────────────────────── */
-export function TitleBadge({ name, style, rarity, size = 'md', showTier = false }) {
+/* ── Title ───────────────────────────────────────────────────────────────────
+   Two independent axes, deliberately kept apart:
+
+     sourceStyle → the plate FORM  (starter | delta | phase | streak | hours)
+     rarityTier  → the plate GLOW  (common | rare | epic | legendary | mythic)
+
+   Same rarity + different source must differ in shape. Same source + different
+   rarity must differ in intensity. `style`/`rarity` are the legacy prop names
+   from the box-title rows and still work unchanged. */
+export function TitleBadge({ name, sourceStyle, rarityTier, style, rarity, size = 'md', showTier = false }) {
   if (!name) return null;
-  const key = style || styleFromRarity(rarity);
-  const t = titleStyle(key);
-  const px = size === 'lg' ? 'text-lg px-4 py-1.5' : size === 'sm' ? 'text-[11px] px-2.5 py-1' : 'text-sm px-3 py-1';
+  const source = sourceStyle || style || inferSource(name) || styleFromRarity(rarity);
+  const tier = normalizeRarity(rarityTier) || normalizeRarity(rarity) || inferRarity(name) || defaultTierFor(source);
+  const spec = { ...titleStyle(source), ...(RARITY_GLOW[tier] || {}) };
+
   return (
-    <span
-      className="inline-flex items-center gap-2 rounded-full"
-      style={{
-        background: '#0C111B',
-        border: `1px solid ${t.a}44`,
-        boxShadow: `0 0 ${Math.round(22 * t.glow)}px -6px ${t.a}, inset 0 1px 0 rgba(255,255,255,0.06)`,
-      }}
-      data-testid="badge-title"
-    >
-      <span className={`font-black tracking-wide ${t.className} ${px}`}>{name}</span>
-      {showTier && (
-        <span className="text-[9px] font-extrabold tracking-[0.14em] pr-3 text-white/35">{t.label.toUpperCase()}</span>
-      )}
+    <span className="inline-flex align-middle" data-testid="badge-title" title={`${name} · ${titleStyle(source).label} · ${tier}`}>
+      <TitlePlate name={name} source={source} tier={tier} spec={spec} size={size} showTier={showTier} />
     </span>
   );
 }
+
+/* ── PLACEHOLDER BLOCK — Prompt 2 deletes this and the import at the top ─────
+   Streak- and hours-source titles have no rows in shop_items yet, so there is
+   nothing live to read a source or a rarity from. Until Prompt 2 inserts them
+   and threads shop_items.rarity_tier through get_public_profile, these two
+   lookups let the plate systems render against the real confirmed names. Every
+   call site already passes sourceStyle/rarityTier straight through when it has
+   them, so wiring live data is a deletion, not a rewrite. */
+function inferSource(name) {
+  if (STREAK_RARITY_PLACEHOLDER[name]) return 'streak';
+  if (HOURS_RARITY_PLACEHOLDER[name]) return 'hours';
+  return null;
+}
+
+function inferRarity(name) {
+  return STREAK_RARITY_PLACEHOLDER[name] || HOURS_RARITY_PLACEHOLDER[name] || null;
+}
+
+function defaultTierFor(source) {
+  return source === 'phase' ? 'mythic' : source === 'delta' ? 'rare' : 'common';
+}
+/* ── end placeholder block ─────────────────────────────────────────────────*/
