@@ -1,12 +1,22 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Users, BarChart3, ShoppingBag, Gem, Zap, Flame, Search, Edit2, Trash2, ChevronDown, ChevronUp, RefreshCw, Lock, ArrowLeft, Trophy, Shield } from 'lucide-react';
+import { Users, BarChart3, Gem, Zap, Flame, Search, Edit2, Ban, ShieldCheck, ChevronDown, ChevronUp, Lock, ArrowLeft, Trophy } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { supabase } from '../lib/supabaseClient';
 
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
+// Admin dashboard talks directly to Supabase via a handful of password-gated
+// RPCs (see supabase/migrations/20260814000000_admin_dashboard_supabase.sql)
+// instead of the retired Mongo/FastAPI backend. The password is sent as the
+// first argument on every call; Postgres checks it (with a 10-attempt
+// lockout) before touching any data.
+
+async function callAdmin(fn, secret, args = {}) {
+  const { data, error } = await supabase.rpc(fn, { p_password: secret, ...args });
+  if (error) throw error;
+  return data;
+}
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -17,18 +27,18 @@ export default function AdminPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${API}/admin/auth`, { secret });
+      await callAdmin('admin_authenticate', secret);
       localStorage.setItem('admin_secret', secret);
       setAuthed(true);
-    } catch {
-      toast.error('Invalid admin secret');
+    } catch (err) {
+      toast.error(err.message || 'Invalid admin password');
     } finally { setLoading(false); }
   };
 
   useEffect(() => {
     const saved = localStorage.getItem('admin_secret');
     if (saved) {
-      axios.post(`${API}/admin/auth`, { secret: saved })
+      callAdmin('admin_authenticate', saved)
         .then(() => { setSecret(saved); setAuthed(true); })
         .catch(() => localStorage.removeItem('admin_secret'));
     }
@@ -43,7 +53,7 @@ export default function AdminPage() {
         </div>
         <Input
           type="password"
-          placeholder="Admin Secret"
+          placeholder="Admin Password"
           value={secret}
           onChange={e => setSecret(e.target.value)}
           className="mb-4 bg-[#101828] border-[#1A2438] text-white"
@@ -61,12 +71,10 @@ export default function AdminPage() {
 
 function AdminDashboard({ secret }) {
   const [tab, setTab] = useState('overview');
-  const headers = useMemo(() => ({ 'X-Admin-Secret': secret }), [secret]);
 
   const TABS = [
     { id: 'overview', icon: BarChart3, label: 'Overview' },
     { id: 'users', icon: Users, label: 'Users' },
-    { id: 'shop', icon: ShoppingBag, label: 'Shop' },
   ];
 
   return (
@@ -90,24 +98,23 @@ function AdminDashboard({ secret }) {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        {tab === 'overview' && <OverviewTab headers={headers} />}
-        {tab === 'users' && <UsersTab headers={headers} />}
-        {tab === 'shop' && <ShopTab headers={headers} />}
+        {tab === 'overview' && <OverviewTab secret={secret} />}
+        {tab === 'users' && <UsersTab secret={secret} />}
       </div>
     </div>
   );
 }
 
-function OverviewTab({ headers }) {
+function OverviewTab({ secret }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${API}/admin/stats`, { headers })
-      .then(r => setStats(r.data))
+    callAdmin('admin_stats', secret)
+      .then(setStats)
       .catch(() => toast.error('Failed to load stats'))
       .finally(() => setLoading(false));
-  }, [headers]);
+  }, [secret]);
 
   if (loading) return <Loader />;
   if (!stats) return <p className="text-zinc-500">Failed to load</p>;
@@ -119,7 +126,7 @@ function OverviewTab({ headers }) {
         <StatCard icon={<Users className="w-5 h-5 text-[#4D8EF0]" />} value={stats.total_users} label="Total Users" />
         <StatCard icon={<Zap className="w-5 h-5 text-amber-400" />} value={stats.active_today} label="Active Today" />
         <StatCard icon={<BarChart3 className="w-5 h-5 text-emerald-400" />} value={stats.total_habits} label="Total Habits" />
-        <StatCard icon={<Flame className="w-5 h-5 text-orange-400" />} value={stats.total_completions} label="Completions" />
+        <StatCard icon={<Ban className="w-5 h-5 text-red-400" />} value={stats.banned_users} label="Banned" />
       </div>
 
       {/* Leaderboards */}
@@ -132,20 +139,21 @@ function OverviewTab({ headers }) {
   );
 }
 
-function UsersTab({ headers }) {
+function UsersTab({ secret }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [editUser, setEditUser] = useState(null);
+  const [busyId, setBusyId] = useState(null);
 
   const fetchUsers = useCallback(async (q = '') => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`${API}/admin/users?q=${q}`, { headers });
-      setUsers(data.users || []);
+      const data = await callAdmin('admin_list_users', secret, { p_query: q });
+      setUsers(data || []);
     } catch { toast.error('Failed to load users'); }
     finally { setLoading(false); }
-  }, [headers]);
+  }, [secret]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -154,13 +162,31 @@ function UsersTab({ headers }) {
     fetchUsers(search);
   };
 
-  const handleDelete = async (email) => {
-    if (!window.confirm(`Delete user ${email}? This cannot be undone.`)) return;
+  // One-click "give somebody gems" — no need to open the full edit modal.
+  const handleQuickGrant = async (user, amount) => {
+    setBusyId(user.id);
     try {
-      await axios.delete(`${API}/admin/users/${encodeURIComponent(email)}`, { headers });
-      toast.success(`Deleted ${email}`);
-      fetchUsers(search);
-    } catch { toast.error('Delete failed'); }
+      const result = await callAdmin('admin_grant_gems', secret, { p_user_id: user.id, p_amount: amount });
+      toast.success(`${amount > 0 ? 'Granted' : 'Removed'} ${Math.abs(amount)} gems — ${user.username || user.email} now has ${result.gems}`);
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, gems: result.gems } : u));
+    } catch (err) { toast.error(err.message || 'Grant failed'); }
+    finally { setBusyId(null); }
+  };
+
+  // One-click ban / unban — "gone from the app" (blocks login via Supabase
+  // Auth, not just an in-app flag).
+  const handleToggleBan = async (user) => {
+    const banning = !user.banned_at;
+    if (!window.confirm(banning
+      ? `Ban ${user.email}? They will be signed out and unable to log back in.`
+      : `Unban ${user.email}? They will be able to log in again.`)) return;
+    setBusyId(user.id);
+    try {
+      await callAdmin('admin_ban_user', secret, { p_user_id: user.id, p_banned: banning });
+      toast.success(banning ? `Banned ${user.email}` : `Unbanned ${user.email}`);
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, banned_at: banning ? new Date().toISOString() : null } : u));
+    } catch (err) { toast.error(err.message || 'Ban failed'); }
+    finally { setBusyId(null); }
   };
 
   return (
@@ -184,7 +210,14 @@ function UsersTab({ headers }) {
         <div className="space-y-2">
           {users.length === 0 && <p className="text-sm text-zinc-500 text-center py-8">No users found</p>}
           {users.map(u => (
-            <UserRow key={u.email} user={u} onEdit={() => setEditUser(u)} onDelete={() => handleDelete(u.email)} />
+            <UserRow
+              key={u.id}
+              user={u}
+              busy={busyId === u.id}
+              onEdit={() => setEditUser(u)}
+              onQuickGrant={(amount) => handleQuickGrant(u, amount)}
+              onToggleBan={() => handleToggleBan(u)}
+            />
           ))}
         </div>
       )}
@@ -193,7 +226,7 @@ function UsersTab({ headers }) {
       {editUser && (
         <EditUserModal
           user={editUser}
-          headers={headers}
+          secret={secret}
           onClose={() => setEditUser(null)}
           onSaved={() => { setEditUser(null); fetchUsers(search); }}
         />
@@ -202,73 +235,89 @@ function UsersTab({ headers }) {
   );
 }
 
-function UserRow({ user, onEdit, onDelete }) {
+function UserRow({ user, busy, onEdit, onQuickGrant, onToggleBan }) {
+  const [grantAmount, setGrantAmount] = useState('50');
+  const banned = !!user.banned_at;
+
   return (
-    <div className="p-3 rounded-xl bg-[#0C1220] border border-[#1A2438] flex items-center gap-3" data-testid={`user-row-${user.email}`}>
+    <div className={`p-3 rounded-xl bg-[#0C1220] border flex flex-wrap items-center gap-3 ${banned ? 'border-red-900/60' : 'border-[#1A2438]'}`} data-testid={`user-row-${user.email}`}>
       <div className="w-9 h-9 rounded-full bg-[#101828] flex items-center justify-center text-xs font-bold text-[#4D8EF0] flex-shrink-0">
         {user.first_name?.[0]}{user.last_name?.[0]}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">{user.first_name} {user.last_name}</p>
+        <p className="text-sm font-medium text-white truncate flex items-center gap-2">
+          {user.first_name} {user.last_name}
+          {banned && <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-red-500/15 text-red-400">BANNED</span>}
+        </p>
         <p className="text-[10px] text-zinc-500 truncate">{user.email} &middot; @{user.username}</p>
       </div>
       <div className="hidden sm:flex items-center gap-3 text-xs text-zinc-400">
-        <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-[#4D8EF0]" /> Lv{user.current_level}</span>
+        <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-[#4D8EF0]" /> Rank {user.rank}</span>
         <span className="flex items-center gap-1"><Gem className="w-3 h-3 text-purple-400" /> {user.gems ?? 0}</span>
         <span className="flex items-center gap-1"><Flame className="w-3 h-3 text-orange-400" /> {user.current_streak ?? 0}d</span>
-        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-[#101828]">{user.app_mode}</span>
       </div>
+
+      {/* Quick gem grant */}
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          value={grantAmount}
+          onChange={e => setGrantAmount(e.target.value)}
+          className="w-16 h-8 bg-[#101828] border-[#1A2438] text-white text-xs"
+          data-testid={`grant-amount-${user.email}`}
+        />
+        <Button
+          size="sm" disabled={busy}
+          onClick={() => onQuickGrant(Number(grantAmount) || 0)}
+          className="h-8 bg-emerald-600 hover:bg-emerald-500 text-white text-xs gap-1"
+          data-testid={`grant-gems-${user.email}`}
+        >
+          <Gem className="w-3 h-3" /> Give
+        </Button>
+      </div>
+
       <div className="flex gap-1.5">
         <button onClick={onEdit} className="p-1.5 rounded-lg text-zinc-500 hover:text-[#4D8EF0] hover:bg-[#101828] transition-all" data-testid={`edit-${user.email}`}>
           <Edit2 className="w-3.5 h-3.5" />
         </button>
-        <button onClick={onDelete} className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all" data-testid={`delete-${user.email}`}>
-          <Trash2 className="w-3.5 h-3.5" />
+        <button
+          onClick={onToggleBan}
+          disabled={busy}
+          className={`p-1.5 rounded-lg transition-all ${banned ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-zinc-500 hover:text-red-400 hover:bg-red-500/10'}`}
+          data-testid={`ban-${user.email}`}
+          title={banned ? 'Unban user' : 'Ban user'}
+        >
+          {banned ? <ShieldCheck className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
         </button>
       </div>
     </div>
   );
 }
 
-function EditUserModal({ user, headers, onClose, onSaved }) {
+function EditUserModal({ user, secret, onClose, onSaved }) {
   const [form, setForm] = useState({
     gems: user.gems ?? 0,
+    xp: user.xp ?? 0,
     current_xp: user.current_xp ?? 0,
-    current_level: user.current_level ?? 1,
+    rank: user.rank ?? 1,
     current_streak: user.current_streak ?? 0,
     longest_streak_ever: user.longest_streak_ever ?? 0,
-    total_xp_all_time: user.total_xp_all_time ?? 0,
-    streak_shields: user.streak_shields ?? 0,
-    streak_revives: user.streak_revives ?? 0,
-    app_mode: user.app_mode ?? 'focus',
+    total_habits_completed: user.total_habits_completed ?? 0,
+    is_pro: !!user.is_pro,
   });
-  const [grantItem, setGrantItem] = useState('');
-  const [grantField, setGrantField] = useState('unlocked_decorations');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const body = { ...form };
-      // Convert numeric strings
-      ['gems','current_xp','current_level','current_streak','longest_streak_ever','total_xp_all_time','streak_shields','streak_revives'].forEach(k => {
-        body[k] = Number(body[k]);
+      const fields = { ...form };
+      ['gems', 'xp', 'current_xp', 'rank', 'current_streak', 'longest_streak_ever', 'total_habits_completed'].forEach(k => {
+        fields[k] = Number(fields[k]);
       });
-      await axios.put(`${API}/admin/users/${encodeURIComponent(user.email)}`, body, { headers });
+      await callAdmin('admin_update_user', secret, { p_user_id: user.id, p_fields: fields });
       toast.success('User updated');
       onSaved();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Update failed'); }
-    finally { setSaving(false); }
-  };
-
-  const handleGrant = async () => {
-    if (!grantItem.trim()) return;
-    setSaving(true);
-    try {
-      await axios.put(`${API}/admin/users/${encodeURIComponent(user.email)}`, { [grantField]: grantItem.trim() }, { headers });
-      toast.success(`Granted ${grantItem} to ${grantField}`);
-      setGrantItem('');
-    } catch (e) { toast.error(e.response?.data?.detail || 'Grant failed'); }
+    } catch (e) { toast.error(e.message || 'Update failed'); }
     finally { setSaving(false); }
   };
 
@@ -281,13 +330,12 @@ function EditUserModal({ user, headers, onClose, onSaved }) {
         <div className="grid grid-cols-2 gap-3 mb-4">
           {[
             { key: 'gems', label: 'Gems', icon: '💎' },
-            { key: 'current_xp', label: 'Current XP', icon: '⚡' },
-            { key: 'current_level', label: 'Level', icon: '🏆' },
+            { key: 'xp', label: 'XP (level)', icon: '⚡' },
+            { key: 'current_xp', label: 'Current XP', icon: '📈' },
+            { key: 'rank', label: 'Rank (1-10)', icon: '🏆' },
             { key: 'current_streak', label: 'Streak', icon: '🔥' },
             { key: 'longest_streak_ever', label: 'Best Streak', icon: '⭐' },
-            { key: 'total_xp_all_time', label: 'Total XP', icon: '📊' },
-            { key: 'streak_shields', label: 'Shields', icon: '🛡' },
-            { key: 'streak_revives', label: 'Revives', icon: '❤' },
+            { key: 'total_habits_completed', label: 'Habits Completed', icon: '📊' },
           ].map(({ key, label, icon }) => (
             <div key={key}>
               <label className="text-[10px] text-zinc-500 mb-1 block">{icon} {label}</label>
@@ -301,44 +349,15 @@ function EditUserModal({ user, headers, onClose, onSaved }) {
           ))}
         </div>
 
-        {/* Mode */}
-        <div className="mb-4">
-          <label className="text-[10px] text-zinc-500 mb-1 block">Mode</label>
-          <select
-            value={form.app_mode}
-            onChange={e => setForm(prev => ({ ...prev, app_mode: e.target.value }))}
-            className="w-full h-8 rounded-lg bg-[#101828] border border-[#1A2438] text-white text-sm px-2"
+        {/* Pro toggle */}
+        <div className="mb-4 flex items-center justify-between">
+          <label className="text-xs text-zinc-400">Pro subscriber</label>
+          <button
+            onClick={() => setForm(prev => ({ ...prev, is_pro: !prev.is_pro }))}
+            className={`w-10 h-6 rounded-full transition-all relative ${form.is_pro ? 'bg-[#1B6AE4]' : 'bg-[#1A2438]'}`}
           >
-            <option value="focus">Focus</option>
-            <option value="game">Game</option>
-          </select>
-        </div>
-
-        {/* Grant Item */}
-        <div className="border-t border-[#1A2438] pt-4 mb-4">
-          <p className="text-xs text-zinc-400 mb-2 font-medium">Grant Item</p>
-          <div className="flex gap-2 mb-2">
-            <select
-              value={grantField}
-              onChange={e => setGrantField(e.target.value)}
-              className="h-8 rounded-lg bg-[#101828] border border-[#1A2438] text-white text-xs px-2"
-            >
-              <option value="unlocked_decorations">Decorations</option>
-              <option value="unlocked_animations">Animations</option>
-              <option value="unlocked_icons">Icons</option>
-              <option value="unlocked_banners">Banners</option>
-              <option value="unlocked_main_colors">Main Colors</option>
-              <option value="unlocked_banner_colors">Banner Colors</option>
-              <option value="badges">Badges</option>
-            </select>
-            <Input
-              placeholder="Item key (e.g. battle_dragon_samurai)"
-              value={grantItem}
-              onChange={e => setGrantItem(e.target.value)}
-              className="bg-[#101828] border-[#1A2438] text-white text-xs h-8 flex-1"
-            />
-            <Button onClick={handleGrant} disabled={saving} size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-8">Grant</Button>
-          </div>
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${form.is_pro ? 'left-[18px]' : 'left-0.5'}`} />
+          </button>
         </div>
 
         <div className="flex gap-2">
@@ -347,69 +366,6 @@ function EditUserModal({ user, headers, onClose, onSaved }) {
           </Button>
           <Button onClick={onClose} variant="outline" className="border-[#1A2438] text-zinc-400 text-sm">Cancel</Button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ShopTab({ headers }) {
-  const [shop, setShop] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchShop = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await axios.get(`${API}/admin/shop`, { headers });
-      setShop(data);
-    } catch { toast.error('Failed to load shop'); }
-    finally { setLoading(false); }
-  }, [headers]);
-
-  useEffect(() => { fetchShop(); }, [fetchShop]);
-
-  const handleRestock = async () => {
-    if (!window.confirm('Force clear shop inventory? It will restock on next visit.')) return;
-    try {
-      await axios.post(`${API}/admin/shop/restock`, {}, { headers });
-      toast.success('Shop cleared — will restock on next visit');
-      fetchShop();
-    } catch { toast.error('Restock failed'); }
-  };
-
-  if (loading) return <Loader />;
-
-  return (
-    <div data-testid="admin-shop">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-medium text-zinc-400">Shop Status</h2>
-        <Button onClick={handleRestock} size="sm" className="bg-amber-600 hover:bg-amber-500 text-white text-xs gap-1.5">
-          <RefreshCw className="w-3.5 h-3.5" /> Force Restock
-        </Button>
-      </div>
-
-      {/* Config */}
-      {shop?.config && (
-        <div className="p-4 rounded-xl bg-[#0C1220] border border-[#1A2438] mb-4">
-          <p className="text-xs text-zinc-500 mb-2">Restock Config</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div><span className="text-zinc-500">Last Restock:</span> <span className="text-white">{shop.config.last_restock_timestamp || 'N/A'}</span></div>
-            <div><span className="text-zinc-500">Next Restock:</span> <span className="text-white">{shop.config.next_restock_timestamp || 'N/A'}</span></div>
-          </div>
-        </div>
-      )}
-
-      {/* Items */}
-      <div className="space-y-2">
-        {(shop?.items || []).length === 0 && <p className="text-sm text-zinc-500 text-center py-4">No items in shop</p>}
-        {(shop?.items || []).map((item, i) => (
-          <div key={i} className="p-3 rounded-xl bg-[#0C1220] border border-[#1A2438] flex items-center justify-between">
-            <div>
-              <p className="text-sm text-white">{item.item_key}</p>
-              <p className="text-[10px] text-zinc-500">{item.rarity} &middot; {item.gem_cost} gems</p>
-            </div>
-            <span className="text-[10px] text-zinc-600">{item.expires_at}</span>
-          </div>
-        ))}
       </div>
     </div>
   );

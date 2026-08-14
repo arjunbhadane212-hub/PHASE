@@ -3,6 +3,13 @@ import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 
+// How often to re-check an already-open session for a ban. Auth-level bans
+// (auth.users.banned_until, set by the admin dashboard) block new logins and
+// token refreshes immediately, but a tab that is already signed in keeps its
+// current access token until it expires — this poll is what kicks that tab
+// out promptly instead of waiting up to an hour.
+const BAN_POLL_MS = 60_000;
+
 // NOTE: FastAPI-shaped error helper, still used by the password-reset and
 // settings flows that have not yet been migrated off the old backend.
 // Supabase auth errors (login/signup) are surfaced directly via e.message.
@@ -54,6 +61,16 @@ export function AuthProvider({ children }) {
     let merged;
     try {
       const profile = await fetchProfile(authUser.id);
+      // Admin-panel ban check: banned_at is set by admin_ban_user alongside
+      // auth.users.banned_until. The auth-level ban already blocks new
+      // logins/refreshes; this is what kicks an already-open tab out instead
+      // of leaving it running with a stale session.
+      if (profile?.banned_at) {
+        await supabase.auth.signOut();
+        setUser('banned');
+        return 'banned';
+      }
+
       merged = mergeAuthUser(authUser, profile);
     } catch {
       merged = mergeAuthUser(authUser, null);
@@ -80,6 +97,17 @@ export function AuthProvider({ children }) {
 
     return () => subscription.unsubscribe();
   }, [checkAuth, loadUser]);
+
+  // Poll a signed-in session for a fresh ban (see BAN_POLL_MS comment above).
+  useEffect(() => {
+    if (!user || user === false || user === 'banned') return;
+    const interval = setInterval(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) loadUser(session.user);
+      });
+    }, BAN_POLL_MS);
+    return () => clearInterval(interval);
+  }, [user, loadUser]);
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -130,7 +158,8 @@ export function AuthProvider({ children }) {
       logout,
       updateUser,
       refreshUser,
-      isAuthenticated: !!user && user !== false
+      isAuthenticated: !!user && user !== false && user !== 'banned',
+      isBanned: user === 'banned'
     }}>
       {children}
     </AuthContext.Provider>
