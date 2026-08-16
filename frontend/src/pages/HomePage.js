@@ -16,6 +16,7 @@ import XpPopAnimation from '../components/XpPopAnimation';
 import FocusSession from '../components/FocusSession';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
+import { showTitleUnlocks } from '../components/profile/TitleUnlockToast';
 import { soundEngine } from '../utils/SoundEngine';
 
 // Client's LOCAL calendar day (YYYY-MM-DD). The complete/uncomplete RPCs key
@@ -118,6 +119,14 @@ export default function HomePage() {
 
       // Pull fresh XP / gems / streak into the user object (XP bar, streak card)
       await refreshUser();
+
+      // Title unlocks fire in BOTH modes. Streaks accumulate in Focus Mode too,
+      // so a title can genuinely be earned there — and a title is profile
+      // identity, not XP or a leaderboard, so surfacing it does not break the
+      // Focus Mode gamification ban. Swallowing it would mean the player only
+      // discovers the title later in the equip list, which is the exact failure
+      // this replaces.
+      showTitleUnlocks(data?.newly_unlocked);
 
       if (isGameMode) {
         soundEngine.habitComplete();

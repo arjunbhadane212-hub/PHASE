@@ -8,7 +8,7 @@ import TierEmblem from '../TierEmblem';
 import { FlameGlyph } from './Sigil';
 import { rankInfo } from '../../data/levels';
 import { tierNumByName } from '../../data/leaderboardTiers';
-import { streakTier, levelBadge, alpha, titleStyle, styleFromRarity } from '../../data/profileIdentity';
+import { streakTier, levelBadge, alpha, titleStyle, resolveTitleSource } from '../../data/profileIdentity';
 import { RankBadge, StreakBadge, StandingBadge, GlobalRankBadge, TitleBadge, ZoneChip } from './FlexBadge';
 
 const BANNER_KEY_TO_ART = {
@@ -51,7 +51,11 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
     : '';
   const ownedTitles = Array.isArray(profile.owned_titles) ? profile.owned_titles : [];
   const history = Array.isArray(profile.period_history) ? profile.period_history : [];
-  const titleKey = profile.equipped_title_style || styleFromRarity(profile.equipped_title_rarity);
+  // Section accent follows the equipped title's SOURCE, so a streak title tints
+  // the Titles header amber and an hours title tints it blue — same resolver the
+  // plate itself uses, so header and plate can never disagree.
+  const titleKey = resolveTitleSource(
+    profile.equipped_title_source, profile.equipped_title_style, profile.equipped_title_rarity);
   const tStyle = titleStyle(titleKey);
   const xpToNext = lvl.isMax ? null
     : Math.max(0, (profile.level_max_xp || 0) - (profile.current_xp || 0) + 1);
@@ -114,17 +118,17 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
             {profile.first_name} {profile.last_name}
           </h1>
           <p className="text-sm text-zinc-500 mt-0.5">@{profile.username}</p>
+          {/* Equipped slot renders at md (~31px tall) so it sits level with
+              the rank/streak/standing pills in the row below — it used to
+              render at the collection's showcase scale (214×42px), over 2×
+              its neighbours. The collection grid keeps the showcase size. */}
           {profile.equipped_title_name && (
-            {/* Equipped slot renders at md (~31px tall) so it sits level with
-                the rank/streak/standing pills in the row below — it used to
-                render at the collection's showcase scale (214×42px), over 2×
-                its neighbours. The collection grid keeps the showcase size. */}
             <div className="mt-2.5" data-testid="profile-equipped-title">
               <TitleBadge
                 name={profile.equipped_title_name}
-                sourceStyle={profile.equipped_title_style}
-                rarityTier={profile.equipped_title_rarity}
-                style={titleKey}
+                sourceSystem={profile.equipped_title_source}
+                style={profile.equipped_title_style}
+                rarityTier={profile.equipped_title_rarity_tier}
                 rarity={profile.equipped_title_rarity}
                 size={compact ? 'sm' : 'md'}
                 showTier={!compact}
@@ -242,8 +246,9 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
             />
             <div className="flex flex-wrap gap-2">
               {(compact ? ownedTitles.slice(0, 6) : ownedTitles).map(t => (
-                <TitleBadge key={t.key} name={t.name} sourceStyle={t.style} rarityTier={t.rarity}
-                  style={t.style} rarity={t.rarity} size={compact ? 'md' : 'lg'} />
+                <TitleBadge key={t.key} name={t.name} sourceSystem={t.source_system}
+                  style={t.style} rarityTier={t.rarity_tier} rarity={t.rarity}
+                  size={compact ? 'md' : 'lg'} />
               ))}
               {compact && ownedTitles.length > 6 && (
                 <span className="text-[11px] font-bold text-zinc-600 self-center">+{ownedTitles.length - 6} more</span>

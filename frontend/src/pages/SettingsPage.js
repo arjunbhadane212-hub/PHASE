@@ -546,7 +546,7 @@ function ProfileCustomizationSection() {
   const fetchData = useCallback(async () => {
     try {
       const [{ data: items }, { data: inv }] = await Promise.all([
-        supabase.from('shop_items').select('id,key,name,category,rarity,rarity_style'),
+        supabase.from('shop_items').select('id,key,name,category,rarity,rarity_style,source_system,rarity_tier'),
         supabase.from('user_inventory').select('shop_item_id'),
       ]);
       const ownedIds = new Set((inv || []).map((r) => r.shop_item_id));
@@ -613,7 +613,8 @@ function ProfileCustomizationSection() {
               <button key={t.key} onClick={() => handleEquip('title', t)} disabled={equipping === `title-${t.key}`}
                 className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-xl border transition-all ${equippedTitle === t.key ? 'border-white/30 bg-white/5' : 'border-white/[0.06] hover:bg-white/5'}`}
                 data-testid={`equip-title-${t.key}`}>
-                <TitleBadge name={t.name} sourceStyle={t.rarity_style} rarityTier={t.rarity} rarity={t.rarity} size="sm" />
+                <TitleBadge name={t.name} sourceSystem={t.source_system} style={t.rarity_style}
+                  rarityTier={t.rarity_tier} rarity={t.rarity} size="sm" />
                 {equippedTitle === t.key && <Check className="w-3 h-3 text-white/60" />}
               </button>
             ))}

@@ -273,6 +273,38 @@ Update 4:             Seasonal drops
 
 ---
 
+## Title System (BUILT — Aug 2026)
+
+There is exactly **one** title system, and it lives in Supabase. Two independent
+axes drive every title badge — never collapse them into one:
+
+- **`shop_items.source_system`** (`box` / `streak` / `hours`) → the plate **FORM**.
+  For box titles the form is refined by `rarity_style` (`starter`/`delta`/`phase`).
+- **`shop_items.rarity_tier`** (`common` → `mythic`) → the plate **GLOW ONLY**.
+
+Rarity is assigned by a different rule per source, deliberately:
+box titles are *probability-rare* (`delta`→Rare, `phase`→Mythic, flat); streak
+and hours titles are *effort-rare*, by breakpoint position. The distributions
+are pyramids — streak **5/3/3/2/1**, hours **3/2/1/2/1**. **Do not rebalance
+either into an even split.**
+
+Awarding is live and automatic: `sync_progress_titles(uuid)` runs inside
+`complete_habit` and returns `newly_unlocked`, which fires a title-unlock toast
+rendering the real plate. **Titles are permanent** — a broken streak never
+revokes one; it only stops new higher titles from unlocking.
+
+Not Pro-gated, on the public profile or on equipping (Sachin's Aug 2026 call).
+This overrides the "Title and banner equipping" line under Locked Behind Pro.
+
+⚠️ **Open item — hours titles cannot be earned yet.** No source of truth for
+"hours spent on Phase" exists: no `focus_sessions` table, no start/end
+timestamps, and `habits.session_duration` is *planned* length, not time served.
+The 9 hours titles are seeded and render, but never unlock. Do not paper over
+this with a proxy metric (habit counts are not durations). Full detail +
+the one-step switch-on: `supabase/migrations/README_progress_titles.md`.
+
+---
+
 ## Active Bugs — Fix These, Don't Make Them Worse
 
 ### Critical (Blocks Launch)

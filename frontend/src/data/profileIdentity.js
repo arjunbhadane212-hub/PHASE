@@ -125,6 +125,34 @@ export function titleStyle(style) {
   return TITLE_STYLES[style] || TITLE_STYLES.starter;
 }
 
+// Rarity → INTENSITY ONLY. This is the second axis: it never changes a plate's
+// shape, only how hard it burns. Lives here (not in a component) because the
+// title-unlock toast and the profile plates must read the exact same numbers —
+// a title has to look identical the moment it is won and every time after.
+export const RARITY_GLOW = {
+  common:    { glow: 0.18, sheen: false, halo: false, incandescent: false, a: '#8A93A6', b: '#B8C0D0' },
+  rare:      { glow: 0.42, sheen: false, halo: false, incandescent: false, a: '#4E8FDB', b: '#8FC3FF' },
+  epic:      { glow: 0.62, sheen: true,  halo: false, incandescent: false, a: '#7C8CF0', b: '#B4C0FF' },
+  legendary: { glow: 0.82, sheen: true,  halo: true,  incandescent: false, a: '#F0A84E', b: '#FFCE85' },
+  mythic:    { glow: 1.0,  sheen: true,  halo: true,  incandescent: true,  a: '#F2C45A', b: '#FFFFFF' },
+};
+
+// Resolves the live DB columns down to the ONE value the plate needs: its form.
+//
+//   source_system  'box' | 'streak' | 'hours'   — which system granted it
+//   rarity_style   'starter' | 'delta' | 'phase' — which BOX, box titles only
+//
+// A box title's form is its box tier, so 'box' defers to rarity_style. Streak
+// and hours titles carry no rarity_style at all (get_public_profile coalesces
+// the missing value to 'starter'), which is precisely why source_system has to
+// be checked FIRST — trusting `style` alone renders every flame plate as a flat
+// starter tag.
+export function resolveTitleSource(sourceSystem, rarityStyle, rarity) {
+  if (sourceSystem === 'streak' || sourceSystem === 'hours') return sourceSystem;
+  if (TITLE_SOURCES.includes(rarityStyle)) return rarityStyle;
+  return styleFromRarity(rarity);
+}
+
 // Normalises whatever a row carries into one of the five rarity tiers. Legacy
 // rows spell it 'ultra'; the tier list is common → mythic.
 export const RARITY_TIERS = ['common', 'rare', 'epic', 'legendary', 'mythic'];

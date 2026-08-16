@@ -290,36 +290,21 @@ SHOP_POWER_UPS = {
     "xp_boost_6x": {"name": "6x XP Boost", "description": "Next 3 habits award 6x XP. Ultra rare!", "price": 1200, "rarity": "legendary", "field": "xp_hexa_boost_uses", "max": 1, "icon": "zap"},
 }
 
-# Streak Titles - earned by maintaining streaks
-STREAK_TITLES = [
-    {"days": 10, "title": "Rookie", "rarity": "common"},
-    {"days": 25, "title": "Contender", "rarity": "common"},
-    {"days": 50, "title": "Cooking", "rarity": "rare"},
-    {"days": 75, "title": "Burning", "rarity": "rare"},
-    {"days": 100, "title": "Locked", "rarity": "rare"},
-    {"days": 150, "title": "Aflame", "rarity": "epic"},
-    {"days": 200, "title": "Agony", "rarity": "epic"},
-    {"days": 250, "title": "Blaze", "rarity": "epic"},
-    {"days": 300, "title": "Interlocked", "rarity": "legendary"},
-    {"days": 350, "title": "Incinerate", "rarity": "legendary"},
-    {"days": 400, "title": "Infernal", "rarity": "legendary"},
-    {"days": 450, "title": "Ethereal", "rarity": "mythic"},
-    {"days": 500, "title": "Unreal", "rarity": "mythic"},
-    {"days": 1000, "title": "The Sovereign Overlord", "rarity": "mythic"},
-]
-
-# Time Titles - earned by total hours tracked
-TIME_TITLES = [
-    {"hours": 25, "title": "Timekeeper", "rarity": "common"},
-    {"hours": 50, "title": "Chronos", "rarity": "common"},
-    {"hours": 100, "title": "Temporal Drift", "rarity": "rare"},
-    {"hours": 200, "title": "Timeless", "rarity": "rare"},
-    {"hours": 350, "title": "Era Weaver", "rarity": "epic"},
-    {"hours": 500, "title": "Void Walker", "rarity": "epic"},
-    {"hours": 750, "title": "Lord of Time", "rarity": "legendary"},
-    {"hours": 900, "title": "Chrono-Archon", "rarity": "legendary"},
-    {"hours": 1000, "title": "Eternity's Edge", "rarity": "mythic"},
-]
+# ── RETIRED: streak/hours title ladders ──────────────────────────────────────
+# STREAK_TITLES and TIME_TITLES used to live here as hardcoded Python lists.
+# They are gone. There is now exactly ONE title system, and it is in Supabase:
+#
+#   shop_items (source_system, rarity_tier, metadata->>'days' | 'hours')
+#     → sync_progress_titles(uuid)  awards on every stat change
+#     → user_inventory              permanent ownership
+#     → equip_item / get_public_profile
+#
+# The lists here were not just duplicated, they DISAGREED with the confirmed
+# ladder: this file had Cooking as rare and Aflame as epic, where the real
+# distribution is a 5/3/3/2/1 pyramid (Cooking common, Aflame rare). Two
+# backends each claiming to own rarity is exactly the bug this replaces.
+# Do not re-add a ladder here — add rows to shop_items instead.
+# ─────────────────────────────────────────────────────────────────────────────
 
 # Shop profile icons (purchasable)
 SHOP_ICONS = {
@@ -469,17 +454,15 @@ SHOP_BATTLE_EFFECTS = {
 }
 
 def get_earned_titles(user_doc):
-    """Compute all titles a user has earned based on streaks and time."""
-    longest = user_doc.get("longest_streak_ever", 0)
-    hours = user_doc.get("total_hours_tracked", 0)
-    earned = []
-    for t in STREAK_TITLES:
-        if longest >= t["days"]:
-            earned.append({"title": t["title"], "type": "streak", "rarity": t["rarity"], "requirement": f"{t['days']}d streak"})
-    for t in TIME_TITLES:
-        if hours >= t["hours"]:
-            earned.append({"title": t["title"], "type": "time", "rarity": t["rarity"], "requirement": f"{t['hours']}h tracked"})
-    return earned
+    """RETIRED — always []. Titles are computed and owned in Supabase.
+
+    This function used to recompute the ladder from STREAK_TITLES/TIME_TITLES
+    against a Mongo user doc. Ownership now lives in user_inventory, awarded by
+    the sync_progress_titles() RPC, and is read via get_public_profile(). It is
+    kept as an empty stub only so the remaining routes on this retired backend
+    still import; no frontend surface reads any of them.
+    """
+    return []
 
 async def check_and_update_streak(user_id: str, user_doc: dict) -> dict:
     """Timestamp-based streak logic. Call when ALL today's habits are complete."""

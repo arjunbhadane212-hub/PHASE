@@ -36,7 +36,7 @@ export default function ProfilePanel({ open, onClose }) {
     if (!open || !user?.id) return;
     try {
       const [{ data: items }, { data: inv }] = await Promise.all([
-        supabase.from('shop_items').select('id,key,name,category,rarity,rarity_style,gradient_value'),
+        supabase.from('shop_items').select('id,key,name,category,rarity,rarity_style,gradient_value,source_system,rarity_tier'),
         supabase.from('user_inventory').select('shop_item_id'),
       ]);
       const ownedIds = new Set((inv || []).map((r) => r.shop_item_id));
@@ -152,8 +152,9 @@ export default function ProfilePanel({ open, onClose }) {
             <div className="mb-3">
               <TitleBadge
                 name={equippedTitleObj?.name || equippedTitle}
-                sourceStyle={equippedTitleObj?.rarity_style}
-                rarityTier={titleRarity}
+                sourceSystem={equippedTitleObj?.source_system}
+                style={equippedTitleObj?.rarity_style}
+                rarityTier={equippedTitleObj?.rarity_tier}
                 rarity={titleRarity}
                 size="sm"
               />
@@ -189,7 +190,8 @@ export default function ProfilePanel({ open, onClose }) {
                 {earnedTitles.map(t => (
                   <Pill key={t.key} active={equippedTitle === t.key} onClick={() => handleEquip('title', t)}
                     loading={equipping === `title-${t.key}`}
-                    label={<TitleBadge name={t.name} sourceStyle={t.rarity_style} rarityTier={t.rarity} rarity={t.rarity} size="sm" />} />
+                    label={<TitleBadge name={t.name} sourceSystem={t.source_system} style={t.rarity_style}
+                      rarityTier={t.rarity_tier} rarity={t.rarity} size="sm" />} />
                 ))}
               </div>
             )}

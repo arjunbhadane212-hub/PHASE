@@ -8,8 +8,7 @@ import { Trophy, Globe2, Crown, ChevronsUp, ChevronsDown, Minus } from 'lucide-r
 import TierEmblem from '../TierEmblem';
 import { FlameGlyph } from './Sigil';
 import TitlePlate from './TitlePlate';
-import { streakTier, levelBadge, standingBadge, globalBadge, titleStyle, styleFromRarity, normalizeRarity } from '../../data/profileIdentity';
-import { RARITY_GLOW, STREAK_RARITY_PLACEHOLDER, HOURS_RARITY_PLACEHOLDER } from '../../data/titleRarityPlaceholder';
+import { streakTier, levelBadge, standingBadge, globalBadge, titleStyle, normalizeRarity, resolveTitleSource, RARITY_GLOW } from '../../data/profileIdentity';
 
 export default function FlexBadge({ spec, icon, label, value, sub, size = 'md', className = '', style, title, ...rest }) {
   const cls = [
@@ -138,12 +137,16 @@ export function GlobalRankBadge({ rank, total, size = 'md' }) {
      rarityTier  → the plate GLOW  (common | rare | epic | legendary | mythic)
 
    Same rarity + different source must differ in shape. Same source + different
-   rarity must differ in intensity. `style`/`rarity` are the legacy prop names
-   from the box-title rows and still work unchanged. */
-export function TitleBadge({ name, sourceStyle, rarityTier, style, rarity, size = 'md', showTier = false }) {
+   rarity must differ in intensity.
+
+   Both axes are LIVE columns on shop_items, surfaced by get_public_profile:
+   `sourceSystem` (box/streak/hours) + `style` (rarity_style, box titles only)
+   resolve the form; `rarityTier` is the intensity. `rarity` is the legacy
+   pre-migration string and is only a last-resort fallback. */
+export function TitleBadge({ name, sourceSystem, sourceStyle, rarityTier, style, rarity, size = 'md', showTier = false }) {
   if (!name) return null;
-  const source = sourceStyle || style || inferSource(name) || styleFromRarity(rarity);
-  const tier = normalizeRarity(rarityTier) || normalizeRarity(rarity) || inferRarity(name) || defaultTierFor(source);
+  const source = sourceStyle || resolveTitleSource(sourceSystem, style, rarity);
+  const tier = normalizeRarity(rarityTier) || normalizeRarity(rarity) || defaultTierFor(source);
   const spec = { ...titleStyle(source), ...(RARITY_GLOW[tier] || {}) };
 
   return (
@@ -153,24 +156,9 @@ export function TitleBadge({ name, sourceStyle, rarityTier, style, rarity, size 
   );
 }
 
-/* ── PLACEHOLDER BLOCK — Prompt 2 deletes this and the import at the top ─────
-   Streak- and hours-source titles have no rows in shop_items yet, so there is
-   nothing live to read a source or a rarity from. Until Prompt 2 inserts them
-   and threads shop_items.rarity_tier through get_public_profile, these two
-   lookups let the plate systems render against the real confirmed names. Every
-   call site already passes sourceStyle/rarityTier straight through when it has
-   them, so wiring live data is a deletion, not a rewrite. */
-function inferSource(name) {
-  if (STREAK_RARITY_PLACEHOLDER[name]) return 'streak';
-  if (HOURS_RARITY_PLACEHOLDER[name]) return 'hours';
-  return null;
-}
-
-function inferRarity(name) {
-  return STREAK_RARITY_PLACEHOLDER[name] || HOURS_RARITY_PLACEHOLDER[name] || null;
-}
-
+/* Last-resort intensity for a row that predates rarity_tier. Mirrors the
+   backfill in the title_rarity_tier_and_source_system migration, so a stale
+   cached row and a fresh one render the same. */
 function defaultTierFor(source) {
   return source === 'phase' ? 'mythic' : source === 'delta' ? 'rare' : 'common';
 }
-/* ── end placeholder block ─────────────────────────────────────────────────*/
