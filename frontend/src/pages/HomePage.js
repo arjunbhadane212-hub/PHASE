@@ -512,14 +512,10 @@ export default function HomePage() {
           isGameMode={isGameMode}
           trigger={
             <Button
-              className={`fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg hover-scale ${
-                isGameMode 
-                  ? 'bg-purple-600 hover:bg-purple-700' 
-                  : 'bg-zinc-700 hover:bg-zinc-600'
-              }`}
+              className="fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg hover-scale bg-[#F4F5F2] hover:bg-[#E5E6E2]"
               data-testid="add-habit-fab"
             >
-              <Plus className="w-6 h-6" />
+              <Plus className="w-6 h-6 text-[#0E1012]" />
             </Button>
           }
         />
