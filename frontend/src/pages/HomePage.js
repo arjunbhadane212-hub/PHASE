@@ -638,8 +638,8 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
       animate={{ opacity: 1, y: 0 }}
       className={`relative p-4 rounded-2xl border transition-all duration-200 overflow-hidden ${
         habit.completed_today
-          ? isGameMode 
-            ? 'bg-purple-500/[0.06] border-purple-500/15' 
+          ? isGameMode
+            ? 'bg-[#D0F662] border-transparent'
             : 'bg-zinc-800/50 border-zinc-700/50'
           : isGameMode
             ? 'glass-card hover:border-purple-500/20'
@@ -697,7 +697,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
             className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
               habit.completed_today
                 ? isGameMode
-                  ? 'bg-purple-500 border-purple-500'
+                  ? 'bg-[#09181C] border-[#09181C]'
                   : 'bg-zinc-600 border-zinc-600'
                 : 'border-zinc-600 hover:border-zinc-400'
             }`}
@@ -706,14 +706,22 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
             {isCompleting ? (
               <Loader2 className="w-4 h-4 text-white animate-spin" />
             ) : habit.completed_today ? (
-              <Check className="w-4 h-4 text-white" />
+              <Check className={`w-4 h-4 ${isGameMode ? 'text-[#D0F662]' : 'text-white'}`} />
             ) : null}
           </button>
         )}
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className={`font-medium ${(habit.completed_today || habit.failed_today) ? 'text-zinc-400 line-through' : 'text-white'}`}>
+          <p className={`${
+            habit.failed_today
+              ? 'font-medium text-zinc-400 line-through'
+              : isGameMode && habit.completed_today
+                ? 'font-bold text-[#09181C]'
+                : habit.completed_today
+                  ? 'font-medium text-zinc-400 line-through'
+                  : 'font-medium text-white'
+          }`}>
             {habit.habit_name}
           </p>
           <div className="flex items-center gap-3 mt-1">
@@ -721,19 +729,19 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
               <span className="text-xs text-red-400 font-medium">Failed today</span>
             )}
             {isGameMode ? (
-              <span className={`text-xs ${difficultyColors[habit.difficulty]}`}>
+              <span className={`text-xs ${habit.completed_today ? 'text-[#09181C] font-bold' : difficultyColors[habit.difficulty]}`}>
                 +{habit.xp_value} XP
               </span>
             ) : (
               <span className="text-xs text-zinc-500 capitalize">{habit.difficulty} &middot; {habit.session_duration || 15}min</span>
             )}
             {isGameMode && (
-              <span className="text-xs text-purple-400 flex items-center gap-1">
+              <span className={`text-xs flex items-center gap-1 ${habit.completed_today ? 'text-[#09181C] font-bold' : 'text-purple-400'}`}>
                 <Gem className="w-3 h-3" /> +{gemReward}
               </span>
             )}
             {habit.current_streak > 0 && (
-              <span className="text-xs text-zinc-500 flex items-center gap-1">
+              <span className={`text-xs flex items-center gap-1 ${isGameMode && habit.completed_today ? 'text-[#09181C]/70' : 'text-zinc-500'}`}>
                 <Flame className="w-3 h-3" /> {habit.current_streak}
               </span>
             )}
@@ -746,15 +754,15 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between"
+          className={`mt-3 pt-3 border-t flex items-center justify-between ${isGameMode ? 'border-[#09181C]/15' : 'border-white/10'}`}
         >
-          <span className="text-sm text-zinc-400">Uncheck this habit?</span>
+          <span className={`text-sm ${isGameMode ? 'text-[#09181C]' : 'text-zinc-400'}`}>Uncheck this habit?</span>
           <div className="flex gap-2">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setShowConfirm(false)}
-              className="text-zinc-400"
+              className={isGameMode ? 'text-[#09181C] hover:bg-[#09181C]/10' : 'text-zinc-400'}
             >
               Cancel
             </Button>
