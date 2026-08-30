@@ -1,5 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Archivo:wght@800;900&display=swap');
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=general-sans@400,500,600,700&display=swap');
+/* Archivo (v2 display) + JetBrains Mono from Google Fonts (reliable). */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+/* General Sans is NOT on Google Fonts (verified 400), so it stays on Fontshare.
+   Satoshi is kept here too: it is still used by ~15 un-migrated v1 screens, and
+   dropping it would send all of them to a serif fallback. It will be retired
+   per-screen as each is migrated to Typography v2. Inter dropped (v1 only). */
+@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=satoshi@400,500,700,900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,600&display=swap');
 
 @tailwind base;

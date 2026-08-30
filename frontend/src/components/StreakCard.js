@@ -63,41 +63,41 @@ export default function StreakCard({ streak = 0, shieldsActive = 0, isGameMode =
 
   return (
     <div
-      className="w-full rounded-3xl bg-[#77D6E4] p-5 sm:p-6"
+      className="w-full rounded-3xl bg-[#95DEE6] p-5 sm:p-6"
       data-testid="streak-card"
     >
       <div className="flex items-start justify-between gap-3">
-        {/* Eyebrow */}
+        {/* Eyebrow — muted mid-tone teal (verified) */}
         <span
-          className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] sm:text-[11px] text-[#09181C]/75"
+          className="font-['JetBrains_Mono',monospace] font-bold uppercase text-[10px] sm:text-[11px] text-[#76B5BC]"
           style={{ letterSpacing: '0.08em' }}
         >
           Day Streak · This Week
         </span>
 
-        {/* Shield badge — dark pill, legible on the cyan card */}
+        {/* Shield badge — dark teal pill, legible on the cyan card */}
         {shieldsActive > 0 && (
           <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#09181C]"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#183A3F]"
             data-testid="streak-shield-badge"
           >
-            <Shield className="w-3.5 h-3.5 text-[#77D6E4]" strokeWidth={2} />
-            <span className="text-xs font-semibold text-[#77D6E4]">{shieldsActive}</span>
+            <Shield className="w-3.5 h-3.5 text-[#95DEE6]" strokeWidth={2} />
+            <span className="text-xs font-semibold text-[#95DEE6]">{shieldsActive}</span>
           </div>
         )}
       </div>
 
-      {/* Hero number */}
+      {/* Hero number — darkest teal ink (verified) */}
       <div
-        className="font-['Archivo'] font-black text-[#09181C] mt-2 text-[44px] sm:text-[52px]"
+        className="font-['Archivo',sans-serif] font-black text-[#183A3F] mt-2 text-[44px] sm:text-[52px]"
         style={{ lineHeight: '0.88', letterSpacing: '-0.02em' }}
         data-testid="streak-count"
       >
         {streak}
       </div>
 
-      {/* Sub-label */}
-      <div className="font-['General_Sans'] font-bold text-[#09181C] text-sm sm:text-base mt-1">
+      {/* Sub-label — mid-weight deep teal (verified) */}
+      <div className="font-['General_Sans',sans-serif] font-bold text-[#3E6C71] text-sm sm:text-base mt-1">
         Days Strong
       </div>
 
@@ -107,7 +107,7 @@ export default function StreakCard({ streak = 0, shieldsActive = 0, isGameMode =
           <div
             key={i}
             className="flex-1 h-2 rounded-full"
-            style={{ backgroundColor: filled ? '#09181C' : '#A8E6EE' }}
+            style={{ backgroundColor: filled ? '#183A3F' : '#83C6CD' }}
           />
         ))}
       </div>
