@@ -1,0 +1,39 @@
+name: Supabase keep-alive
+
+# Prevents the free-tier Supabase project (ref dnfcrpthpinilibvqwtf) from
+# auto-pausing after ~7 days of inactivity, which otherwise makes the live app
+# and every Vercel preview fail with "failed to fetch" on login/signup.
+#
+# It sends one real REST request every 2 days. The token below is the PUBLIC
+# anon key — the same one already shipped in the frontend bundle and protected
+# by Row Level Security — so committing it here exposes nothing new.
+#
+# Scheduled workflows only run from the default branch, and GitHub disables them
+# after ~60 days of no repo activity; re-enable from the Actions tab if needed.
+
+on:
+  schedule:
+    - cron: '0 12 */2 * *'   # every 2 days at 12:00 UTC
+  workflow_dispatch: {}        # allow manual runs from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST endpoint
+        env:
+          SUPABASE_URL: https://dnfcrpthpinilibvqwtf.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuZmNycHRocGluaWxpYnZxd3RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MjY2MTYsImV4cCI6MjA5OTMwMjYxNn0.4PtZIiavu26_tenIiu8sGeFDatJkGn9HTnulwCUI4d8
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            "${SUPABASE_URL}/rest/v1/users?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          echo "HTTP ${code}"
+          if [ "${code}" = "200" ] || [ "${code}" = "206" ]; then
+            echo "Keep-alive OK — Supabase project is awake."
+          else
+            echo "Keep-alive FAILED (HTTP ${code}) — project may be paused; restore it from the Supabase dashboard."
+            exit 1
+          fi
