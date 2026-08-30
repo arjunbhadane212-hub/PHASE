@@ -25,47 +25,58 @@ Every feature decision filters through this lens. If a feature doesn't reinforce
 
 ---
 
-## Color System — CRITICAL, READ FIRST
+## Color System v2 — CRITICAL, READ FIRST (supersedes all earlier color rules in this file and in design_guidelines.json)
 
-**Blue is the ONLY brand color. This is a hard, locked rule.**
+Phase's UI is being rebuilt screen-by-screen from a new design reference ("Phase Game Mode Guide"). This section is the current and only source of truth for color and type. Ignore any earlier text in this file, or in design_guidelines.json, that says blue is the only brand color or that purple must always be removed on sight — that rule is retired as of this update.
 
-Purple appears in the current codebase in several places. This is a bug inherited from the original Figma/Emergent template — NOT an intentional design choice. Every instance of purple must be replaced with the blue system below. Do not add purple. Do not preserve purple. If you see purple in any component, flag it and replace it.
-
-### Core Hex Values
+### Core Hex Values (v2)
 ```
-Background:       #0A0E14  (near-black — not navy-grey, not #0F172A)
-Card fill:        #11161F
-Card border:      #1E2530
-Primary blue:     #3B82F6
-Blue glow:        #60A5FA
-Muted text:       #6B7280
-White text:       #FFFFFF
-Destructive red:  #B91C1C  (delete/abandon actions ONLY — dark muted red)
-```
-
-### What "No Purple" Means in Practice
-- XP bars → blue (#3B82F6), not purple
-- Shop banners → blue palette, not purple
-- Progress charts → blue only, no yellow, no purple
-- Button focus rings → blue glow (#60A5FA), not purple
-- Create Habit modal CTA button → blue, not purple
-- Input focus states → blue ring, not purple
-
-### Rank Color Ladder (Locked — Applied to Badges, Rings, Profile Elements)
-```
-Rank 1  — Rookie       #64748B  (slate-blue grey)
-Rank 2  — Novice       #14B8A6  (teal)
-Rank 3  — Apprentice   #06B6D4  (cyan)
-Rank 4  — Adept        #38BDF8  (sky blue)
-Rank 5  — Achiever     #3B82F6  (brand blue)
-Rank 6  — Expert       #6366F1  (indigo)
-Rank 7  — Master       #8B5CF6  (violet)
-Rank 8  — Elite        #EF4444  (bright red — deliberate "danger zone before peak" beat)
-Rank 9  — Champion     #A855F7  (purple)
-Rank 10 — Apex         #FBBF24 + white shimmer (gold/amber — animated, the only rank with a special effect)
+Background (page):        #0E1012
+Card fill (default):      #1F2123   — flat solid fill. NO backdrop-blur, NO translucent
+                                       glass, NO glass-card class on new/touched components.
+Streak hero card fill:    #77D6E4   — solid cyan, home streak hero widget ONLY
+Streak hero card text:    #09181C   — near-black, ONLY on top of the cyan hero card
+Success / completed:      #D0F662   — lime-green solid fill for completed/success states
+                                       (e.g. a checked-off habit row). REPLACES blue here.
+Progress indicator blue:  #3B82F6 (base) / #60A5FA (highlight)
+                                     — reserved for progress rings and progress bars ONLY.
+                                       Do not use this blue for general accents anymore.
+Purple accent (restored): #A59BCC   — outlined pill buttons and secondary chip accents
+                                       (e.g. an "Add" pill, a filter chip). Intentional,
+                                       NOT the old "bug purple" — do not convert to blue.
+Text — primary:           #F4F5F2
+Text — muted:             #9BA09C
+Destructive red:          #B91C1C   (unchanged — delete/abandon actions only)
 ```
 
-**Critical:** Elite's red (#EF4444, bright/saturated) must look visually distinct from destructive-action red (#B91C1C, dark/muted). Same hue family, completely different intent — never confuse them.
+### What changed from the old rule, explicitly
+- Purple is allowed again, scoped to pill-button outlines/text and small secondary chip accents. Do not "fix" it back to blue.
+- Lime-green (#D0F662) is the new success/completed signal color. Blue is now reserved for progress rings/bars specifically, not general accents.
+- Cards are flat solid fills (#1F2123 by default), not glassmorphic. As you touch a component in a screen task, remove its backdrop-blur/glass treatment. Do not add glass-card to anything new.
+- The cyan hero card (#77D6E4 fill + #09181C text) is a new, specific pattern for hero/streak widgets — not a general card style.
+
+### Unchanged
+The 10-rank color ladder (Rookie through Apex, defined in `frontend/src/data/levels.js`), Elite rank red (#EF4444) vs. destructive red (#B91C1C) distinction, and the league/leaderboard tier palette exception are all UNCHANGED by this update. Do not touch those.
+
+### Typography v2 (supersedes Satoshi as the display font)
+```
+Archivo       — Display: numbers, headlines, section titles, the brand mark.
+                Weights 800–900 ONLY. Never body copy, never metadata.
+General Sans  — UI text: habit names, button labels, row titles.
+                Weight 700 for emphasis, weight 500 for plain body copy.
+JetBrains Mono — Data & labels: timestamps, XP counters, eyebrow/section labels.
+                Always uppercase + letter-spacing when used as a label.
+```
+Exact type scale:
+- Hero number (e.g. a big streak count): 44–52px, weight 900, Archivo, line-height 0.88, letter-spacing -0.02em
+- Section title (e.g. "Today"): 19–20px, weight 800, Archivo, letter-spacing -0.01em
+- Row/list title (e.g. a habit name): 13–14px, weight 700, General Sans
+- Eyebrow/label (e.g. "DAY STREAK"): 10–11px, weight 700, JetBrains Mono, uppercase, letter-spacing 0.08em
+
+Satoshi is retired as the display font. Anywhere you touch code that uses `font-['Satoshi']`, replace it with the Archivo treatment above. Do not go hunting for other Satoshi usages outside the files a given task names.
+
+### Rollout status — IMPORTANT
+This is being rolled out ONE SCREEN AT A TIME. Only the screen(s) named in the current task should change. Every other screen still uses the OLD v1 palette (purple #8B5CF6, Satoshi, glassmorphism) until its own turn comes later in this project — that is expected and correct, not a bug or inconsistency to fix. Never repaint a screen that wasn't explicitly named in the current task, even if it looks inconsistent next to a screen you just finished.
 
 ---
 
