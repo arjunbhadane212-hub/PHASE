@@ -469,6 +469,7 @@ export default function HomePage() {
             <HabitSection
               title="Morning"
               icon={<Sunrise className="w-5 h-5" />}
+              onAddClick={() => setAddDialogOpen(true)}
               habits={morningHabits}
               onComplete={handleCompleteHabit}
               onUncomplete={handleUncompleteHabit}
@@ -479,6 +480,7 @@ export default function HomePage() {
             <HabitSection
               title="Afternoon"
               icon={<Sun className="w-5 h-5" />}
+              onAddClick={() => setAddDialogOpen(true)}
               habits={afternoonHabits}
               onComplete={handleCompleteHabit}
               onUncomplete={handleUncompleteHabit}
@@ -489,6 +491,7 @@ export default function HomePage() {
             <HabitSection
               title="Night"
               icon={<Moon className="w-5 h-5" />}
+              onAddClick={() => setAddDialogOpen(true)}
               habits={nightHabits}
               onComplete={handleCompleteHabit}
               onUncomplete={handleUncompleteHabit}
@@ -545,19 +548,46 @@ export default function HomePage() {
   );
 }
 
-function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSession, completingHabit, isGameMode }) {
+function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSession, completingHabit, isGameMode, onAddClick }) {
   if (habits.length === 0) return null;
   const IconMap = { morning: Sunrise, afternoon: Sun, night: Moon };
   const Icon = IconMap[title.toLowerCase()] || Sunrise;
+  const leftCount = habits.filter(h => !h.completed_today).length;
 
   return (
     <div data-testid={`habits-${title.toLowerCase()}`}>
-      <div className="flex items-center gap-2 mb-4">
-        <Icon className={`w-4 h-4 ${isGameMode ? 'text-purple-400' : 'text-zinc-400'}`} />
-        <h3 className="font-semibold text-white">{title}</h3>
-        <span className="text-sm text-zinc-500">
-          ({habits.filter(h => h.completed_today).length}/{habits.length})
-        </span>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon className={`w-4 h-4 flex-shrink-0 ${isGameMode ? 'text-purple-400' : 'text-zinc-400'}`} />
+          <h3
+            className="font-['Archivo'] font-extrabold text-white text-[19px] sm:text-xl truncate"
+            style={{ letterSpacing: '-0.01em' }}
+          >
+            {title}
+          </h3>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Status indicator — not a button */}
+          {leftCount > 0 && (
+            <span
+              className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] px-2.5 py-1 rounded-full border border-[#A59BCC]/50 text-[#A59BCC]"
+              style={{ letterSpacing: '0.06em' }}
+              data-testid={`habits-left-${title.toLowerCase()}`}
+            >
+              {leftCount} Left
+            </span>
+          )}
+          {/* ADD pill — opens the SAME existing AddHabitDialog as the FAB */}
+          <button
+            type="button"
+            onClick={onAddClick}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#A59BCC] text-[#A59BCC] text-xs font-['General_Sans'] font-bold uppercase hover:bg-[#A59BCC]/10 transition-colors"
+            data-testid={`add-habit-pill-${title.toLowerCase()}`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add
+          </button>
+        </div>
       </div>
 
       <div className="space-y-3">
