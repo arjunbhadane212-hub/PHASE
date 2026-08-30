@@ -49,6 +49,20 @@
   /* Dynamic User Colors (set via JS in Game Mode) */
   --user-accent: #3B82F6;
   --user-banner: #1F2937;
+
+  /* Game Mode home v2 — theme-aware surface tokens. These are the DARK values
+     (the original Steps 1-6 dark Game Mode home). The .light-mode block below
+     overrides them with the verified light palette, so the Home screen flips
+     with the Settings light/dark toggle. NOTE: the cyan streak card (#95DEE6),
+     lime completed rows (#DBF67F) and purple accent (#A59BCC) are intentionally
+     NOT tokenized here — they are identical in both themes. */
+  --gm-bg: #06080F;        /* page background */
+  --gm-card: #1F2123;      /* stat tiles, quest cards, uncompleted rows, chips */
+  --gm-badge: #2E3235;     /* quest icon badge (non-complete) */
+  --gm-track: #2E3235;     /* weekly ring track, card hover border */
+  --gm-checkbox: #52525B;  /* uncompleted checkbox outline */
+  --gm-ink: #F4F5F2;       /* primary text / numbers */
+  --gm-muted: #9BA09C;     /* muted labels / secondary text */
 }
 
 /* Light Mode Override */
@@ -65,6 +79,15 @@
   --color-success: #059669;
   --color-warning: #D97706;
   --color-danger: #DC2626;
+
+  /* Game Mode home v2 — LIGHT values (verified from the design reference). */
+  --gm-bg: #FAFAF7;
+  --gm-card: #F2F3F0;
+  --gm-badge: #E4E6E1;
+  --gm-track: #D9DBD6;
+  --gm-checkbox: #C9CCC6;
+  --gm-ink: #0F1210;
+  --gm-muted: #6C6F6C;
 }
 
 * {

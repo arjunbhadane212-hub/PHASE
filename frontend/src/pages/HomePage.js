@@ -245,7 +245,7 @@ export default function HomePage() {
   const weeklyRingPct = weeklyXpGoal > 0 ? Math.min((weeklyXpEarned / weeklyXpGoal) * 100, 100) : 0;
 
   return (
-    <div className={`min-h-screen p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 ${isGameMode ? 'bg-[#FAFAF7]' : ''}`} data-testid="home-page">
+    <div className={`min-h-screen p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 ${isGameMode ? 'bg-[var(--gm-bg)]' : ''}`} data-testid="home-page">
       {/* XP Pop Animation */}
       <XpPopAnimation xpEvents={xpEvents} />
 
@@ -289,7 +289,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between gap-3">
             {/* Wordmark */}
             <h1
-              className={`font-['Archivo',sans-serif] font-black uppercase text-xl sm:text-2xl ${isGameMode ? 'text-[#0F1210]' : 'text-white'}`}
+              className={`font-['Archivo',sans-serif] font-black uppercase text-xl sm:text-2xl ${isGameMode ? 'text-[var(--gm-ink)]' : 'text-white'}`}
               style={{ letterSpacing: '-0.01em' }}
               data-testid="wordmark"
             >
@@ -299,14 +299,14 @@ export default function HomePage() {
             {/* Game Mode Stats (gems / shields) — light pills on the light bg */}
             {isGameMode && (
               <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#F2F3F0] cursor-default" data-testid="gems-display">
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--gm-card)] cursor-default" data-testid="gems-display">
                   <Gem className="w-4 h-4 text-blue-500 animate-gem-shimmer" />
-                  <span className="text-sm font-bold text-[#0F1210]">{user?.gems ?? 0}</span>
+                  <span className="text-sm font-bold text-[var(--gm-ink)]">{user?.gems ?? 0}</span>
                 </div>
                 {streakShields > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#F2F3F0]" data-testid="shields-display">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--gm-card)]" data-testid="shields-display">
                     <Shield className="w-4 h-4 text-cyan-600" />
-                    <span className="text-sm font-bold text-[#0F1210]">{streakShields}</span>
+                    <span className="text-sm font-bold text-[var(--gm-ink)]">{streakShields}</span>
                   </div>
                 )}
               </div>
@@ -318,20 +318,20 @@ export default function HomePage() {
             <>
               <div className="grid grid-cols-3 gap-3 mt-4">
                 {/* Tile 1 — Total XP */}
-                <div className="rounded-2xl bg-[#F2F3F0] p-4" data-testid="stat-tile-xp">
-                  <div className="font-['Archivo'] font-black text-[#0F1210] text-2xl sm:text-3xl leading-none">
+                <div className="rounded-2xl bg-[var(--gm-card)] p-4" data-testid="stat-tile-xp">
+                  <div className="font-['Archivo'] font-black text-[var(--gm-ink)] text-2xl sm:text-3xl leading-none">
                     {currentXP.toLocaleString()}
                   </div>
-                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[#6C6F6C] mt-2" style={{ letterSpacing: '0.08em' }}>
+                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[var(--gm-muted)] mt-2" style={{ letterSpacing: '0.08em' }}>
                     Total XP
                   </div>
                 </div>
 
                 {/* Tile 2 — Weekly progress ring (blue is reserved for progress) */}
-                <div className="rounded-2xl bg-[#F2F3F0] p-4 flex flex-col items-center justify-center text-center" data-testid="stat-tile-week">
+                <div className="rounded-2xl bg-[var(--gm-card)] p-4 flex flex-col items-center justify-center text-center" data-testid="stat-tile-week">
                   <div className="relative w-[68px] h-[68px]">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 68 68">
-                      <circle cx="34" cy="34" r="28" fill="none" stroke="#D9DBD6" strokeWidth="6" />
+                      <circle cx="34" cy="34" r="28" fill="none" stroke="var(--gm-track)" strokeWidth="6" />
                       <circle
                         cx="34" cy="34" r="28" fill="none"
                         stroke="#3B82F6" strokeWidth="6" strokeLinecap="round"
@@ -341,22 +341,22 @@ export default function HomePage() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="font-['JetBrains_Mono'] font-bold text-[10px] text-[#0F1210]">
+                      <span className="font-['JetBrains_Mono'] font-bold text-[10px] text-[var(--gm-ink)]">
                         {weeklyXpEarned}/{weeklyXpGoal}
                       </span>
                     </div>
                   </div>
-                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[#6C6F6C] mt-2" style={{ letterSpacing: '0.08em' }}>
+                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[var(--gm-muted)] mt-2" style={{ letterSpacing: '0.08em' }}>
                     This Week
                   </div>
                 </div>
 
                 {/* Tile 3 — Level */}
-                <div className="rounded-2xl bg-[#F2F3F0] p-4" data-testid="stat-tile-level">
-                  <div className="font-['Archivo'] font-black text-[#0F1210] text-2xl sm:text-3xl leading-none">
+                <div className="rounded-2xl bg-[var(--gm-card)] p-4" data-testid="stat-tile-level">
+                  <div className="font-['Archivo'] font-black text-[var(--gm-ink)] text-2xl sm:text-3xl leading-none">
                     LV.{currentLevel}
                   </div>
-                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[#6C6F6C] mt-2 truncate" style={{ letterSpacing: '0.08em' }}>
+                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[var(--gm-muted)] mt-2 truncate" style={{ letterSpacing: '0.08em' }}>
                     {levelName} Rank
                   </div>
                 </div>
@@ -367,8 +367,8 @@ export default function HomePage() {
                 <div className="flex flex-wrap items-center gap-2 mt-3">
                   {boostMultiplier > 0 && (
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/15 border border-amber-600/25" data-testid="boost-active">
-                      <Zap className="w-3.5 h-3.5 text-amber-700" />
-                      <span className="text-xs font-semibold text-amber-700">{boostMultiplier}x BOOST</span>
+                      <Zap className="w-3.5 h-3.5 text-amber-600" />
+                      <span className="text-xs font-semibold text-amber-600">{boostMultiplier}x BOOST</span>
                     </div>
                   )}
                   {user?.current_streak === 0 && streakRevives > 0 && (
@@ -376,7 +376,7 @@ export default function HomePage() {
                       size="sm"
                       onClick={handleUseStreakRevive}
                       disabled={reviveBusy}
-                      className="bg-red-500/10 text-red-700 border border-red-600/25 hover:bg-red-500/20 text-xs rounded-xl"
+                      className="bg-red-500/10 text-red-600 border border-red-600/25 hover:bg-red-500/20 text-xs rounded-xl"
                       data-testid="use-streak-revive-btn"
                     >
                       <Heart className="w-3 h-3 mr-1" />
@@ -437,18 +437,18 @@ export default function HomePage() {
             return (
               <div
                 key={q.id}
-                className={`flex-shrink-0 min-w-[150px] rounded-2xl p-4 ${done ? 'bg-[#DBF67F]' : 'bg-[#F2F3F0]'}`}
+                className={`flex-shrink-0 min-w-[150px] rounded-2xl p-4 ${done ? 'bg-[#DBF67F]' : 'bg-[var(--gm-card)]'}`}
                 data-testid={`quest-card-${q.id}`}
               >
                 <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${done ? 'bg-[#2A3B0B]' : 'bg-[#E4E6E1]'}`}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${done ? 'bg-[#2A3B0B]' : 'bg-[var(--gm-badge)]'}`}
                 >
-                  <QIcon className={`w-4 h-4 ${done ? 'text-[#DBF67F]' : 'text-[#6C6F6C]'}`} strokeWidth={2} />
+                  <QIcon className={`w-4 h-4 ${done ? 'text-[#DBF67F]' : 'text-[var(--gm-muted)]'}`} strokeWidth={2} />
                 </div>
-                <div className={`font-['General_Sans',sans-serif] font-bold text-sm mt-3 text-[#0F1210]`}>
+                <div className={`font-['General_Sans',sans-serif] font-bold text-sm mt-3 ${done ? 'text-[#0F1210]' : 'text-[var(--gm-ink)]'}`}>
                   {q.title}
                 </div>
-                <div className={`text-xs mt-0.5 ${done ? 'text-[#0F1210]/70' : 'text-[#6C6F6C]'}`}>
+                <div className={`text-xs mt-0.5 ${done ? 'text-[#0F1210]/70' : 'text-[var(--gm-muted)]'}`}>
                   {q.sub}
                 </div>
               </div>
@@ -460,15 +460,15 @@ export default function HomePage() {
         {/* Habits sections */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className={`w-8 h-8 animate-spin ${isGameMode ? 'text-[#0F1210]' : 'text-zinc-400'}`} />
+            <Loader2 className={`w-8 h-8 animate-spin ${isGameMode ? 'text-[var(--gm-ink)]' : 'text-zinc-400'}`} />
           </div>
         ) : habits.length === 0 ? (
           <div className="text-center py-20" data-testid="no-habits">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isGameMode ? 'bg-[#F2F3F0]' : 'bg-zinc-800'}`}>
-              <Sparkles className={`w-8 h-8 ${isGameMode ? 'text-[#6C6F6C]' : 'text-zinc-500'}`} />
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isGameMode ? 'bg-[var(--gm-card)]' : 'bg-zinc-800'}`}>
+              <Sparkles className={`w-8 h-8 ${isGameMode ? 'text-[var(--gm-muted)]' : 'text-zinc-500'}`} />
             </div>
-            <h3 className={`text-xl font-extrabold font-['Archivo',sans-serif] mb-2 ${isGameMode ? 'text-[#0F1210]' : 'text-white'}`}>No habits yet</h3>
-            <p className={`mb-6 ${isGameMode ? 'text-[#6C6F6C]' : 'text-zinc-500'}`}>{isGameMode ? 'Add your first habit to start earning XP and gems' : 'Add your first habit to start tracking'}</p>
+            <h3 className={`text-xl font-extrabold font-['Archivo',sans-serif] mb-2 ${isGameMode ? 'text-[var(--gm-ink)]' : 'text-white'}`}>No habits yet</h3>
+            <p className={`mb-6 ${isGameMode ? 'text-[var(--gm-muted)]' : 'text-zinc-500'}`}>{isGameMode ? 'Add your first habit to start earning XP and gems' : 'Add your first habit to start tracking'}</p>
             <AddHabitDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSuccess={fetchHabits} isGameMode={isGameMode} />
           </div>
         ) : (
@@ -519,10 +519,10 @@ export default function HomePage() {
           isGameMode={isGameMode}
           trigger={
             <Button
-              className={`fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg hover-scale ${isGameMode ? 'bg-[#0F1210] hover:bg-[#23271F]' : 'bg-[#F4F5F2] hover:bg-[#E5E6E2]'}`}
+              className={`fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg hover-scale ${isGameMode ? 'bg-[var(--gm-ink)] hover:opacity-90' : 'bg-[#F4F5F2] hover:bg-[#E5E6E2]'}`}
               data-testid="add-habit-fab"
             >
-              <Plus className={`w-6 h-6 ${isGameMode ? 'text-[#FAFAF7]' : 'text-[#0E1012]'}`} />
+              <Plus className={`w-6 h-6 ${isGameMode ? 'text-[var(--gm-bg)]' : 'text-[#0E1012]'}`} />
             </Button>
           }
         />
@@ -561,9 +561,9 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSe
     <div data-testid={`habits-${title.toLowerCase()}`}>
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2 min-w-0">
-          <Icon className={`w-4 h-4 flex-shrink-0 ${isGameMode ? 'text-[#6C6F6C]' : 'text-zinc-400'}`} />
+          <Icon className={`w-4 h-4 flex-shrink-0 ${isGameMode ? 'text-[var(--gm-muted)]' : 'text-zinc-400'}`} />
           <h3
-            className={`font-['Archivo',sans-serif] font-extrabold text-[19px] sm:text-xl truncate ${isGameMode ? 'text-[#0F1210]' : 'text-white'}`}
+            className={`font-['Archivo',sans-serif] font-extrabold text-[19px] sm:text-xl truncate ${isGameMode ? 'text-[var(--gm-ink)]' : 'text-white'}`}
             style={{ letterSpacing: '-0.01em' }}
           >
             {title}
@@ -626,12 +626,12 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
     }
   };
 
-  // Difficulty accent for the XP reward — darker shades that stay legible on the
-  // light (#F2F3F0) Game-Mode row.
-  const difficultyColorsLight = {
-    easy: 'text-green-700',
-    medium: 'text-amber-700',
-    hard: 'text-red-700'
+  // Difficulty accent for the XP reward — mid-tone shades that stay legible on
+  // the Game-Mode row in BOTH themes (dark #1F2123 and light #F2F3F0 card).
+  const difficultyColorsHome = {
+    easy: 'text-green-600',
+    medium: 'text-amber-600',
+    hard: 'text-red-600'
   };
 
   const gemReward = { easy: 5, medium: 10, hard: 20 }[habit.difficulty] || 5;
@@ -647,7 +647,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
             ? 'bg-[#DBF67F] border-transparent'
             : 'bg-zinc-800/50 border-zinc-700/50'
           : isGameMode
-            ? 'bg-[#F2F3F0] border-transparent hover:border-[#D9DBD6]'
+            ? 'bg-[var(--gm-card)] border-transparent hover:border-[var(--gm-track)]'
             : 'glass-card hover:border-zinc-600'
       }`}
       data-testid={`habit-card-${habit.habit_id}`}
@@ -705,13 +705,13 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
                   ? 'bg-[#2A3B0B] border-[#2A3B0B]'
                   : 'bg-zinc-600 border-zinc-600'
                 : isGameMode
-                  ? 'border-[#C9CCC6] hover:border-[#6C6F6C]'
+                  ? 'border-[var(--gm-checkbox)] hover:border-[var(--gm-muted)]'
                   : 'border-zinc-600 hover:border-zinc-400'
             }`}
             data-testid={`habit-checkbox-${habit.habit_id}`}
           >
             {isCompleting ? (
-              <Loader2 className={`w-4 h-4 animate-spin ${isGameMode && !habit.completed_today ? 'text-[#0F1210]' : 'text-white'}`} />
+              <Loader2 className={`w-4 h-4 animate-spin ${isGameMode && !habit.completed_today ? 'text-[var(--gm-ink)]' : 'text-white'}`} />
             ) : habit.completed_today ? (
               <Check className="w-4 h-4 text-white" />
             ) : null}
@@ -728,7 +728,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
                 : habit.completed_today
                   ? 'font-medium text-zinc-400 line-through'
                   : isGameMode
-                    ? 'font-medium text-[#0F1210]'
+                    ? 'font-medium text-[var(--gm-ink)]'
                     : 'font-medium text-white'
           }`}>
             {habit.habit_name}
@@ -738,19 +738,19 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
               <span className="text-xs text-red-400 font-medium">Failed today</span>
             )}
             {isGameMode ? (
-              <span className={`text-xs ${habit.completed_today ? 'text-[#0F1210] font-bold' : `${difficultyColorsLight[habit.difficulty]} font-semibold`}`}>
+              <span className={`text-xs ${habit.completed_today ? 'text-[#0F1210] font-bold' : `${difficultyColorsHome[habit.difficulty]} font-semibold`}`}>
                 +{habit.xp_value} XP
               </span>
             ) : (
               <span className="text-xs text-zinc-500 capitalize">{habit.difficulty} &middot; {habit.session_duration || 15}min</span>
             )}
             {isGameMode && (
-              <span className={`text-xs flex items-center gap-1 ${habit.completed_today ? 'text-[#0F1210] font-bold' : 'text-[#6C6F6C]'}`}>
+              <span className={`text-xs flex items-center gap-1 ${habit.completed_today ? 'text-[#0F1210] font-bold' : 'text-[var(--gm-muted)]'}`}>
                 <Gem className="w-3 h-3" /> +{gemReward}
               </span>
             )}
             {habit.current_streak > 0 && (
-              <span className={`text-xs flex items-center gap-1 ${isGameMode ? (habit.completed_today ? 'text-[#0F1210]/70' : 'text-[#6C6F6C]') : 'text-zinc-500'}`}>
+              <span className={`text-xs flex items-center gap-1 ${isGameMode ? (habit.completed_today ? 'text-[#0F1210]/70' : 'text-[var(--gm-muted)]') : 'text-zinc-500'}`}>
                 <Flame className="w-3 h-3" /> {habit.current_streak}
               </span>
             )}
