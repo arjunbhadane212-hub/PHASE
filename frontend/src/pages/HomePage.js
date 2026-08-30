@@ -51,14 +51,7 @@ export default function HomePage() {
   const [xpEvents, setXpEvents] = useState([]);
   const xpIdRef = useRef(0);
   const [focusSession, setFocusSession] = useState(null); // { habit, duration }
-
-  // Get greeting based on time
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
+  const [weeklyXpEarned, setWeeklyXpEarned] = useState(0);
 
   const fetchHabits = useCallback(async () => {
     if (!user?.id) return;
@@ -105,6 +98,34 @@ export default function HomePage() {
   useEffect(() => {
     fetchHabits();
   }, [fetchHabits]);
+
+  // Weekly XP earned for the home header's "This Week" ring. Same weekly window
+  // as StreakCard's pip bar: CALENDAR WEEK, Monday-start. daily_logs.xp_earned_today
+  // is the authoritative per-day XP (complete_habit writes it, uncomplete_habit
+  // decrements it), so summing it is accurate. Read-only SELECT — no writes,
+  // no schema/RPC changes. Re-runs on current_xp change so it stays fresh after
+  // a completion (refreshUser updates current_xp).
+  const fetchWeeklyXp = useCallback(async () => {
+    if (!user?.id) return;
+    const now = new Date();
+    const diffToMonday = (now.getDay() + 6) % 7; // 0=Sun..6=Sat -> days since Monday
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - diffToMonday);
+    const { data, error } = await supabase
+      .from('daily_logs')
+      .select('xp_earned_today')
+      .eq('user_id', user.id)
+      .gte('log_date', localDateStr(monday));
+    if (error) {
+      console.error('Failed to load weekly XP', error);
+      return;
+    }
+    setWeeklyXpEarned((data || []).reduce((s, r) => s + (r.xp_earned_today || 0), 0));
+  }, [user?.id, user?.current_xp]);
+
+  useEffect(() => {
+    fetchWeeklyXp();
+  }, [fetchWeeklyXp]);
 
   const handleCompleteHabit = async (habitId) => {
     setCompletingHabit(habitId);
@@ -200,9 +221,14 @@ export default function HomePage() {
   const currentLevel = user?.rank || levelForXp(currentXP);
   const currentLevelInfo = rankInfo(currentLevel);
   const levelName = currentLevelInfo.name;
-  const xpInLevel = currentXP - currentLevelInfo.min_xp;
-  const xpNeeded = currentLevelInfo.max_xp - currentLevelInfo.min_xp;
-  const xpProgress = xpNeeded > 0 ? Math.min((xpInLevel / xpNeeded) * 100, 100) : 100;
+
+  // Weekly XP goal for the "This Week" ring — Step 2 spec: "if you did every one
+  // of your habits every day this week" = sum of habit xp_value * 7.
+  // NOTE: `habits` is the set scheduled for TODAY (fetchHabits filters by weekday),
+  // not literally every active habit — see Step 2 summary. weeklyXpEarned comes
+  // from daily_logs (Monday-start week), matching StreakCard's pip window.
+  const weeklyXpGoal = habits.reduce((s, h) => s + (h.xp_value || 0), 0) * 7;
+  const weeklyRingPct = weeklyXpGoal > 0 ? Math.min((weeklyXpEarned / weeklyXpGoal) * 100, 100) : 0;
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 pb-24 md:pb-8" data-testid="home-page">
@@ -246,14 +272,17 @@ export default function HomePage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold font-['Satoshi'] text-white mb-1 truncate" data-testid="greeting">
-                {getGreeting()}, {user?.first_name}
-              </h1>
-            </div>
-            
-            {/* Game Mode Stats */}
+          <div className="flex items-center justify-between gap-3">
+            {/* Wordmark */}
+            <h1
+              className="font-['Archivo'] font-black uppercase text-white text-xl sm:text-2xl"
+              style={{ letterSpacing: '-0.01em' }}
+              data-testid="wordmark"
+            >
+              PHASE
+            </h1>
+
+            {/* Game Mode Stats (gems / shields) — kept, top-right */}
             {isGameMode && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 glass-card cursor-default" data-testid="gems-display">
@@ -269,51 +298,79 @@ export default function HomePage() {
               </div>
             )}
           </div>
-          
-          {/* Level badge, XP boost, XP Progress - Game Mode Only */}
+
+          {/* Stat tiles + boost/revive — Game Mode Only */}
           {isGameMode && (
             <>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 sm:mt-4">
-                <div className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 animate-level-glow" data-testid="level-badge">
-                  <span className="text-xs sm:text-sm font-medium text-blue-400">
-                    Level {currentLevel} -- {levelName}
-                  </span>
-                </div>
-                
-                {boostMultiplier > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/15" data-testid="boost-active">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-xs font-semibold text-amber-400">{boostMultiplier}x BOOST</span>
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                {/* Tile 1 — Total XP */}
+                <div className="rounded-2xl bg-[#1F2123] p-4" data-testid="stat-tile-xp">
+                  <div className="font-['Archivo'] font-black text-[#F4F5F2] text-2xl sm:text-3xl leading-none">
+                    {currentXP.toLocaleString()}
                   </div>
-                )}
+                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[#9BA09C] mt-2" style={{ letterSpacing: '0.08em' }}>
+                    Total XP
+                  </div>
+                </div>
 
-                {user?.current_streak === 0 && streakRevives > 0 && (
-                  <Button
-                    size="sm"
-                    onClick={handleUseStreakRevive}
-                    disabled={reviveBusy}
-                    className="bg-red-500/10 text-red-400 border border-red-500/15 hover:bg-red-500/20 text-xs rounded-xl"
-                    data-testid="use-streak-revive-btn"
-                  >
-                    <Heart className="w-3 h-3 mr-1" />
-                    Revive Streak
-                  </Button>
-                )}
+                {/* Tile 2 — Weekly progress ring (blue is reserved for progress) */}
+                <div className="rounded-2xl bg-[#1F2123] p-4 flex flex-col items-center justify-center text-center" data-testid="stat-tile-week">
+                  <div className="relative w-[68px] h-[68px]">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 68 68">
+                      <circle cx="34" cy="34" r="28" fill="none" stroke="#2E3235" strokeWidth="6" />
+                      <circle
+                        cx="34" cy="34" r="28" fill="none"
+                        stroke="#3B82F6" strokeWidth="6" strokeLinecap="round"
+                        strokeDasharray={2 * Math.PI * 28}
+                        strokeDashoffset={(2 * Math.PI * 28) * (1 - weeklyRingPct / 100)}
+                        style={{ transition: 'stroke-dashoffset 700ms ease-out' }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="font-['JetBrains_Mono'] font-bold text-[10px] text-[#F4F5F2]">
+                        {weeklyXpEarned}/{weeklyXpGoal}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[#9BA09C] mt-2" style={{ letterSpacing: '0.08em' }}>
+                    This Week
+                  </div>
+                </div>
+
+                {/* Tile 3 — Level */}
+                <div className="rounded-2xl bg-[#1F2123] p-4" data-testid="stat-tile-level">
+                  <div className="font-['Archivo'] font-black text-[#F4F5F2] text-2xl sm:text-3xl leading-none">
+                    LV.{currentLevel}
+                  </div>
+                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[#9BA09C] mt-2 truncate" style={{ letterSpacing: '0.08em' }}>
+                    {levelName} Rank
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-3 sm:mt-4" data-testid="xp-progress">
-                <div className="flex items-center justify-between text-xs sm:text-sm mb-1.5 sm:mb-2">
-                  <span className="text-zinc-400">{currentXP} XP</span>
-                  <span className="text-zinc-500">{currentLevelInfo.max_xp === 999999 ? 'MAX' : `${currentLevelInfo.max_xp} XP`}</span>
+              {/* Boost + Revive — kept functional, repositioned under the tiles */}
+              {(boostMultiplier > 0 || (user?.current_streak === 0 && streakRevives > 0)) && (
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  {boostMultiplier > 0 && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/15" data-testid="boost-active">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-xs font-semibold text-amber-400">{boostMultiplier}x BOOST</span>
+                    </div>
+                  )}
+                  {user?.current_streak === 0 && streakRevives > 0 && (
+                    <Button
+                      size="sm"
+                      onClick={handleUseStreakRevive}
+                      disabled={reviveBusy}
+                      className="bg-red-500/10 text-red-400 border border-red-500/15 hover:bg-red-500/20 text-xs rounded-xl"
+                      data-testid="use-streak-revive-btn"
+                    >
+                      <Heart className="w-3 h-3 mr-1" />
+                      Revive Streak
+                    </Button>
+                  )}
                 </div>
-                <div className="h-2.5 bg-zinc-800/60 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r from-blue-700 to-blue-400"
-                    style={{ width: `${xpProgress}%`, boxShadow: '0 0 8px rgba(59,130,246,0.5)' }}
-                    data-testid="xp-bar"
-                  />
-                </div>
-              </div>
+              )}
             </>
           )}
 
