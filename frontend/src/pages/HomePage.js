@@ -10,7 +10,7 @@ import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Progress } from '../components/ui/progress';
-import { Plus, Check, Sunrise, Sun, Moon, Flame, Sparkles, Loader2, Gem, Heart, Shield, Zap, X, Award, Play } from 'lucide-react';
+import { Plus, Check, Sunrise, Sun, Moon, Flame, Sparkles, Loader2, Gem, Heart, Shield, Zap, X, Award, Play, Clock } from 'lucide-react';
 import StreakCard from '../components/StreakCard';
 import XpPopAnimation from '../components/XpPopAnimation';
 import FocusSession from '../components/FocusSession';
@@ -28,6 +28,16 @@ function localDateStr(d = new Date()) {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+// PLACEHOLDER — quest/challenge cards are UI-only mockup data.
+// Real quest data model, backend logic, and friend-comparison wiring
+// do not exist yet and are NOT part of this task. See project notes
+// for "quest system" as a future spec.
+const PLACEHOLDER_quests = [
+  { id: 'q1', state: 'complete', icon: 'check', title: '7-day sprint', sub: 'Complete' },
+  { id: 'q2', state: 'progress', icon: 'clock', title: 'No-skip week', sub: '3 of 7 days' },
+  { id: 'q3', state: 'locked', icon: 'zap', title: 'Beat Rival', sub: '+120 XP to win' },
+];
 
 export default function HomePage() {
   const { user, refreshUser } = useAuth();
@@ -410,6 +420,34 @@ export default function HomePage() {
               </Button>
             </div>
           )}
+        </div>
+
+        {/* Quest / challenge cards — PLACEHOLDER UI only (see PLACEHOLDER_quests).
+            No real quest data model, backend, or friend wiring exists yet. */}
+        <div className="flex gap-3 overflow-x-auto pb-1 mb-6 sm:mb-8 -mx-1 px-1" data-testid="quest-row">
+          {PLACEHOLDER_quests.map((q) => {
+            const done = q.state === 'complete';
+            const QIcon = q.icon === 'check' ? Check : q.icon === 'clock' ? Clock : Zap;
+            return (
+              <div
+                key={q.id}
+                className={`flex-shrink-0 min-w-[150px] rounded-2xl p-4 ${done ? 'bg-[#D0F662]' : 'bg-[#1F2123]'}`}
+                data-testid={`quest-card-${q.id}`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${done ? 'bg-[#09181C]' : 'bg-[#2E3235]'}`}
+                >
+                  <QIcon className={`w-4 h-4 ${done ? 'text-[#D0F662]' : 'text-[#9BA09C]'}`} strokeWidth={2} />
+                </div>
+                <div className={`font-['General_Sans'] font-bold text-sm mt-3 ${done ? 'text-[#09181C]' : 'text-[#F4F5F2]'}`}>
+                  {q.title}
+                </div>
+                <div className={`text-xs mt-0.5 ${done ? 'text-[#09181C]/70' : 'text-[#9BA09C]'}`}>
+                  {q.sub}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Habits sections */}
