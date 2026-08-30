@@ -131,6 +131,10 @@ export default function HomePage() {
       return;
     }
     setWeeklyXpEarned((data || []).reduce((s, r) => s + (r.xp_earned_today || 0), 0));
+    // current_xp is not read in the body; it's an intentional dependency so the
+    // ring refetches after a completion (refreshUser bumps current_xp). The
+    // exhaustive-deps rule flags it as "unnecessary", which fails the CI build.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.current_xp]);
 
   useEffect(() => {
