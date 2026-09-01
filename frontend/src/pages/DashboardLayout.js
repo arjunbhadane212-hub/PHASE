@@ -27,21 +27,18 @@ function MobileNavItem({ item, isGameMode }) {
   return (
     <button
       onClick={() => navigate(item.to)}
-      className={`flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 rounded-lg transition-all duration-200 relative ${
+      className={`flex flex-col items-center justify-center gap-0.5 transition-all duration-200 relative ${
         isActive
-          ? isGameMode ? 'text-[#A59BCC]' : 'text-[var(--gm-ink)]'
-          : 'text-zinc-600'
+          ? isGameMode
+            ? 'py-2 px-4 rounded-[14px] text-[#A59BCC] bg-[#A59BCC]/10'
+            : 'py-2 px-4 rounded-[14px] text-[var(--gm-ink)] bg-[var(--gm-card)]'
+          : 'py-1.5 px-3 rounded-lg text-zinc-600'
       }`}
       data-testid={`nav-${item.label.toLowerCase()}`}
       style={{ pointerEvents: 'auto' }}
     >
       <Icon className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />
       <span className="text-[9px] font-medium">{item.label}</span>
-      {isActive && (
-        <div className={`absolute -bottom-0.5 w-5 h-0.5 rounded-full ${
-          isGameMode ? 'bg-[#A59BCC]' : 'bg-[var(--gm-ink)]'
-        }`} />
-      )}
     </button>
   );
 }
@@ -56,7 +53,7 @@ export default function DashboardLayout() {
   return (
     <div className={`min-h-screen ${isGameMode ? 'mode-game' : 'mode-focus'}`} style={{ backgroundColor: 'var(--color-bg)' }} data-testid="dashboard-layout">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 flex-col items-center py-8 gap-1 glass-nav border-r border-white/[0.06] z-50" data-testid="desktop-sidebar">
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 flex-col items-center py-8 gap-1 glass-nav border-r border-white/[0.06] shadow-[var(--gm-shadow-nav)] z-50" data-testid="desktop-sidebar">
         {/* Profile button at top */}
         <button
           onClick={() => setProfileOpen(true)}
@@ -98,7 +95,7 @@ export default function DashboardLayout() {
 
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 md:hidden z-[9999]" data-testid="mobile-nav" style={{ pointerEvents: 'none' }}>
-        <div className="mx-2 mb-8 glass-nav rounded-2xl border border-white/[0.06]" style={{ pointerEvents: 'auto' }}>
+        <div className="mx-2 mb-8 glass-nav rounded-2xl border border-white/[0.06] shadow-[var(--gm-shadow-nav)]" style={{ pointerEvents: 'auto' }}>
           <div className="flex items-stretch justify-around h-14 px-1">
             {/* Profile button in mobile nav */}
             <button

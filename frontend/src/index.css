@@ -63,6 +63,16 @@
   --gm-checkbox: #52525B;  /* uncompleted checkbox outline */
   --gm-ink: #F4F5F2;       /* primary text / numbers */
   --gm-muted: #9BA09C;     /* muted labels / secondary text */
+
+  /* Elevation system (dark defaults) — one source of truth for every card,
+     hero, CTA, FAB and nav shadow on the Home screen. Values pulled from the
+     approved Focus Mode Home redesign mockup. */
+  --gm-shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -10px rgba(0,0,0,0.55);
+  --gm-shadow-hero: 0 1px 2px rgba(0,0,0,0.3), 0 10px 28px -10px rgba(24,58,63,0.55);
+  --gm-shadow-lime: 0 1px 2px rgba(0,0,0,0.3), 0 10px 24px -10px rgba(219,246,127,0.35);
+  --gm-shadow-cta: 0 6px 16px -5px rgba(59,130,246,0.65);
+  --gm-shadow-fab: 0 10px 24px -6px rgba(0,0,0,0.6);
+  --gm-shadow-nav: 0 12px 30px -10px rgba(0,0,0,0.65);
 }
 
 /* Light Mode Override */
@@ -88,6 +98,14 @@
   --gm-checkbox: #C9CCC6;
   --gm-ink: #0F1210;
   --gm-muted: #6C6F6C;
+
+  /* Elevation system — LIGHT overrides (softer, tinted for a light ground). */
+  --gm-shadow-card: 0 1px 2px rgba(15,18,16,0.05), 0 6px 18px -10px rgba(15,18,16,0.13);
+  --gm-shadow-hero: 0 1px 2px rgba(15,18,16,0.05), 0 10px 26px -10px rgba(24,58,63,0.28);
+  --gm-shadow-lime: 0 1px 2px rgba(15,18,16,0.05), 0 10px 22px -10px rgba(219,246,127,0.5);
+  --gm-shadow-cta: 0 6px 16px -5px rgba(59,130,246,0.5);
+  --gm-shadow-fab: 0 10px 22px -6px rgba(15,18,16,0.35);
+  --gm-shadow-nav: 0 12px 26px -10px rgba(15,18,16,0.16);
 }
 
 * {

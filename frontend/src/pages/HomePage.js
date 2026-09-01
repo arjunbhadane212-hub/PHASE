@@ -400,7 +400,7 @@ export default function HomePage() {
           {/* Focus Mode: Streak Shield button on the home screen (500 gems).
               Locked decision — Focus Mode has no shop, this is its only purchase. */}
           {!isGameMode && (
-            <div className="mt-4 p-4 rounded-2xl bg-[var(--gm-card)] flex items-center gap-4" data-testid="focus-shield-card">
+            <div className="mt-4 p-4 rounded-[20px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] flex items-center gap-4" data-testid="focus-shield-card">
               <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
                 <Shield className="w-5 h-5 text-[#60A5FA]" />
               </div>
@@ -415,12 +415,12 @@ export default function HomePage() {
               <Button
                 onClick={handleBuyFocusShield}
                 disabled={shieldBusy || (user?.gems ?? 0) < 500}
-                className="h-9 px-4 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm flex-shrink-0 disabled:opacity-40"
+                className="rounded-full py-[9px] px-[14px] bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm flex-shrink-0 shadow-[var(--gm-shadow-cta)] disabled:opacity-40"
                 data-testid="buy-focus-shield-btn"
               >
                 {shieldBusy
                   ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> 500</span>}
+                  : <span className="flex items-center gap-[6px]"><Gem className="w-3.5 h-3.5" /> 500</span>}
               </Button>
             </div>
           )}
@@ -519,7 +519,7 @@ export default function HomePage() {
           isGameMode={isGameMode}
           trigger={
             <Button
-              className="fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg hover-scale bg-[var(--gm-ink)] hover:opacity-90"
+              className="fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-[var(--gm-shadow-fab)] hover-scale bg-[var(--gm-ink)] hover:opacity-90"
               data-testid="add-habit-fab"
             >
               <Plus className="w-6 h-6 text-[var(--gm-bg)]" />
@@ -573,7 +573,7 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSe
           {/* Status indicator — not a button */}
           {leftCount > 0 && (
             <span
-              className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] px-2.5 py-1 rounded-full border border-[#A59BCC]/50 text-[#A59BCC]"
+              className={`font-['JetBrains_Mono'] font-bold uppercase text-[10px] px-2.5 py-1 rounded-full border ${isGameMode ? 'border-[#A59BCC]/50 text-[#A59BCC]' : 'border-[var(--gm-track)] text-[var(--gm-muted)]'}`}
               style={{ letterSpacing: '0.06em' }}
               data-testid={`habits-left-${title.toLowerCase()}`}
             >
@@ -584,7 +584,7 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSe
           <button
             type="button"
             onClick={onAddClick}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#A59BCC] text-[#A59BCC] text-xs font-['General_Sans'] font-bold uppercase hover:bg-[#A59BCC]/10 transition-colors"
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-['General_Sans'] font-bold uppercase transition-colors ${isGameMode ? 'border-[#A59BCC] text-[#A59BCC] hover:bg-[#A59BCC]/10' : 'border-[var(--gm-track)] text-[var(--gm-ink)] hover:bg-[var(--gm-card)]'}`}
             data-testid={`add-habit-pill-${title.toLowerCase()}`}
           >
             <Plus className="w-3.5 h-3.5" />
@@ -641,10 +641,10 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative p-4 rounded-2xl border transition-all duration-200 overflow-hidden ${
+      className={`relative p-4 rounded-[18px] border transition-all duration-200 overflow-hidden ${
         habit.completed_today
-          ? 'bg-[#DBF67F] border-transparent'
-          : 'bg-[var(--gm-card)] border-transparent hover:border-[var(--gm-track)]'
+          ? 'bg-[#DBF67F] border-transparent shadow-[var(--gm-shadow-lime)]'
+          : 'bg-[var(--gm-card)] border-transparent hover:border-[var(--gm-track)] shadow-[var(--gm-shadow-card)]'
       }`}
       data-testid={`habit-card-${habit.habit_id}`}
     >
@@ -685,17 +685,17 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
           <button
             onClick={() => onBeginSession(habit)}
             disabled={isCompleting}
-            className="px-4 py-1.5 rounded-full bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold flex-shrink-0 transition-all flex items-center gap-1.5"
+            className="py-[10px] px-[16px] rounded-full bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold flex-shrink-0 transition-all flex items-center gap-[7px] shadow-[var(--gm-shadow-cta)]"
             data-testid={`habit-begin-${habit.habit_id}`}
           >
-            {isCompleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Play className="w-3 h-3" /> Begin</>}
+            {isCompleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Play className="w-3 h-3 fill-current" /> Begin</>}
           </button>
         ) : (
           /* Game Mode checkbox OR completed Focus Mode checkbox */
           <button
             onClick={handleClick}
             disabled={isCompleting}
-            className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+            className={`w-[34px] h-[34px] rounded-[11px] border-2 flex items-center justify-center flex-shrink-0 transition-all ${
               habit.completed_today
                 ? 'bg-[#2A3B0B] border-[#2A3B0B]'
                 : 'border-[var(--gm-checkbox)] hover:border-[var(--gm-muted)]'
@@ -847,7 +847,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="bg-[var(--gm-card)] border-[var(--gm-track)] text-[var(--gm-ink)] max-w-md" data-testid="add-habit-dialog">
+      <DialogContent className="bg-[var(--gm-card)] border-[var(--gm-track)] text-[var(--gm-ink)] shadow-[var(--gm-shadow-card)] max-w-md" data-testid="add-habit-dialog">
         <DialogHeader>
           <DialogTitle className="font-['Archivo',sans-serif] font-extrabold">Create New Habit</DialogTitle>
         </DialogHeader>

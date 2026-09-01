@@ -63,7 +63,7 @@ export default function StreakCard({ streak = 0, shieldsActive = 0, isGameMode =
 
   return (
     <div
-      className="w-full rounded-3xl bg-[#95DEE6] p-5 sm:p-6"
+      className="w-full rounded-[22px] bg-[#95DEE6] p-5 sm:p-6 shadow-[var(--gm-shadow-hero)]"
       data-testid="streak-card"
     >
       <div className="flex items-start justify-between gap-3">
