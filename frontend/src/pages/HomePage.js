@@ -289,7 +289,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between gap-3">
             {/* Wordmark */}
             <h1
-              className={`font-['Archivo',sans-serif] font-black uppercase text-xl sm:text-2xl ${isGameMode ? 'text-[var(--gm-ink)]' : 'text-white'}`}
+              className="font-['Archivo',sans-serif] font-black uppercase text-xl sm:text-2xl text-[var(--gm-ink)]"
               style={{ letterSpacing: '-0.01em' }}
               data-testid="wordmark"
             >
@@ -400,13 +400,13 @@ export default function HomePage() {
           {/* Focus Mode: Streak Shield button on the home screen (500 gems).
               Locked decision — Focus Mode has no shop, this is its only purchase. */}
           {!isGameMode && (
-            <div className="mt-4 p-4 rounded-2xl glass-card flex items-center gap-4" data-testid="focus-shield-card">
+            <div className="mt-4 p-4 rounded-2xl bg-[var(--gm-card)] flex items-center gap-4" data-testid="focus-shield-card">
               <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
                 <Shield className="w-5 h-5 text-[#60A5FA]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white">Streak Shield</p>
-                <p className="text-xs text-zinc-500 mt-0.5">
+                <p className="text-sm font-semibold text-[var(--gm-ink)]">Streak Shield</p>
+                <p className="text-xs text-[var(--gm-muted)] mt-0.5">
                   {streakShields > 0
                     ? `${streakShields} active · protects a missed day`
                     : 'Protects your streak on a missed day'}
@@ -460,15 +460,15 @@ export default function HomePage() {
         {/* Habits sections */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className={`w-8 h-8 animate-spin ${isGameMode ? 'text-[var(--gm-ink)]' : 'text-zinc-400'}`} />
+            <Loader2 className="w-8 h-8 animate-spin text-[var(--gm-ink)]" />
           </div>
         ) : habits.length === 0 ? (
           <div className="text-center py-20" data-testid="no-habits">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isGameMode ? 'bg-[var(--gm-card)]' : 'bg-zinc-800'}`}>
-              <Sparkles className={`w-8 h-8 ${isGameMode ? 'text-[var(--gm-muted)]' : 'text-zinc-500'}`} />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-[var(--gm-card)]">
+              <Sparkles className="w-8 h-8 text-[var(--gm-muted)]" />
             </div>
-            <h3 className={`text-xl font-extrabold font-['Archivo',sans-serif] mb-2 ${isGameMode ? 'text-[var(--gm-ink)]' : 'text-white'}`}>No habits yet</h3>
-            <p className={`mb-6 ${isGameMode ? 'text-[var(--gm-muted)]' : 'text-zinc-500'}`}>{isGameMode ? 'Add your first habit to start earning XP and gems' : 'Add your first habit to start tracking'}</p>
+            <h3 className="text-xl font-extrabold font-['Archivo',sans-serif] mb-2 text-[var(--gm-ink)]">No habits yet</h3>
+            <p className="mb-6 text-[var(--gm-muted)]">{isGameMode ? 'Add your first habit to start earning XP and gems' : 'Add your first habit to start tracking'}</p>
             <AddHabitDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSuccess={fetchHabits} isGameMode={isGameMode} />
           </div>
         ) : (
@@ -519,10 +519,10 @@ export default function HomePage() {
           isGameMode={isGameMode}
           trigger={
             <Button
-              className={`fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg hover-scale ${isGameMode ? 'bg-[var(--gm-ink)] hover:opacity-90' : 'bg-[#F4F5F2] hover:bg-[#E5E6E2]'}`}
+              className="fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg hover-scale bg-[var(--gm-ink)] hover:opacity-90"
               data-testid="add-habit-fab"
             >
-              <Plus className={`w-6 h-6 ${isGameMode ? 'text-[var(--gm-bg)]' : 'text-[#0E1012]'}`} />
+              <Plus className="w-6 h-6 text-[var(--gm-bg)]" />
             </Button>
           }
         />
@@ -561,9 +561,9 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSe
     <div data-testid={`habits-${title.toLowerCase()}`}>
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2 min-w-0">
-          <Icon className={`w-4 h-4 flex-shrink-0 ${isGameMode ? 'text-[var(--gm-muted)]' : 'text-zinc-400'}`} />
+          <Icon className="w-4 h-4 flex-shrink-0 text-[var(--gm-muted)]" />
           <h3
-            className={`font-['Archivo',sans-serif] font-extrabold text-[19px] sm:text-xl truncate ${isGameMode ? 'text-[var(--gm-ink)]' : 'text-white'}`}
+            className="font-['Archivo',sans-serif] font-extrabold text-[19px] sm:text-xl truncate text-[var(--gm-ink)]"
             style={{ letterSpacing: '-0.01em' }}
           >
             {title}
@@ -643,12 +643,8 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
       animate={{ opacity: 1, y: 0 }}
       className={`relative p-4 rounded-2xl border transition-all duration-200 overflow-hidden ${
         habit.completed_today
-          ? isGameMode
-            ? 'bg-[#DBF67F] border-transparent'
-            : 'bg-zinc-800/50 border-zinc-700/50'
-          : isGameMode
-            ? 'bg-[var(--gm-card)] border-transparent hover:border-[var(--gm-track)]'
-            : 'glass-card hover:border-zinc-600'
+          ? 'bg-[#DBF67F] border-transparent'
+          : 'bg-[var(--gm-card)] border-transparent hover:border-[var(--gm-track)]'
       }`}
       data-testid={`habit-card-${habit.habit_id}`}
     >
@@ -701,12 +697,8 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
             disabled={isCompleting}
             className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
               habit.completed_today
-                ? isGameMode
-                  ? 'bg-[#2A3B0B] border-[#2A3B0B]'
-                  : 'bg-zinc-600 border-zinc-600'
-                : isGameMode
-                  ? 'border-[var(--gm-checkbox)] hover:border-[var(--gm-muted)]'
-                  : 'border-zinc-600 hover:border-zinc-400'
+                ? 'bg-[#2A3B0B] border-[#2A3B0B]'
+                : 'border-[var(--gm-checkbox)] hover:border-[var(--gm-muted)]'
             }`}
             data-testid={`habit-checkbox-${habit.habit_id}`}
           >
@@ -723,13 +715,9 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
           <p className={`${
             habit.failed_today
               ? 'font-medium text-zinc-400 line-through'
-              : isGameMode && habit.completed_today
+              : habit.completed_today
                 ? 'font-bold text-[#0F1210]'
-                : habit.completed_today
-                  ? 'font-medium text-zinc-400 line-through'
-                  : isGameMode
-                    ? 'font-medium text-[var(--gm-ink)]'
-                    : 'font-medium text-white'
+                : 'font-medium text-[var(--gm-ink)]'
           }`}>
             {habit.habit_name}
           </p>
@@ -742,7 +730,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
                 +{habit.xp_value} XP
               </span>
             ) : (
-              <span className="text-xs text-zinc-500 capitalize">{habit.difficulty} &middot; {habit.session_duration || 15}min</span>
+              <span className={`text-xs capitalize ${habit.completed_today ? 'text-[#0F1210] font-bold' : 'text-[var(--gm-muted)]'}`}>{habit.difficulty} &middot; {habit.session_duration || 15}min</span>
             )}
             {isGameMode && (
               <span className={`text-xs flex items-center gap-1 ${habit.completed_today ? 'text-[#0F1210] font-bold' : 'text-[var(--gm-muted)]'}`}>
@@ -750,7 +738,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
               </span>
             )}
             {habit.current_streak > 0 && (
-              <span className={`text-xs flex items-center gap-1 ${isGameMode ? (habit.completed_today ? 'text-[#0F1210]/70' : 'text-[var(--gm-muted)]') : 'text-zinc-500'}`}>
+              <span className={`text-xs flex items-center gap-1 ${habit.completed_today ? 'text-[#0F1210]/70' : 'text-[var(--gm-muted)]'}`}>
                 <Flame className="w-3 h-3" /> {habit.current_streak}
               </span>
             )}
@@ -763,15 +751,15 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`mt-3 pt-3 border-t flex items-center justify-between ${isGameMode ? 'border-[#0F1210]/15' : 'border-white/10'}`}
+          className="mt-3 pt-3 border-t flex items-center justify-between border-[#0F1210]/15"
         >
-          <span className={`text-sm ${isGameMode ? 'text-[#0F1210]' : 'text-zinc-400'}`}>Uncheck this habit?</span>
+          <span className="text-sm text-[#0F1210]">Uncheck this habit?</span>
           <div className="flex gap-2">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setShowConfirm(false)}
-              className={isGameMode ? 'text-[#0F1210] hover:bg-[#0F1210]/10' : 'text-zinc-400'}
+              className="text-[#0F1210] hover:bg-[#0F1210]/10"
             >
               Cancel
             </Button>
@@ -851,7 +839,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
       {!trigger && (
         <DialogTrigger asChild>
           <Button
-            className={`${isGameMode ? 'bg-purple-600 hover:bg-purple-700 glow-purple-sm' : 'bg-zinc-700 hover:bg-zinc-600'}`}
+            className={`${isGameMode ? 'bg-purple-600 hover:bg-purple-700 glow-purple-sm' : 'bg-[var(--gm-ink)] text-[var(--gm-bg)] hover:opacity-90'}`}
             data-testid="add-first-habit-btn"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -859,32 +847,32 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-md" data-testid="add-habit-dialog">
+      <DialogContent className="bg-[var(--gm-card)] border-[var(--gm-track)] text-[var(--gm-ink)] max-w-md" data-testid="add-habit-dialog">
         <DialogHeader>
           <DialogTitle className="font-['Archivo',sans-serif] font-extrabold">Create New Habit</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label className="text-zinc-300">Habit Name</Label>
+            <Label className="text-[var(--gm-muted)]">Habit Name</Label>
             <Input
               placeholder="e.g., Morning workout"
               value={formData.habit_name}
               onChange={(e) => setFormData({ ...formData, habit_name: e.target.value })}
-              className="bg-zinc-800 border-zinc-700 text-white"
+              className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]"
               data-testid="habit-name-input"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-zinc-300">Time of Day</Label>
+            <Label className="text-[var(--gm-muted)]">Time of Day</Label>
             <Select
               value={formData.time_of_day}
               onValueChange={(v) => setFormData({ ...formData, time_of_day: v })}
             >
-              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white" data-testid="habit-time-select">
+              <SelectTrigger className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]" data-testid="habit-time-select">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700">
+              <SelectContent className="bg-[var(--gm-card)] border-[var(--gm-track)]">
                 <SelectItem value="morning">Morning</SelectItem>
                 <SelectItem value="afternoon">Afternoon</SelectItem>
                 <SelectItem value="night">Night</SelectItem>
@@ -893,15 +881,15 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
           </div>
 
           <div className="space-y-2">
-            <Label className="text-zinc-300">Difficulty</Label>
+            <Label className="text-[var(--gm-muted)]">Difficulty</Label>
             <Select
               value={formData.difficulty}
               onValueChange={(v) => setFormData({ ...formData, difficulty: v })}
             >
-              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white" data-testid="habit-difficulty-select">
+              <SelectTrigger className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]" data-testid="habit-difficulty-select">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700">
+              <SelectContent className="bg-[var(--gm-card)] border-[var(--gm-track)]">
                 <SelectItem value="easy">
                   Easy (+{xpValues.easy} XP{isGameMode ? ` • +${gemValues.easy} gems` : ''})
                 </SelectItem>
@@ -916,15 +904,15 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
           </div>
 
           <div className="space-y-2">
-            <Label className="text-zinc-300">Repeat</Label>
+            <Label className="text-[var(--gm-muted)]">Repeat</Label>
             <Select
               value={formData.repeat_schedule}
               onValueChange={(v) => setFormData({ ...formData, repeat_schedule: v })}
             >
-              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white" data-testid="habit-repeat-select">
+              <SelectTrigger className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]" data-testid="habit-repeat-select">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700">
+              <SelectContent className="bg-[var(--gm-card)] border-[var(--gm-track)]">
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekdays">Weekdays</SelectItem>
                 <SelectItem value="weekends">Weekends</SelectItem>
@@ -935,15 +923,15 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
           {/* Session Duration - Focus Mode only */}
           {!isGameMode && (
             <div className="space-y-2">
-              <Label className="text-zinc-300">Session Duration</Label>
+              <Label className="text-[var(--gm-muted)]">Session Duration</Label>
               <Select
                 value={String(formData.session_duration)}
                 onValueChange={(v) => setFormData({ ...formData, session_duration: Number(v) })}
               >
-                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white" data-testid="habit-duration-select">
+                <SelectTrigger className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]" data-testid="habit-duration-select">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700">
+                <SelectContent className="bg-[var(--gm-card)] border-[var(--gm-track)]">
                   {[5, 10, 15, 20, 30, 45, 60].map(m => (
                     <SelectItem key={m} value={String(m)}>{m} min</SelectItem>
                   ))}
@@ -956,7 +944,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
             <Button
               type="submit"
               disabled={loading || !formData.habit_name.trim()}
-              className={`w-full ${isGameMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-zinc-700 hover:bg-zinc-600'}`}
+              className={`w-full ${isGameMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-[var(--gm-ink)] text-[var(--gm-bg)] hover:opacity-90'}`}
               data-testid="create-habit-btn"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Habit'}

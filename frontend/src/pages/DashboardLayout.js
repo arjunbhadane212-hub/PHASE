@@ -29,7 +29,7 @@ function MobileNavItem({ item, isGameMode }) {
       onClick={() => navigate(item.to)}
       className={`flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 rounded-lg transition-all duration-200 relative ${
         isActive
-          ? isGameMode ? 'text-[#A59BCC]' : 'text-white'
+          ? isGameMode ? 'text-[#A59BCC]' : 'text-[var(--gm-ink)]'
           : 'text-zinc-600'
       }`}
       data-testid={`nav-${item.label.toLowerCase()}`}
@@ -39,7 +39,7 @@ function MobileNavItem({ item, isGameMode }) {
       <span className="text-[9px] font-medium">{item.label}</span>
       {isActive && (
         <div className={`absolute -bottom-0.5 w-5 h-0.5 rounded-full ${
-          isGameMode ? 'bg-[#A59BCC]' : 'bg-white/40'
+          isGameMode ? 'bg-[#A59BCC]' : 'bg-[var(--gm-ink)]'
         }`} />
       )}
     </button>
@@ -77,7 +77,7 @@ export default function DashboardLayout() {
               ${isActive
                 ? isGameMode
                   ? 'text-[#A59BCC] bg-[#A59BCC]/10'
-                  : 'text-white bg-white/[0.06]'
+                  : 'text-[var(--gm-ink)] bg-[var(--gm-card)]'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
               }
             `}
