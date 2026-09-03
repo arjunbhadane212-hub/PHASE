@@ -41,6 +41,9 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   // keep it for the whole session (lazy initializer, so it does not re-roll
   // on every tick re-render). Same index drives the active + completion lines.
   const [lineIndex] = useState(() => Math.floor(Math.random() * ACTIVE_LINES.length));
+  // Random-once: pick ONE of the 5 full-screen timer styles for this session,
+  // held for the whole session (same lazy-initializer pattern as lineIndex).
+  const [styleIdx] = useState(() => Math.floor(Math.random() * 5));
   // Guards for the tab-switch penalty (see the visibility effect below).
   const penalizedRef = useRef(false);
   const showModalRef = useRef(false);
@@ -265,40 +268,163 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
     );
   }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6"
-      style={{ backgroundColor: '#4ECDDE' }}
-      data-testid="focus-session"
+  // Shared number + label, reused by every timer style. The number keeps its
+  // data-testid and the responsive font-size calc (driven by the --circle-size
+  // / --digit-chars vars set on each style's container).
+  const renderNumber = (color, extra = {}) => (
+    <span
+      className="font-black leading-none select-none"
+      style={{
+        fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif",
+        fontVariantNumeric: 'tabular-nums',
+        letterSpacing: '-0.02em',
+        color,
+        fontSize: `calc(var(--circle-size) * 0.668 / (var(--digit-chars) * 0.55))`,
+        maxWidth: 'calc(var(--circle-size) * 0.668)',
+        textShadow: '0 1px 0 rgba(255,255,255,0.3)',
+        willChange: 'transform',
+        ...extra,
+      }}
+      data-testid="session-timer"
     >
-      {/* Big, thick ring — dominates the screen. Nothing above it: the session
-          screen is deliberately stripped so nothing pulls you away. */}
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.3, type: 'spring', stiffness: 180 }}
-        className="relative z-10 flex flex-col items-center justify-center"
-        style={{
-          // Circle diameter — responsive; it should nearly fill the screen.
-          width: 'min(80vmin, 640px)',
-          height: 'min(80vmin, 640px)',
-          // CSS vars consumed by inline font-size calc below
-          '--circle-size': 'min(80vmin, 640px)',
-          '--digit-chars': charCount,
-        }}
-        data-testid="session-timer-container"
+      {timerStr}
+    </span>
+  );
+  const renderRemaining = (color = '#183A3F') => (
+    <span
+      className="uppercase"
+      style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '11px',
+        fontWeight: 700,
+        letterSpacing: '0.15em',
+        color,
+        marginTop: '10px',
+      }}
+    >
+      Remaining
+    </span>
+  );
+
+  // CSS vars for the responsive number calc, per container size.
+  const numberVars = (size) => ({ '--circle-size': size, '--digit-chars': charCount });
+
+  let timerVisual;
+  if (styleIdx === 1) {
+    // Style 1 — Giant Number + chunky bar.
+    timerVisual = (
+      <div className="flex flex-col items-center w-full">
+        <span
+          className="font-black leading-none select-none text-center"
+          style={{
+            fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif",
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.02em',
+            color: '#0F1210',
+            fontSize: 'min(24vw, 118px)',
+            textShadow: '0 1px 0 rgba(255,255,255,0.3)',
+          }}
+          data-testid="session-timer"
+        >
+          {timerStr}
+        </span>
+        {renderRemaining()}
+        <div
+          className="mt-8"
+          style={{ width: '100%', maxWidth: 'min(80vmin, 640px)', height: '26px', borderRadius: '999px', background: 'rgba(255,255,255,0.4)', overflow: 'hidden' }}
+        >
+          <div style={{ width: `${progress * 100}%`, height: '100%', borderRadius: '999px', background: '#0F1210', transition: 'width 1s linear' }} />
+        </div>
+      </div>
+    );
+  } else if (styleIdx === 2) {
+    // Style 2 — Breathing Orb (progress read from the countdown itself).
+    const orbSize = 'min(76vmin, 300px)';
+    timerVisual = (
+      <>
+        <style>{`
+          @keyframes focus-orb-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+          .focus-orb { animation: focus-orb-breathe 4s ease-in-out infinite; }
+          @media (prefers-reduced-motion: reduce) { .focus-orb { animation: none; } }
+        `}</style>
+        <div
+          className="focus-orb flex flex-col items-center justify-center rounded-full"
+          style={{
+            ...numberVars(orbSize),
+            width: orbSize,
+            height: orbSize,
+            background: '#0F1210',
+            boxShadow: '0 0 0 12px rgba(15,18,16,0.10), 0 30px 60px -20px rgba(15,18,16,0.5)',
+          }}
+        >
+          {renderNumber('#4ECDDE')}
+          {renderRemaining('rgba(78,205,222,0.65)')}
+        </div>
+      </>
+    );
+  } else if (styleIdx === 3) {
+    // Style 3 — Segmented Ticks. 48 marks; the first round(48*progress) are ink.
+    const filled = Math.round(48 * progress);
+    timerVisual = (
+      <div
+        className="relative flex flex-col items-center justify-center"
+        style={{ ...numberVars('min(80vmin, 640px)'), width: 'min(80vmin, 640px)', height: 'min(80vmin, 640px)' }}
       >
-        {/* Progress ring (absolute, fills container) */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox="0 0 280 280"
-          style={{
-            transform: 'rotate(-90deg)',
-            filter: 'drop-shadow(0 10px 30px rgba(15,18,16,0.18))',
-          }}
+          style={{ filter: 'drop-shadow(0 10px 30px rgba(15,18,16,0.18))' }}
+        >
+          {Array.from({ length: 48 }).map((_, i) => (
+            <line
+              key={i}
+              x1="140" y1="14" x2="140" y2="36"
+              stroke={i < filled ? '#0F1210' : 'rgba(255,255,255,0.4)'}
+              strokeWidth="6"
+              strokeLinecap="round"
+              transform={`rotate(${i * 7.5} 140 140)`}
+            />
+          ))}
+        </svg>
+        {renderNumber('#0F1210')}
+        {renderRemaining()}
+      </div>
+    );
+  } else if (styleIdx === 4) {
+    // Style 4 — Sweeping Pie (conic donut). Inner disc holds the number.
+    const discSize = 'min(80vmin, 320px)';
+    const innerSize = 'calc(min(80vmin, 320px) * 0.61)';
+    timerVisual = (
+      <div
+        className="flex items-center justify-center rounded-full"
+        style={{
+          width: discSize,
+          height: discSize,
+          background: `conic-gradient(#0F1210 0turn ${progress}turn, rgba(255,255,255,0.4) ${progress}turn 1turn)`,
+          boxShadow: '0 20px 50px -18px rgba(15,18,16,0.4)',
+          transition: 'background 1s linear',
+        }}
+      >
+        <div
+          className="flex flex-col items-center justify-center rounded-full"
+          style={{ ...numberVars(innerSize), width: innerSize, height: innerSize, background: '#4ECDDE' }}
+        >
+          {renderNumber('#0F1210')}
+          {renderRemaining()}
+        </div>
+      </div>
+    );
+  } else {
+    // Style 0 — Thick Ring (default).
+    timerVisual = (
+      <div
+        className="relative flex flex-col items-center justify-center"
+        style={{ ...numberVars('min(80vmin, 640px)'), width: 'min(80vmin, 640px)', height: 'min(80vmin, 640px)' }}
+      >
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          viewBox="0 0 280 280"
+          style={{ transform: 'rotate(-90deg)', filter: 'drop-shadow(0 10px 30px rgba(15,18,16,0.18))' }}
         >
           <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="15" />
           <circle
@@ -311,42 +437,32 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
         </svg>
+        {renderNumber('#0F1210')}
+        {renderRemaining()}
+      </div>
+    );
+  }
 
-        {/* Timer text — flex centered inside circle, font-size scales with char count.
-            Width capped to 78% of circle diameter; 0.55 is approx glyph-width ratio
-            for the Archivo tabular-nums character set. */}
-        <span
-          className="font-black text-[#0F1210] leading-none select-none"
-          style={{
-            fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif",
-            fontVariantNumeric: 'tabular-nums',
-            letterSpacing: '-0.02em',
-            // Text width budget = 78% of circle diameter (circle = 240/280 of container).
-            // Each glyph ≈ 0.55 × fontSize for Archivo tabular-nums.
-            // → fontSize = (0.78 * 240/280 * D) / (chars * 0.55) = D * 0.668 / (chars * 0.55)
-            fontSize: `calc(var(--circle-size) * 0.668 / (var(--digit-chars) * 0.55))`,
-            maxWidth: 'calc(var(--circle-size) * 0.668)',
-            // Subtle white top-edge highlight for depth on the cyan ground.
-            textShadow: '0 1px 0 rgba(255,255,255,0.3)',
-            willChange: 'transform',
-          }}
-          data-testid="session-timer"
-        >
-          {timerStr}
-        </span>
-        <span
-          className="uppercase"
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: '11px',
-            fontWeight: 700,
-            letterSpacing: '0.15em',
-            color: '#183A3F',
-            marginTop: '10px',
-          }}
-        >
-          Remaining
-        </span>
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6"
+      style={{ backgroundColor: '#4ECDDE' }}
+      data-testid="focus-session"
+    >
+      {/* One of 5 full-screen timer styles, chosen at random per session
+          (styleIdx). The screen is deliberately stripped — nothing above the
+          timer pulls you away. */}
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.3, type: 'spring', stiffness: 180 }}
+        className="relative z-10 flex flex-col items-center justify-center w-full"
+        data-testid="session-timer-container"
+      >
+        {timerVisual}
       </motion.div>
 
       {/* Rotating motivational line — chosen once per session (random-once). */}
