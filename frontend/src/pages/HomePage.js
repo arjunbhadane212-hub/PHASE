@@ -839,7 +839,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
       {!trigger && (
         <DialogTrigger asChild>
           <Button
-            className={`${isGameMode ? 'bg-purple-600 hover:bg-purple-700 glow-purple-sm' : 'bg-[var(--gm-ink)] text-[var(--gm-bg)] hover:opacity-90'}`}
+            className={`${isGameMode ? 'bg-purple-600 hover:bg-purple-700 glow-purple-sm' : 'bg-[#95DEE6] text-[#183A3F] hover:opacity-90'}`}
             data-testid="add-first-habit-btn"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -944,7 +944,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
             <Button
               type="submit"
               disabled={loading || !formData.habit_name.trim()}
-              className={`w-full ${isGameMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-[var(--gm-ink)] text-[var(--gm-bg)] hover:opacity-90'}`}
+              className={`w-full ${isGameMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-[#95DEE6] text-[#183A3F] hover:opacity-90'}`}
               data-testid="create-habit-btn"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Habit'}

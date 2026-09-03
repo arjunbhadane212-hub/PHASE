@@ -5,6 +5,30 @@ import { fireRoast } from './RoastNotification';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
 
+// One line is chosen at random when a session mounts and held for the whole
+// session (see the useState(() => ...) below — random-once, not per-tick).
+const ACTIVE_LINES = [
+  "You're in it. Nothing else needs you right now.",
+  "This is the work. Everything else can wait.",
+  "Stay here. The focus is the whole point.",
+  "One block, one thing. This is how it gets built.",
+  "Nothing outside this timer needs you.",
+  "You showed up. Now just stay.",
+  "Deep work is rare — and you're doing it.",
+  "The distractions will still be there. Let them wait.",
+];
+
+const COMPLETE_LINES = [
+  "That's a real block of deep work. Most people never protect their time like that.",
+  "You gave something your full attention. That's rarer than it sounds.",
+  "Time you'll never wonder where it went.",
+  "This is how the big things get done — one block at a time.",
+  "You chose focus over everything else pulling at you. That counts.",
+  "Another block behind you. This is what momentum looks like.",
+  "Most people can't sit with one thing this long. You just did.",
+  "Come back and do it again tomorrow.",
+];
+
 export default function FocusSession({ habit, duration, onComplete, onAbandon }) {
   const totalSeconds = duration * 60;
   const startTimeRef = useRef(Date.now());
@@ -13,6 +37,10 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   const [now, setNow] = useState(() => Date.now());
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [abandoning, setAbandoning] = useState(false);
+  // Random-once: pick a motivational line index when the session mounts and
+  // keep it for the whole session (lazy initializer, so it does not re-roll
+  // on every tick re-render). Same index drives the active + completion lines.
+  const [lineIndex] = useState(() => Math.floor(Math.random() * ACTIVE_LINES.length));
   // Guards for the tab-switch penalty (see the visibility effect below).
   const penalizedRef = useRef(false);
   const showModalRef = useRef(false);
@@ -108,15 +136,9 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
     return () => { document.title = 'Phase'; };
   }, [secondsLeft, habit.habit_name]);
 
-  // Session complete
-  useEffect(() => {
-    if (completed) {
-      const timer = setTimeout(() => {
-        onComplete();
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [completed, onComplete]);
+  // Session complete: the completion screen now persists until the user taps
+  // "Back to Phase" (which calls onComplete). No auto-advance — a finished
+  // deep-work block deserves to be seen, not flashed past.
 
   const handleAbandon = useCallback(async () => {
     setAbandoning(true);
@@ -154,13 +176,22 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   const circumference = 2 * Math.PI * 120;
   const strokeOffset = circumference * (1 - progress);
 
-  // Completion screen
+  // Completion screen — persists until the user taps "Back to Phase".
   if (completed) {
+    // Stats are wired only from data this component actually holds: `duration`
+    // (the session length) and the `habit` prop's real columns — xp_value (the
+    // XP this habit awards, set at creation) and current_streak (the per-habit
+    // streak already shown on the Home card). Any missing field is dropped
+    // rather than faked, so the row never shows an invented number.
+    const stats = [{ value: duration, label: 'Minutes' }];
+    if (habit.xp_value != null) stats.push({ value: `+${habit.xp_value}`, label: 'XP' });
+    if (habit.current_streak != null) stats.push({ value: habit.current_streak, label: 'Streak' });
+
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-6"
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6"
         style={{ backgroundColor: '#DBF67F' }}
         data-testid="session-complete"
       >
@@ -168,19 +199,68 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-          className="w-16 h-16 rounded-[20px] flex items-center justify-center z-10"
+          className="w-16 h-16 rounded-[20px] flex items-center justify-center mb-6"
           style={{ background: '#2A3B0B' }}
         >
           <Check className="w-[30px] h-[30px] text-[#DBF67F]" strokeWidth={3} />
         </motion.div>
-        <motion.p
+
+        <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="text-lg text-[#0F1210] font-bold z-10"
+          className="text-[26px] text-[#0F1210] text-center"
+          style={{ fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif", fontWeight: 900, letterSpacing: '-0.01em' }}
         >
-          Session complete. Well done.
+          {duration} minutes, done.
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="text-sm text-center mt-3 max-w-[280px]"
+          style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 500, color: 'rgba(15,18,16,0.75)' }}
+        >
+          {COMPLETE_LINES[lineIndex]}
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="flex items-start justify-center mt-8"
+          style={{ gap: '28px' }}
+        >
+          {stats.map((s) => (
+            <div key={s.label} className="flex flex-col items-center">
+              <span
+                className="text-[22px] text-[#0F1210] leading-none"
+                style={{ fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif", fontWeight: 900 }}
+              >
+                {s.value}
+              </span>
+              <span
+                className="text-[9px] uppercase mt-1.5"
+                style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', color: 'rgba(15,18,16,0.65)' }}
+              >
+                {s.label}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          onClick={onComplete}
+          className="mt-10 rounded-[14px] bg-[#0F1210] text-[#DBF67F]"
+          style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, padding: '15px 28px' }}
+          data-testid="back-to-phase-btn"
+        >
+          Back to Phase
+        </motion.button>
       </motion.div>
     );
   }
@@ -190,44 +270,23 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
-      style={{ backgroundColor: '#95DEE6' }}
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6"
+      style={{ backgroundColor: '#4ECDDE' }}
       data-testid="focus-session"
     >
-      {/* Habit name */}
-      <motion.p
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="text-sm text-[#3E6C71] font-medium mb-2 z-10"
-        data-testid="session-habit-name"
-      >
-        {habit.habit_name}
-      </motion.p>
-
-      {/* Focus Session label */}
+      {/* Big, thick ring — dominates the screen. Nothing above it: the session
+          screen is deliberately stripped so nothing pulls you away. */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="px-3 py-1 rounded-full mb-8 z-10"
-        style={{ background: 'rgba(24,58,63,0.10)', border: '1px solid rgba(24,58,63,0.20)' }}
-      >
-        <span className="text-[10px] text-[#183A3F] uppercase tracking-[0.2em] font-bold">Focus Session</span>
-      </motion.div>
-
-      {/* Timer display — circle container with flex-centered text */}
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
-        className="relative z-10 mb-8 flex items-center justify-center"
+        transition={{ delay: 0.3, type: 'spring', stiffness: 180 }}
+        className="relative z-10 flex flex-col items-center justify-center"
         style={{
-          // Circle diameter — responsive, fixed aspect ratio
-          width: 'min(72vmin, 360px)',
-          height: 'min(72vmin, 360px)',
+          // Circle diameter — responsive; it should nearly fill the screen.
+          width: 'min(80vmin, 640px)',
+          height: 'min(80vmin, 640px)',
           // CSS vars consumed by inline font-size calc below
-          '--circle-size': 'min(72vmin, 360px)',
+          '--circle-size': 'min(80vmin, 640px)',
           '--digit-chars': charCount,
         }}
         data-testid="session-timer-container"
@@ -238,14 +297,14 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           viewBox="0 0 280 280"
           style={{
             transform: 'rotate(-90deg)',
-            filter: 'drop-shadow(0 8px 24px rgba(24,58,63,0.20))',
+            filter: 'drop-shadow(0 10px 30px rgba(15,18,16,0.18))',
           }}
         >
-          <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(24,58,63,0.14)" strokeWidth="3" />
+          <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="15" />
           <circle
             cx="140" cy="140" r="120" fill="none"
-            stroke="#183A3F"
-            strokeWidth="3"
+            stroke="#0F1210"
+            strokeWidth="15"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeOffset}
@@ -257,7 +316,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             Width capped to 78% of circle diameter; 0.55 is approx glyph-width ratio
             for the Archivo tabular-nums character set. */}
         <span
-          className="font-black text-[#183A3F] leading-none select-none"
+          className="font-black text-[#0F1210] leading-none select-none"
           style={{
             fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif",
             fontVariantNumeric: 'tabular-nums',
@@ -268,22 +327,58 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             fontSize: `calc(var(--circle-size) * 0.668 / (var(--digit-chars) * 0.55))`,
             maxWidth: 'calc(var(--circle-size) * 0.668)',
             // Subtle white top-edge highlight for depth on the cyan ground.
-            textShadow: '0 1px 0 rgba(255,255,255,0.35)',
+            textShadow: '0 1px 0 rgba(255,255,255,0.3)',
             willChange: 'transform',
           }}
           data-testid="session-timer"
         >
           {timerStr}
         </span>
+        <span
+          className="uppercase"
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '0.15em',
+            color: '#183A3F',
+            marginTop: '10px',
+          }}
+        >
+          Remaining
+        </span>
       </motion.div>
 
-      {/* Abandon button */}
+      {/* Rotating motivational line — chosen once per session (random-once). */}
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="text-center mt-8 max-w-[300px]"
+        style={{ fontFamily: "'General Sans', sans-serif", fontSize: '15px', fontWeight: 600, color: '#183A3F' }}
+        data-testid="session-motivation"
+      >
+        {ACTIVE_LINES[lineIndex]}
+      </motion.p>
+
+      {/* Honest footnote — a web app can't silence calls/texts, so it doesn't claim to. */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.9 }}
+        className="uppercase text-center absolute bottom-6 px-6"
+        style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.05em', color: 'rgba(24,58,63,0.55)' }}
+      >
+        Stay on this screen · Phase will let you know when time's up
+      </motion.p>
+
+      {/* Abandon button — the single subtle exit (no pause; the app has no pause capability) */}
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
         onClick={() => setShowAbandonModal(true)}
-        className="text-xs text-[#183A3F]/50 hover:text-[#183A3F]/80 transition-colors z-10 mt-auto mb-12"
+        className="text-xs text-[#0F1210]/45 hover:text-[#0F1210]/75 transition-colors z-10 mt-6"
         data-testid="abandon-session-btn"
       >
         Abandon Session
@@ -339,12 +434,12 @@ export function FocusSessionBar({ habitName, secondsLeft }) {
   const secs = secondsLeft % 60;
   return (
     <div className="fixed top-0 left-0 right-0 z-[9998] h-8 flex items-center px-4 text-xs"
-      style={{ background: '#95DEE6', borderLeft: '3px solid #183A3F' }}
+      style={{ background: '#4ECDDE', borderLeft: '3px solid #0F1210' }}
       data-testid="focus-session-bar"
     >
-      <span className="text-[#3E6C71]">Focus Session in progress —</span>
-      <span className="text-[#183A3F] font-medium ml-1.5">{habitName}</span>
-      <span className="text-[#183A3F] font-bold ml-auto">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>
+      <span className="text-[#183A3F]">Focus Session in progress —</span>
+      <span className="text-[#0F1210] font-medium ml-1.5">{habitName}</span>
+      <span className="text-[#0F1210] font-bold ml-auto">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>
     </div>
   );
 }
