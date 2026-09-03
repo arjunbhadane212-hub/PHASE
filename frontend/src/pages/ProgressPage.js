@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMode } from '../contexts/ModeContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { BarChart3, PieChart as PieChartIcon, TrendingUp, AreaChartIcon, Columns3, Gem, Zap, CheckSquare, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { themedChartColors } from '../lib/chartColors';
 
 const CHART_TYPES = [
   { id: 'bar', icon: BarChart3, label: 'Bar' },
@@ -14,12 +14,8 @@ const CHART_TYPES = [
   { id: 'column', icon: Columns3 || BarChart3, label: 'Column' },
 ];
 
-// Blue-only palette per CLAUDE.md color system (no purple, no yellow)
-const COLORS = { gems: '#60A5FA', xp: '#3B82F6', tasks: '#1B6AE4' };
-
 export default function ProgressPage() {
   const { user } = useAuth();
-  const { isGameMode } = useMode();
   const [range, setRange] = useState('weekly');
   const [chartType, setChartType] = useState('bar');
   const [data, setData] = useState(null);
@@ -149,16 +145,16 @@ export default function ProgressPage() {
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 pb-24 md:pb-8" data-testid="progress-page">
       <div className="max-w-4xl mx-auto animate-slide-up">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-['Satoshi'] text-white mb-5">Progress</h1>
+        <h1 className="text-xl sm:text-2xl font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em] mb-5">Progress</h1>
 
         {/* Time Range Toggle */}
-        <div className="flex gap-1 p-1 rounded-xl bg-[#0C1220] border border-[#1A2438] w-fit mb-6" data-testid="range-toggle">
+        <div className="inline-flex items-center gap-2 mb-6" data-testid="range-toggle">
           {['daily', 'weekly', 'monthly'].map(r => (
             <button key={r} onClick={() => setRange(r)}
-              className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
+              className={`px-4 py-2 rounded-full font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] transition-colors ${
                 range === r
-                  ? isGameMode ? 'bg-[#101828] text-[#4D8EF0]' : 'bg-white/10 text-white'
-                  : 'text-zinc-500 hover:text-zinc-300'
+                  ? 'text-[color:var(--gm-ink)] ring-1 ring-[#A59BCC]'
+                  : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
               }`} data-testid={`range-${r}`}>
               {r}
             </button>
@@ -166,24 +162,24 @@ export default function ProgressPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-zinc-500 animate-spin" /></div>
+          <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[color:var(--gm-muted)] animate-spin" /></div>
         ) : (
           <>
             {/* Stat Cards */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6" data-testid="stat-cards">
-              <StatCard icon={<Gem className="w-5 h-5" />} value={gemsEarned} label="Gems Earned" color={COLORS.gems} />
-              <StatCard icon={<Zap className="w-5 h-5" />} value={xpEarned} label="XP Earned" color={COLORS.xp} />
-              <StatCard icon={<CheckSquare className="w-5 h-5" />} value={tasksDone} label="Tasks Done" color={COLORS.tasks} />
+              <StatCard icon={<Gem className="w-5 h-5" />} value={gemsEarned} label="Gems Earned" />
+              <StatCard icon={<Zap className="w-5 h-5" />} value={xpEarned} label="XP Earned" />
+              <StatCard icon={<CheckSquare className="w-5 h-5" />} value={tasksDone} label="Tasks Done" />
             </div>
 
             {/* Chart Type Toolbar */}
             <div className="flex items-center gap-1 mb-4" data-testid="chart-toolbar">
               {CHART_TYPES.map(({ id, icon: Icon, label }) => (
                 <button key={id} onClick={() => setChartType(id)} title={label}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`p-2 rounded-lg transition-colors ${
                     chartType === id
-                      ? isGameMode ? 'bg-[#101828] text-[#4D8EF0]' : 'bg-white/10 text-white'
-                      : 'text-zinc-600 hover:text-zinc-400'
+                      ? 'bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] ring-1 ring-[#A59BCC]'
+                      : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
                   }`} data-testid={`chart-${id}`}>
                   <Icon className="w-4 h-4" />
                 </button>
@@ -191,7 +187,7 @@ export default function ProgressPage() {
             </div>
 
             {/* Chart */}
-            <div className="rounded-2xl border border-[#1A2438] bg-[#0C1220] p-4 sm:p-6" data-testid="progress-chart">
+            <div className="rounded-2xl bg-[color:var(--gm-card)] p-4 sm:p-6" data-testid="progress-chart">
               <AnimatePresence mode="wait">
                 <motion.div key={chartType}
                   initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
@@ -207,59 +203,79 @@ export default function ProgressPage() {
   );
 }
 
-function StatCard({ icon, value, label, color }) {
+function StatCard({ icon, value, label }) {
   return (
-    <div className="rounded-2xl border border-[#1A2438] bg-[#0C1220] p-4 sm:p-5 text-center" data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
-      <div className="flex justify-center mb-2" style={{ color }}>{icon}</div>
-      <p className="text-2xl sm:text-3xl font-bold text-white font-['Satoshi']">{value}</p>
-      <p className="text-xs sm:text-sm text-zinc-500 mt-1">{label}</p>
+    <div className="rounded-2xl bg-[color:var(--gm-card)] p-4 sm:p-5 text-center" data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
+      <div className="flex justify-center mb-2 text-[color:var(--gm-ink)]">{icon}</div>
+      <p className="text-3xl sm:text-4xl font-['Archivo'] font-black text-[color:var(--gm-ink)] leading-none tracking-[-0.02em] tabular-nums">{value}</p>
+      <p className="mt-2 font-['JetBrains_Mono'] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">{label}</p>
     </div>
   );
 }
 
-const TOOLTIP_STYLE = {
-  contentStyle: { backgroundColor: '#0C1220', border: '1px solid #1A2438', borderRadius: '8px', color: '#fff', fontSize: '12px' },
-};
-
-function xAxisProps() {
+function xAxisProps(c) {
   // Every category has few enough ticks (3 daily / 7 weekly / 6 monthly) to show all labels
-  return { dataKey: 'name', stroke: '#52525B', fontSize: 11, tickLine: false, axisLine: false, interval: 0 };
+  return {
+    dataKey: 'name',
+    stroke: c.muted,
+    tick: { fill: c.muted, fontSize: 11, fontFamily: 'JetBrains Mono' },
+    tickLine: false,
+    axisLine: false,
+    interval: 0,
+  };
+}
+
+function yAxisProps(c) {
+  return {
+    stroke: c.muted,
+    tick: { fill: c.muted, fontSize: 11, fontFamily: 'JetBrains Mono' },
+    tickLine: false,
+    axisLine: false,
+    allowDecimals: false,
+  };
+}
+
+function tooltipProps(c) {
+  return {
+    contentStyle: { background: c.card, border: 'none', borderRadius: 12, color: c.ink, boxShadow: 'none' },
+    labelStyle: { color: c.muted, fontFamily: 'JetBrains Mono', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' },
+    itemStyle: { color: c.ink },
+    cursor: { fill: c.track, opacity: 0.4 },
+  };
 }
 
 function EmptyChart() {
   return (
     <div className="flex flex-col items-center justify-center text-center" style={{ height: 260 }} data-testid="chart-empty">
-      <p className="text-sm text-zinc-400">No activity in this period yet</p>
-      <p className="text-xs text-zinc-600 mt-1">Complete habits to see your progress here.</p>
+      <p className="text-sm text-[color:var(--gm-muted)]">No activity in this period yet</p>
+      <p className="text-xs text-[color:var(--gm-muted)] opacity-70 mt-1">Complete habits to see your progress here.</p>
     </div>
   );
 }
 
-function yAxisProps() {
-  return { stroke: '#52525B', fontSize: 11, tickLine: false, axisLine: false, allowDecimals: false };
-}
-
 function ChartRenderer({ type, data }) {
   const height = 260;
-  const xProps = xAxisProps();
-  const yProps = yAxisProps();
+  const c = themedChartColors();
+  const xProps = xAxisProps(c);
+  const yProps = yAxisProps(c);
+  const tProps = tooltipProps(c);
 
   const hasData = Array.isArray(data) && data.some(d => (d.xp || 0) + (d.gems || 0) + (d.tasks || 0) > 0);
   if (!hasData) return <EmptyChart />;
 
   if (type === 'pie') {
     const pieData = [
-      { name: 'Gems', value: data.reduce((s, d) => s + d.gems, 0), fill: COLORS.gems },
-      { name: 'XP', value: data.reduce((s, d) => s + d.xp, 0), fill: COLORS.xp },
-      { name: 'Tasks', value: data.reduce((s, d) => s + d.tasks, 0), fill: COLORS.tasks },
+      { name: 'Gems', value: data.reduce((s, d) => s + d.gems, 0) },
+      { name: 'XP', value: data.reduce((s, d) => s + d.xp, 0) },
+      { name: 'Tasks', value: data.reduce((s, d) => s + d.tasks, 0) },
     ].filter(d => d.value > 0);
     return (
       <ResponsiveContainer width="100%" height={height}>
         <PieChart>
           <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
-            {pieData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+            {pieData.map((e, i) => <Cell key={i} fill={c.series[i % c.series.length]} />)}
           </Pie>
-          <Tooltip {...TOOLTIP_STYLE} />
+          <Tooltip {...tProps} />
         </PieChart>
       </ResponsiveContainer>
     );
@@ -269,13 +285,13 @@ function ChartRenderer({ type, data }) {
     return (
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1A2438" />
+          <CartesianGrid strokeDasharray="3 3" stroke={c.track} />
           <XAxis {...xProps} />
           <YAxis {...yProps} />
-          <Tooltip {...TOOLTIP_STYLE} />
-          <Line type="monotone" dataKey="xp" stroke={COLORS.xp} strokeWidth={2} dot={{ r: 3 }} name="XP" />
-          <Line type="monotone" dataKey="gems" stroke={COLORS.gems} strokeWidth={2} dot={{ r: 3 }} name="Gems" />
-          <Line type="monotone" dataKey="tasks" stroke={COLORS.tasks} strokeWidth={2} dot={{ r: 3 }} name="Tasks" />
+          <Tooltip {...tProps} />
+          <Line type="monotone" dataKey="xp" stroke={c.series[0]} strokeWidth={2} dot={{ fill: c.series[0], r: 3 }} activeDot={{ r: 5 }} name="XP" />
+          <Line type="monotone" dataKey="gems" stroke={c.series[1]} strokeWidth={2} dot={{ fill: c.series[1], r: 3 }} activeDot={{ r: 5 }} name="Gems" />
+          <Line type="monotone" dataKey="tasks" stroke={c.series[2]} strokeWidth={2} dot={{ fill: c.series[2], r: 3 }} activeDot={{ r: 5 }} name="Tasks" />
         </LineChart>
       </ResponsiveContainer>
     );
@@ -285,13 +301,27 @@ function ChartRenderer({ type, data }) {
     return (
       <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1A2438" />
+          <defs>
+            <linearGradient id="areaXp" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={c.series[0]} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={c.series[0]} stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="areaGems" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={c.series[1]} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={c.series[1]} stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="areaTasks" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={c.series[2]} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={c.series[2]} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={c.track} />
           <XAxis {...xProps} />
           <YAxis {...yProps} />
-          <Tooltip {...TOOLTIP_STYLE} />
-          <Area type="monotone" dataKey="xp" fill={COLORS.xp + '30'} stroke={COLORS.xp} strokeWidth={2} name="XP" />
-          <Area type="monotone" dataKey="gems" fill={COLORS.gems + '30'} stroke={COLORS.gems} strokeWidth={2} name="Gems" />
-          <Area type="monotone" dataKey="tasks" fill={COLORS.tasks + '30'} stroke={COLORS.tasks} strokeWidth={2} name="Tasks" />
+          <Tooltip {...tProps} />
+          <Area type="monotone" dataKey="xp" fill="url(#areaXp)" stroke={c.series[0]} strokeWidth={2} name="XP" />
+          <Area type="monotone" dataKey="gems" fill="url(#areaGems)" stroke={c.series[1]} strokeWidth={2} name="Gems" />
+          <Area type="monotone" dataKey="tasks" fill="url(#areaTasks)" stroke={c.series[2]} strokeWidth={2} name="Tasks" />
         </AreaChart>
       </ResponsiveContainer>
     );
@@ -303,10 +333,10 @@ function ChartRenderer({ type, data }) {
         <BarChart data={data} barCategoryGap="20%">
           <XAxis {...xProps} />
           <YAxis {...yProps} />
-          <Tooltip {...TOOLTIP_STYLE} />
-          <Bar dataKey="xp" fill={COLORS.xp} radius={[3, 3, 0, 0]} name="XP" />
-          <Bar dataKey="gems" fill={COLORS.gems} radius={[3, 3, 0, 0]} name="Gems" />
-          <Bar dataKey="tasks" fill={COLORS.tasks} radius={[3, 3, 0, 0]} name="Tasks" />
+          <Tooltip {...tProps} />
+          <Bar dataKey="xp" fill={c.series[0]} radius={[8, 8, 0, 0]} name="XP" />
+          <Bar dataKey="gems" fill={c.series[1]} radius={[8, 8, 0, 0]} name="Gems" />
+          <Bar dataKey="tasks" fill={c.series[2]} radius={[8, 8, 0, 0]} name="Tasks" />
         </BarChart>
       </ResponsiveContainer>
     );
@@ -318,10 +348,10 @@ function ChartRenderer({ type, data }) {
       <BarChart data={data}>
         <XAxis {...xProps} />
         <YAxis {...yProps} />
-        <Tooltip {...TOOLTIP_STYLE} />
-        <Bar dataKey="xp" fill={COLORS.xp} radius={[3, 3, 0, 0]} name="XP" />
-        <Bar dataKey="gems" fill={COLORS.gems} radius={[3, 3, 0, 0]} name="Gems" />
-        <Bar dataKey="tasks" fill={COLORS.tasks} radius={[3, 3, 0, 0]} name="Tasks" />
+        <Tooltip {...tProps} />
+        <Bar dataKey="xp" fill={c.series[0]} radius={[8, 8, 0, 0]} name="XP" />
+        <Bar dataKey="gems" fill={c.series[1]} radius={[8, 8, 0, 0]} name="Gems" />
+        <Bar dataKey="tasks" fill={c.series[2]} radius={[8, 8, 0, 0]} name="Tasks" />
       </BarChart>
     </ResponsiveContainer>
   );
