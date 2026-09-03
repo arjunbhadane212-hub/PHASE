@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { fireRoast } from './RoastNotification';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
@@ -160,22 +160,24 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center"
-        style={{ backgroundColor: '#000' }}
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-6"
+        style={{ backgroundColor: '#DBF67F' }}
         data-testid="session-complete"
       >
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.4, 0] }}
-          transition={{ duration: 1.2 }}
-          className="absolute inset-0"
-          style={{ background: 'radial-gradient(circle at center, #1B6AE4, transparent 70%)' }}
-        />
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+          className="w-16 h-16 rounded-[20px] flex items-center justify-center z-10"
+          style={{ background: '#2A3B0B' }}
+        >
+          <Check className="w-[30px] h-[30px] text-[#DBF67F]" strokeWidth={3} />
+        </motion.div>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="text-lg text-white/80 font-medium z-10"
+          className="text-lg text-[#0F1210] font-bold z-10"
         >
           Session complete. Well done.
         </motion.p>
@@ -189,20 +191,15 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
-      style={{ backgroundColor: '#000' }}
+      style={{ backgroundColor: '#95DEE6' }}
       data-testid="focus-session"
     >
-      {/* Subtle pulsing blue glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="focus-glow-pulse" />
-      </div>
-
       {/* Habit name */}
       <motion.p
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="text-sm text-white/50 font-medium mb-2 z-10"
+        className="text-sm text-[#3E6C71] font-medium mb-2 z-10"
         data-testid="session-habit-name"
       >
         {habit.habit_name}
@@ -214,9 +211,9 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
         className="px-3 py-1 rounded-full mb-8 z-10"
-        style={{ background: 'rgba(27,106,228,0.15)', border: '1px solid rgba(27,106,228,0.25)' }}
+        style={{ background: 'rgba(24,58,63,0.10)', border: '1px solid rgba(24,58,63,0.20)' }}
       >
-        <span className="text-[10px] text-[#4D8EF0] uppercase tracking-[0.2em] font-bold">Focus Session</span>
+        <span className="text-[10px] text-[#183A3F] uppercase tracking-[0.2em] font-bold">Focus Session</span>
       </motion.div>
 
       {/* Timer display — circle container with flex-centered text */}
@@ -241,15 +238,13 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           viewBox="0 0 280 280"
           style={{
             transform: 'rotate(-90deg)',
-            filter:
-              'drop-shadow(0 0 16px rgba(59, 130, 246, 0.35))' +
-              ' drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3))',
+            filter: 'drop-shadow(0 8px 24px rgba(24,58,63,0.20))',
           }}
         >
-          <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(27,106,228,0.08)" strokeWidth="3" />
+          <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(24,58,63,0.14)" strokeWidth="3" />
           <circle
             cx="140" cy="140" r="120" fill="none"
-            stroke="#1B6AE4"
+            stroke="#183A3F"
             strokeWidth="3"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -260,23 +255,20 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
 
         {/* Timer text — flex centered inside circle, font-size scales with char count.
             Width capped to 78% of circle diameter; 0.55 is approx glyph-width ratio
-            for the Satoshi/SF Pro tabular-nums character set. */}
+            for the Archivo tabular-nums character set. */}
         <span
-          className="font-black text-white leading-none select-none"
+          className="font-black text-[#183A3F] leading-none select-none"
           style={{
-            fontFamily: "'Satoshi', 'SF Pro Display', sans-serif",
+            fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif",
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.02em',
             // Text width budget = 78% of circle diameter (circle = 240/280 of container).
-            // Each glyph ≈ 0.55 × fontSize for Satoshi/SF Pro tabular-nums.
+            // Each glyph ≈ 0.55 × fontSize for Archivo tabular-nums.
             // → fontSize = (0.78 * 240/280 * D) / (chars * 0.55) = D * 0.668 / (chars * 0.55)
             fontSize: `calc(var(--circle-size) * 0.668 / (var(--digit-chars) * 0.55))`,
             maxWidth: 'calc(var(--circle-size) * 0.668)',
-            // Soft outer blue glow + subtle white top-edge highlight for depth
-            textShadow:
-              '0 -1px 0 rgba(255, 255, 255, 0.35),' +
-              ' 0 0 24px rgba(59, 130, 246, 0.4),' +
-              ' 0 0 48px rgba(59, 130, 246, 0.18)',
+            // Subtle white top-edge highlight for depth on the cyan ground.
+            textShadow: '0 1px 0 rgba(255,255,255,0.35)',
             willChange: 'transform',
           }}
           data-testid="session-timer"
@@ -291,7 +283,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
         onClick={() => setShowAbandonModal(true)}
-        className="text-xs text-white/40 hover:text-white/70 transition-colors z-10 mt-auto mb-12"
+        className="text-xs text-[#183A3F]/50 hover:text-[#183A3F]/80 transition-colors z-10 mt-auto mb-12"
         data-testid="abandon-session-btn"
       >
         Abandon Session
@@ -304,23 +296,21 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 px-4"
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 px-4"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-sm p-6 rounded-2xl text-center"
-              style={{ background: '#0C1220', border: '1px solid #1A2438' }}
+              className="w-full max-w-sm p-6 rounded-2xl text-center bg-[var(--gm-card)] border border-[var(--gm-track)]"
               data-testid="abandon-modal"
             >
-              <p className="text-base font-bold text-white mb-2">Abandon this session?</p>
-              <p className="text-sm text-zinc-500 mb-6">This ends your session early.</p>
+              <p className="text-base font-bold text-[var(--gm-ink)] mb-2">Abandon this session?</p>
+              <p className="text-sm text-[var(--gm-muted)] mb-6">This ends your session early.</p>
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => setShowAbandonModal(false)}
-                  className="w-full py-3 rounded-xl font-bold text-white text-sm"
-                  style={{ background: '#1B6AE4' }}
+                  className="w-full py-3 rounded-xl font-bold text-[#183A3F] text-sm bg-[#95DEE6]"
                   data-testid="keep-going-btn"
                 >
                   Keep Going
@@ -328,7 +318,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
                 <button
                   onClick={handleAbandon}
                   disabled={abandoning}
-                  className="w-full py-2.5 text-sm text-zinc-600 hover:text-zinc-400 transition-colors"
+                  className="w-full py-2.5 text-sm text-[var(--gm-muted)] hover:text-[var(--gm-ink)] transition-colors"
                   data-testid="confirm-abandon-btn"
                 >
                   {abandoning ? 'Abandoning...' : 'Abandon'}
@@ -349,12 +339,12 @@ export function FocusSessionBar({ habitName, secondsLeft }) {
   const secs = secondsLeft % 60;
   return (
     <div className="fixed top-0 left-0 right-0 z-[9998] h-8 flex items-center px-4 text-xs"
-      style={{ background: '#0a0e1a', borderBottom: '1px solid #1A2438', borderLeft: '3px solid #1B6AE4' }}
+      style={{ background: '#95DEE6', borderLeft: '3px solid #183A3F' }}
       data-testid="focus-session-bar"
     >
-      <span className="text-white/50">Focus Session in progress —</span>
-      <span className="text-white font-medium ml-1.5">{habitName}</span>
-      <span className="text-[#4D8EF0] font-bold ml-auto">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>
+      <span className="text-[#3E6C71]">Focus Session in progress —</span>
+      <span className="text-[#183A3F] font-medium ml-1.5">{habitName}</span>
+      <span className="text-[#183A3F] font-bold ml-auto">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>
     </div>
   );
 }

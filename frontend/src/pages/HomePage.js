@@ -401,8 +401,8 @@ export default function HomePage() {
               Locked decision — Focus Mode has no shop, this is its only purchase. */}
           {!isGameMode && (
             <div className="mt-4 p-4 rounded-[20px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] flex items-center gap-4" data-testid="focus-shield-card">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
-                <Shield className="w-5 h-5 text-[#60A5FA]" />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(149,222,230,0.16)' }}>
+                <Shield className="w-5 h-5 text-[#183A3F]" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-[var(--gm-ink)]">Streak Shield</p>
@@ -415,12 +415,12 @@ export default function HomePage() {
               <Button
                 onClick={handleBuyFocusShield}
                 disabled={shieldBusy || (user?.gems ?? 0) < 500}
-                className="rounded-full py-[9px] px-[14px] bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm flex-shrink-0 shadow-[var(--gm-shadow-cta)] disabled:opacity-40"
+                className="rounded-full py-[9px] px-[14px] bg-[#95DEE6] hover:opacity-90 text-[#183A3F] text-sm flex-shrink-0 shadow-[var(--gm-shadow-cyan)] disabled:opacity-40"
                 data-testid="buy-focus-shield-btn"
               >
                 {shieldBusy
                   ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <span className="flex items-center gap-[6px]"><Gem className="w-3.5 h-3.5" /> 500</span>}
+                  : <span className="flex items-center gap-[6px]"><Gem className="w-3.5 h-3.5 text-[#183A3F]" /> 500</span>}
               </Button>
             </div>
           )}
@@ -685,7 +685,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
           <button
             onClick={() => onBeginSession(habit)}
             disabled={isCompleting}
-            className="py-[10px] px-[16px] rounded-full bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-bold flex-shrink-0 transition-all flex items-center gap-[7px] shadow-[var(--gm-shadow-cta)]"
+            className="py-[10px] px-[16px] rounded-full bg-[#95DEE6] hover:opacity-90 text-[#183A3F] text-xs font-bold flex-shrink-0 transition-all flex items-center gap-[7px] shadow-[var(--gm-shadow-cyan)]"
             data-testid={`habit-begin-${habit.habit_id}`}
           >
             {isCompleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Play className="w-3 h-3 fill-current" /> Begin</>}
