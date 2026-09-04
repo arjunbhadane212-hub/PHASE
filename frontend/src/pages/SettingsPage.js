@@ -19,7 +19,7 @@ import { rankInfo } from '../data/levels';
 // outline-pill accent, red #B91C1C = destructive (all inlined below).
 const LIME = '#DBF67F';
 const SECTION_LABEL = "font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
-const CARD = 'rounded-2xl bg-[color:var(--gm-card)]';
+const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
 const DIALOG = 'bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0';
 
 export default function SettingsPage() {
@@ -67,7 +67,7 @@ export default function SettingsPage() {
           <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Profile</h2>
           <div className={CARD}>
             <div className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-['Archivo'] font-black bg-[color:var(--gm-badge)] text-[color:var(--gm-ink)]">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-['Archivo'] font-black bg-[#DBF67F] text-[#2A3B0B]">
                 {user?.first_name?.[0]}{user?.last_name?.[0]}
               </div>
               <div className="flex-1 min-w-0">
@@ -485,7 +485,7 @@ function NotificationSettings({ user, isGameMode }) {
   };
 
   return (
-    <div className="rounded-2xl bg-[color:var(--gm-card)]">
+    <div className="rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]">
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Bell className="w-5 h-5 text-[color:var(--gm-ink)]" />
@@ -790,7 +790,7 @@ function ProgressSection({ isGameMode }) {
   return (
     <section className="mb-6 sm:mb-8" data-testid="progress-section">
       <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Progress</h2>
-      <div className={`${CARD} p-4`}>
+      <div className="rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-lime)] p-4">
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-2">
             <span className="text-[color:var(--gm-muted)]">Today</span>
