@@ -9,16 +9,24 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Separator } from '../components/ui/separator';
-import { User, Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Palette, Check, ExternalLink, Sun, Moon } from 'lucide-react';
+import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Palette, Check, ExternalLink, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
 import { TitleBadge } from '../components/profile/FlexBadge';
 import { rankInfo } from '../data/levels';
 
+// v2 design system — shared with Progress / Level / Home.
+// cyan #95DEE6 = active/selected, lime #DBF67F = progress, purple #A59BCC =
+// outline-pill accent, red #B91C1C = destructive (all inlined below).
+const LIME = '#DBF67F';
+const SECTION_LABEL = "font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
+const CARD = 'rounded-2xl bg-[color:var(--gm-card)]';
+const DIALOG = 'bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0';
+
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { user, logout, updateUser, refreshUser } = useAuth();
-  const { mode, switchMode, isGameMode } = useMode();
-  
+  const { user, logout, refreshUser } = useAuth();
+  const { switchMode, isGameMode } = useMode();
+
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [switchModeDialogOpen, setSwitchModeDialogOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -50,37 +58,33 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 pb-24 md:pb-8" data-testid="settings-page">
       <div className="max-w-2xl mx-auto animate-slide-up">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-['Satoshi'] text-white mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em] mb-4 sm:mb-6">
           Settings
         </h1>
 
         {/* Profile Section */}
         <section className="mb-6 sm:mb-8">
-          <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 sm:mb-4">Profile</h2>
-          <div className="glass-card">
+          <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Profile</h2>
+          <div className={CARD}>
             <div className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-bold ${
-                isGameMode ? 'bg-purple-500/10 text-purple-400' : 'bg-zinc-800 text-white'
-              }`}>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-['Archivo'] font-black bg-[color:var(--gm-badge)] text-[color:var(--gm-ink)]">
                 {user?.first_name?.[0]}{user?.last_name?.[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-white text-sm sm:text-base truncate">{user?.first_name} {user?.last_name}</p>
-                <p className="text-xs sm:text-sm text-zinc-500 truncate">{user?.email}</p>
+                <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] text-sm sm:text-base truncate">{user?.first_name} {user?.last_name}</p>
+                <p className="text-xs sm:text-sm text-[color:var(--gm-muted)] truncate">{user?.email}</p>
               </div>
-              <EditProfileDialog 
-                user={user} 
+              <EditProfileDialog
+                user={user}
                 open={editProfileOpen}
                 onOpenChange={setEditProfileOpen}
                 onSuccess={refreshUser}
-                isGameMode={isGameMode}
               />
             </div>
-            <Separator className="bg-zinc-800" />
+            <Separator className="bg-[color:var(--gm-track)]" />
             <ChangePasswordDialog
               open={changePasswordOpen}
               onOpenChange={setChangePasswordOpen}
-              isGameMode={isGameMode}
             />
           </div>
         </section>
@@ -90,34 +94,34 @@ export default function SettingsPage() {
 
         {/* All-Time Stats */}
         <section className="mb-6 sm:mb-8">
-          <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 sm:mb-4">All-Time Stats</h2>
-          <div className="glass-card p-3 sm:p-4">
+          <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>All-Time Stats</h2>
+          <div className={`${CARD} p-3 sm:p-4`}>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {isGameMode && (
                 <>
                   <div>
-                    <p className="text-xs sm:text-sm text-zinc-500">Total XP</p>
-                    <p className="text-lg sm:text-xl font-bold text-blue-400">
+                    <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Total XP</p>
+                    <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">
                       {user?.total_xp_all_time || 0}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs sm:text-sm text-zinc-500">Highest Level</p>
-                    <p className="text-lg sm:text-xl font-bold text-white">{user?.highest_level_reached || 1} — {rankInfo(user?.highest_level_reached || 1).name}</p>
+                    <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Highest Level</p>
+                    <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{user?.highest_level_reached || 1} — {rankInfo(user?.highest_level_reached || 1).name}</p>
                   </div>
                 </>
               )}
               <div>
-                <p className="text-xs sm:text-sm text-zinc-500">Longest Streak</p>
-                <p className="text-lg sm:text-xl font-bold text-white">{user?.longest_streak_ever || 0} days</p>
+                <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Longest Streak</p>
+                <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{user?.longest_streak_ever || 0} days</p>
               </div>
               <div>
-                <p className="text-xs sm:text-sm text-zinc-500">Habits Completed</p>
-                <p className="text-lg sm:text-xl font-bold text-white">{user?.total_habits_completed || 0}</p>
+                <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Habits Completed</p>
+                <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{user?.total_habits_completed || 0}</p>
               </div>
               <div className="col-span-2">
-                <p className="text-xs sm:text-sm text-zinc-500">Member Since</p>
-                <p className="text-sm sm:text-base text-white">
+                <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Member Since</p>
+                <p className="text-sm sm:text-base text-[color:var(--gm-ink)]">
                   {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
@@ -132,71 +136,71 @@ export default function SettingsPage() {
         {/* Public Profile Link */}
         {user?.username && (
           <section className="mb-6">
-            <Link 
+            <Link
               to={`/profile/${user.username}`}
-              className="glass-card p-4 flex items-center justify-between hover-lift transition-all block"
+              className={`${CARD} p-4 flex items-center justify-between transition-colors hover:brightness-[0.97] block`}
               data-testid="view-profile-link"
             >
               <div className="flex items-center gap-3">
-                <ExternalLink className={`w-5 h-5 ${isGameMode ? 'text-blue-400' : 'text-zinc-400'}`} />
+                <ExternalLink className="w-5 h-5 text-[color:var(--gm-muted)]" />
                 <div>
-                  <p className="text-sm font-medium text-white">View Public Profile</p>
-                  <p className="text-xs text-zinc-500">@{user.username}</p>
+                  <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">View Public Profile</p>
+                  <p className="text-xs text-[color:var(--gm-muted)]">@{user.username}</p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-zinc-500" />
+              <ChevronRight className="w-4 h-4 text-[color:var(--gm-muted)]" />
             </Link>
           </section>
         )}
 
         {/* Profile Colors - Game Mode Only */}
-        {isGameMode && <ColorSettingsSection isGameMode={isGameMode} />}
+        {isGameMode && <ColorSettingsSection />}
 
         {/* Profile Customization - Game Mode Only */}
         {isGameMode && <ProfileCustomizationSection />}
 
         {/* App Experience */}
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-4">App Experience</h2>
-          <div className="glass-card">
+          <h2 className={`${SECTION_LABEL} mb-4`}>App Experience</h2>
+          <div className={CARD}>
             <div className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {isGameMode ? (
-                  <Gamepad2 className="w-5 h-5 text-purple-400" />
+                  <Gamepad2 className="w-5 h-5 text-[color:var(--gm-ink)]" />
                 ) : (
-                  <Eye className="w-5 h-5 text-zinc-400" />
+                  <Eye className="w-5 h-5 text-[color:var(--gm-ink)]" />
                 )}
                 <div>
-                  <p className="font-medium text-white">
+                  <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">
                     {isGameMode ? 'Game Mode' : 'Focus Mode'}
                   </p>
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-[color:var(--gm-muted)]">
                     {isGameMode ? 'Full gamified experience' : 'Clean, minimal interface'}
                   </p>
                 </div>
               </div>
               <Dialog open={switchModeDialogOpen} onOpenChange={setSwitchModeDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="border-zinc-700 text-white hover:bg-zinc-800" data-testid="switch-mode-btn">
+                  <Button variant="outline" className="rounded-full border-[#A59BCC] bg-transparent text-[color:var(--gm-ink)] hover:bg-[color:var(--gm-badge)]" data-testid="switch-mode-btn">
                     Switch
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                <DialogContent className={DIALOG}>
                   <DialogHeader>
-                    <DialogTitle className="font-['Satoshi']">Switch Mode?</DialogTitle>
+                    <DialogTitle className="font-['Archivo'] font-extrabold">Switch Mode?</DialogTitle>
                   </DialogHeader>
-                  <p className="text-zinc-400">
-                    Are you sure you want to switch to {isGameMode ? 'Focus' : 'Game'} Mode? 
+                  <p className="text-[color:var(--gm-muted)]">
+                    Are you sure you want to switch to {isGameMode ? 'Focus' : 'Game'} Mode?
                     Your entire UI and features will change.
                   </p>
                   <DialogFooter className="mt-4">
-                    <Button variant="ghost" onClick={() => setSwitchModeDialogOpen(false)} className="text-zinc-400">
+                    <Button variant="ghost" onClick={() => setSwitchModeDialogOpen(false)} className="text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]">
                       Cancel
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleSwitchMode}
                       disabled={loading}
-                      className={isGameMode ? 'bg-zinc-700 hover:bg-zinc-600' : 'bg-purple-600 hover:bg-purple-700'}
+                      className="bg-[#95DEE6] text-[#183A3F] hover:brightness-95"
                       data-testid="confirm-switch-mode-btn"
                     >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Switch Mode'}
@@ -208,34 +212,34 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Notifications */}
+        {/* Appearance */}
         <section className="mb-6 sm:mb-8">
-          <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 sm:mb-4">Appearance</h2>
+          <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Appearance</h2>
           <LightModeToggle />
         </section>
 
         {/* Notifications */}
         <section className="mb-6 sm:mb-8">
-          <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 sm:mb-4">Notifications</h2>
+          <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Notifications</h2>
           <NotificationSettings user={user} isGameMode={isGameMode} />
         </section>
 
         {/* Help & Support */}
         <section className="mb-6 sm:mb-8">
-          <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 sm:mb-4">Help & Support</h2>
-          <div className="glass-card">
+          <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Help & Support</h2>
+          <div className={CARD}>
             <SettingsLink icon={<HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />} label="Help Center" href="/help" />
-            <Separator className="bg-white/[0.06]" />
+            <Separator className="bg-[color:var(--gm-track)]" />
             <SettingsLink icon={<FileText className="w-4 h-4 sm:w-5 sm:h-5" />} label="FAQ" href="/faq" />
           </div>
         </section>
 
         {/* Legal */}
         <section className="mb-6 sm:mb-8">
-          <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 sm:mb-4">Legal</h2>
-          <div className="glass-card">
+          <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Legal</h2>
+          <div className={CARD}>
             <SettingsLink icon={<FileText className="w-4 h-4 sm:w-5 sm:h-5" />} label="Terms & Rights" href="/terms" />
-            <Separator className="bg-white/[0.06]" />
+            <Separator className="bg-[color:var(--gm-track)]" />
             <SettingsLink icon={<Lock className="w-4 h-4 sm:w-5 sm:h-5" />} label="Privacy Policy" href="/privacy" />
           </div>
         </section>
@@ -243,29 +247,29 @@ export default function SettingsPage() {
         {/* Log out */}
         <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-[#B91C1C] hover:text-[#B91C1C] hover:bg-[#B91C1C]/10"
               data-testid="logout-btn"
             >
               <LogOut className="w-5 h-5 mr-3" />
               Log Out
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+          <DialogContent className={DIALOG}>
             <DialogHeader>
-              <DialogTitle className="font-['Satoshi']">Log Out?</DialogTitle>
+              <DialogTitle className="font-['Archivo'] font-extrabold">Log Out?</DialogTitle>
             </DialogHeader>
-            <p className="text-zinc-400">
+            <p className="text-[color:var(--gm-muted)]">
               Are you sure you want to log out?
             </p>
             <DialogFooter className="mt-4">
-              <Button variant="ghost" onClick={() => setLogoutDialogOpen(false)} className="text-zinc-400">
+              <Button variant="ghost" onClick={() => setLogoutDialogOpen(false)} className="text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]">
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleLogout}
-                className="bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                className="bg-[#B91C1C]/15 text-[#B91C1C] hover:bg-[#B91C1C]/25"
                 data-testid="confirm-logout-btn"
               >
                 Log Out
@@ -280,20 +284,20 @@ export default function SettingsPage() {
 
 function SettingsLink({ icon, label, href }) {
   return (
-    <a 
+    <a
       href={href}
-      className="flex items-center justify-between p-3 sm:p-4 hover:bg-zinc-800/50 transition-colors"
+      className="flex items-center justify-between p-3 sm:p-4 hover:bg-[color:var(--gm-badge)] transition-colors"
     >
-      <div className="flex items-center gap-2 sm:gap-3 text-zinc-300">
+      <div className="flex items-center gap-2 sm:gap-3 text-[color:var(--gm-ink)]">
         {icon}
-        <span className="text-sm sm:text-base">{label}</span>
+        <span className="text-sm sm:text-base font-['General_Sans']">{label}</span>
       </div>
-      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-600" />
+      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-[color:var(--gm-muted)]" />
     </a>
   );
 }
 
-function EditProfileDialog({ user, open, onOpenChange, onSuccess, isGameMode }) {
+function EditProfileDialog({ user, open, onOpenChange, onSuccess }) {
   const [firstName, setFirstName] = useState(user?.first_name || '');
   const [lastName, setLastName] = useState(user?.last_name || '');
   const [loading, setLoading] = useState(false);
@@ -320,41 +324,41 @@ function EditProfileDialog({ user, open, onOpenChange, onSuccess, isGameMode }) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white" data-testid="edit-profile-btn">
+        <Button variant="ghost" size="sm" className="text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]" data-testid="edit-profile-btn">
           <Edit2 className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+      <DialogContent className="bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0">
         <DialogHeader>
-          <DialogTitle className="font-['Satoshi']">Edit Profile</DialogTitle>
+          <DialogTitle className="font-['Archivo'] font-extrabold">Edit Profile</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label className="text-zinc-300">First Name</Label>
+            <Label className="text-[color:var(--gm-muted)]">First Name</Label>
             <Input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="bg-zinc-800 border-zinc-700 text-white"
+              className="bg-[color:var(--gm-badge)] border-0 text-[color:var(--gm-ink)]"
               data-testid="edit-firstname-input"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-zinc-300">Last Name</Label>
+            <Label className="text-[color:var(--gm-muted)]">Last Name</Label>
             <Input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="bg-zinc-800 border-zinc-700 text-white"
+              className="bg-[color:var(--gm-badge)] border-0 text-[color:var(--gm-ink)]"
               data-testid="edit-lastname-input"
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-zinc-400">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]">
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className={isGameMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-zinc-700 hover:bg-zinc-600'}
+              className="bg-[#95DEE6] text-[#183A3F] hover:brightness-95"
               data-testid="save-profile-btn"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
@@ -366,7 +370,7 @@ function EditProfileDialog({ user, open, onOpenChange, onSuccess, isGameMode }) 
   );
 }
 
-function ChangePasswordDialog({ open, onOpenChange, isGameMode }) {
+function ChangePasswordDialog({ open, onOpenChange }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -396,52 +400,52 @@ function ChangePasswordDialog({ open, onOpenChange, isGameMode }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <button className="w-full flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors text-left" data-testid="change-password-btn">
-          <div className="flex items-center gap-3 text-zinc-300">
+        <button className="w-full flex items-center justify-between p-4 hover:bg-[color:var(--gm-badge)] transition-colors text-left" data-testid="change-password-btn">
+          <div className="flex items-center gap-3 text-[color:var(--gm-ink)]">
             <Lock className="w-5 h-5" />
-            <span>Change Password</span>
+            <span className="font-['General_Sans']">Change Password</span>
           </div>
-          <ChevronRight className="w-5 h-5 text-zinc-600" />
+          <ChevronRight className="w-5 h-5 text-[color:var(--gm-muted)]" />
         </button>
       </DialogTrigger>
-      <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+      <DialogContent className="bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0">
         <DialogHeader>
-          <DialogTitle className="font-['Satoshi']">Change Password</DialogTitle>
+          <DialogTitle className="font-['Archivo'] font-extrabold">Change Password</DialogTitle>
         </DialogHeader>
         {error && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <div className="p-3 rounded-lg bg-[#B91C1C]/10 text-[#B91C1C] text-sm">
             {error}
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label className="text-zinc-300">Current Password</Label>
+            <Label className="text-[color:var(--gm-muted)]">Current Password</Label>
             <Input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="bg-zinc-800 border-zinc-700 text-white"
+              className="bg-[color:var(--gm-badge)] border-0 text-[color:var(--gm-ink)]"
               data-testid="current-password-input"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-zinc-300">New Password</Label>
+            <Label className="text-[color:var(--gm-muted)]">New Password</Label>
             <Input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="bg-zinc-800 border-zinc-700 text-white"
+              className="bg-[color:var(--gm-badge)] border-0 text-[color:var(--gm-ink)]"
               data-testid="new-password-input"
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-zinc-400">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]">
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading || !currentPassword || !newPassword}
-              className={isGameMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-zinc-700 hover:bg-zinc-600'}
+              className="bg-[#95DEE6] text-[#183A3F] hover:brightness-95"
               data-testid="save-password-btn"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Change Password'}
@@ -481,50 +485,50 @@ function NotificationSettings({ user, isGameMode }) {
   };
 
   return (
-    <div className={`rounded-xl ${isGameMode ? 'bg-zinc-900/50 border border-white/10' : 'bg-zinc-900 border border-zinc-800'}`}>
+    <div className="rounded-2xl bg-[color:var(--gm-card)]">
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Bell className="w-5 h-5 text-zinc-400" />
+          <Bell className="w-5 h-5 text-[color:var(--gm-ink)]" />
           <div>
-            <p className="font-medium text-white">Push Notifications</p>
-            <p className="text-sm text-zinc-500">Receive notifications on your device</p>
+            <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Push Notifications</p>
+            <p className="text-sm text-[color:var(--gm-muted)]">Receive notifications on your device</p>
           </div>
         </div>
         <Switch
           checked={settings.push_enabled}
           onCheckedChange={() => handleToggle('push_enabled')}
-          className="data-[state=checked]:bg-purple-600"
+          className="data-[state=checked]:bg-[#95DEE6]"
           data-testid="push-toggle"
         />
       </div>
-      
+
       {settings.push_enabled && (
         <>
-          <Separator className="bg-zinc-800" />
+          <Separator className="bg-[color:var(--gm-track)]" />
           <div className="p-4 flex items-center justify-between">
             <div>
-              <p className="font-medium text-white">Reminders</p>
-              <p className="text-sm text-zinc-500">Habit reminders throughout the day</p>
+              <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Reminders</p>
+              <p className="text-sm text-[color:var(--gm-muted)]">Habit reminders throughout the day</p>
             </div>
             <Switch
               checked={settings.reminders_enabled}
               onCheckedChange={() => handleToggle('reminders_enabled')}
-              className="data-[state=checked]:bg-purple-600"
+              className="data-[state=checked]:bg-[#95DEE6]"
               data-testid="reminders-toggle"
             />
           </div>
-          
+
           {/* Roast Mode - both modes */}
-          <Separator className="bg-zinc-800" />
+          <Separator className="bg-[color:var(--gm-track)]" />
           <div className="p-4 flex items-center justify-between">
             <div>
-              <p className="font-medium text-white">Roast Mode</p>
-              <p className="text-sm text-zinc-500">{isGameMode ? 'Competitive trash talk when you slack' : 'Quiet nudges when you miss sessions'}</p>
+              <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Roast Mode</p>
+              <p className="text-sm text-[color:var(--gm-muted)]">{isGameMode ? 'Competitive trash talk when you slack' : 'Quiet nudges when you miss sessions'}</p>
             </div>
             <Switch
               checked={settings.roast_enabled}
               onCheckedChange={() => handleToggle('roast_enabled')}
-              className="data-[state=checked]:bg-purple-600"
+              className="data-[state=checked]:bg-[#95DEE6]"
               data-testid="roast-toggle"
             />
           </div>
@@ -597,25 +601,32 @@ function ProfileCustomizationSection() {
   const ownedAnims = owned.anims;
   const ownedBanners = owned.banners;
 
+  // Equipped chip = cyan "active" ring; unequipped = neutral badge.
+  const chipCls = (active) =>
+    `text-xs px-3 py-1 rounded-full transition-colors ${
+      active ? 'bg-[color:var(--gm-badge)] ring-1 ring-[#95DEE6] text-[color:var(--gm-ink)]'
+             : 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
+    }`;
+
   return (
     <section className="mb-6" data-testid="profile-customization">
-      <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">Profile Customization</h2>
-      
+      <h2 className={`${SECTION_LABEL} mb-3`}>Profile Customization</h2>
+
       {/* Titles */}
       {earnedTitles.length > 0 && (
-        <div className="glass-card p-4 mb-3">
-          <p className="text-sm text-zinc-400 mb-2">Titles</p>
+        <div className={`${CARD} p-4 mb-3`}>
+          <p className="text-sm text-[color:var(--gm-muted)] mb-2">Titles</p>
           <div className="flex flex-wrap gap-2">
             {equippedTitle && (
-              <button onClick={() => handleUnequip('title')} className="text-xs px-3 py-1 rounded-full border border-red-500/20 text-red-400 hover:bg-red-500/10">Remove</button>
+              <button onClick={() => handleUnequip('title')} className="text-xs px-3 py-1 rounded-full text-[#B91C1C] hover:bg-[#B91C1C]/10">Remove</button>
             )}
             {earnedTitles.map(t => (
               <button key={t.key} onClick={() => handleEquip('title', t)} disabled={equipping === `title-${t.key}`}
-                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-xl border transition-all ${equippedTitle === t.key ? 'border-white/30 bg-white/5' : 'border-white/[0.06] hover:bg-white/5'}`}
+                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-xl transition-colors ${equippedTitle === t.key ? 'bg-[color:var(--gm-badge)] ring-1 ring-[#95DEE6]' : 'bg-[color:var(--gm-badge)] hover:brightness-95'}`}
                 data-testid={`equip-title-${t.key}`}>
                 <TitleBadge name={t.name} sourceSystem={t.source_system} style={t.rarity_style}
                   rarityTier={t.rarity_tier} rarity={t.rarity} size="sm" />
-                {equippedTitle === t.key && <Check className="w-3 h-3 text-white/60" />}
+                {equippedTitle === t.key && <Check className="w-3 h-3 text-[color:var(--gm-ink)]" />}
               </button>
             ))}
           </div>
@@ -626,13 +637,13 @@ function ProfileCustomizationSection() {
           equip_item rejects it, so ownedIcons is always [] and this never renders
           or calls anything. Kept for when icons are added. See NOTES_FOR_SACHIN.md. */}
       {ownedIcons.length > 0 && (
-        <div className="glass-card p-4 mb-3">
-          <p className="text-sm text-zinc-400 mb-2">Icons</p>
+        <div className={`${CARD} p-4 mb-3`}>
+          <p className="text-sm text-[color:var(--gm-muted)] mb-2">Icons</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleEquip('icon', null)} className="text-xs px-3 py-1 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800">Default</button>
+            <button onClick={() => handleEquip('icon', null)} className={chipCls(false)}>Default</button>
             {ownedIcons.map(i => (
               <button key={i.key} onClick={() => handleEquip('icon', i.key)} disabled={equipping === `icon-${i.key}`}
-                className={`text-xs px-3 py-1 rounded-full border transition-all ${user?.equipped_icon === i.key ? 'border-blue-500/30 bg-blue-500/10 text-blue-400' : 'border-white/[0.06] text-zinc-300 hover:bg-white/5'}`}>
+                className={chipCls(user?.equipped_icon === i.key)}>
                 {i.name}
               </button>
             ))}
@@ -642,13 +653,13 @@ function ProfileCustomizationSection() {
 
       {/* Animations */}
       {ownedAnims.length > 0 && (
-        <div className="glass-card p-4 mb-3">
-          <p className="text-sm text-zinc-400 mb-2">Animations</p>
+        <div className={`${CARD} p-4 mb-3`}>
+          <p className="text-sm text-[color:var(--gm-muted)] mb-2">Animations</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleUnequip('animation')} className="text-xs px-3 py-1 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800">None</button>
+            <button onClick={() => handleUnequip('animation')} className={chipCls(false)}>None</button>
             {ownedAnims.map(a => (
               <button key={a.key} onClick={() => handleEquip('animation', a)} disabled={equipping === `animation-${a.key}`}
-                className={`text-xs px-3 py-1 rounded-full border transition-all ${user?.equipped_animation === a.key ? 'border-blue-500/30 bg-blue-500/10 text-blue-400' : 'border-white/[0.06] text-zinc-300 hover:bg-white/5'}`}>
+                className={chipCls(user?.equipped_animation === a.key)}>
                 {a.name}
               </button>
             ))}
@@ -658,13 +669,13 @@ function ProfileCustomizationSection() {
 
       {/* Banners */}
       {ownedBanners.length > 0 && (
-        <div className="glass-card p-4 mb-3">
-          <p className="text-sm text-zinc-400 mb-2">Banners</p>
+        <div className={`${CARD} p-4 mb-3`}>
+          <p className="text-sm text-[color:var(--gm-muted)] mb-2">Banners</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleUnequip('banner')} className="text-xs px-3 py-1 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800">Default</button>
+            <button onClick={() => handleUnequip('banner')} className={chipCls(false)}>Default</button>
             {ownedBanners.map(b => (
               <button key={b.key} onClick={() => handleEquip('banner', b)} disabled={equipping === `banner-${b.key}`}
-                className={`text-xs px-3 py-1 rounded-full border transition-all ${user?.equipped_banner === b.key ? 'border-blue-500/30 bg-blue-500/10 text-blue-400' : 'border-white/[0.06] text-zinc-300 hover:bg-white/5'}`}>
+                className={chipCls(user?.equipped_banner === b.key)}>
                 {b.name}
               </button>
             ))}
@@ -673,7 +684,7 @@ function ProfileCustomizationSection() {
       )}
 
       {earnedTitles.length === 0 && ownedIcons.length === 0 && ownedAnims.length === 0 && ownedBanners.length === 0 && (
-        <div className="glass-card p-4 text-center text-sm text-zinc-500">
+        <div className={`${CARD} p-4 text-center text-sm text-[color:var(--gm-muted)]`}>
           No items to equip yet. Earn titles through streaks or buy items from the Shop!
         </div>
       )}
@@ -700,18 +711,18 @@ function LightModeToggle() {
   };
 
   return (
-    <div className="glass-card p-4 flex items-center justify-between" data-testid="light-mode-toggle">
+    <div className={`${CARD} p-4 flex items-center justify-between`} data-testid="light-mode-toggle">
       <div className="flex items-center gap-3">
-        {lightMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-zinc-400" />}
+        {lightMode ? <Sun className="w-5 h-5 text-[color:var(--gm-ink)]" /> : <Moon className="w-5 h-5 text-[color:var(--gm-ink)]" />}
         <div>
-          <p className="font-medium text-white">Light Mode</p>
-          <p className="text-sm text-zinc-500">{lightMode ? 'Light theme active' : 'Dark theme active'}</p>
+          <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Light Mode</p>
+          <p className="text-sm text-[color:var(--gm-muted)]">{lightMode ? 'Light theme active' : 'Dark theme active'}</p>
         </div>
       </div>
       <Switch
         checked={lightMode}
         onCheckedChange={handleToggle}
-        className="data-[state=checked]:bg-amber-500"
+        className="data-[state=checked]:bg-[#95DEE6]"
         data-testid="light-mode-switch"
       />
     </div>
@@ -778,37 +789,37 @@ function ProgressSection({ isGameMode }) {
 
   return (
     <section className="mb-6 sm:mb-8" data-testid="progress-section">
-      <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 sm:mb-4">Progress</h2>
-      <div className="glass-card p-4">
+      <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Progress</h2>
+      <div className={`${CARD} p-4`}>
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-zinc-400">Today</span>
-            <span className="text-white font-medium">{daily.completed_habits}/{daily.total_habits}</span>
+            <span className="text-[color:var(--gm-muted)]">Today</span>
+            <span className="font-['JetBrains_Mono'] font-bold text-[color:var(--gm-ink)]">{daily.completed_habits}/{daily.total_habits}</span>
           </div>
-          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-[color:var(--gm-track)] rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${isGameMode ? 'bg-blue-500' : 'bg-zinc-400'}`}
-              style={{ width: `${todayPct}%` }}
+              className="h-full rounded-full transition-all"
+              style={{ width: `${todayPct}%`, backgroundColor: LIME }}
               data-testid="progress-today-bar"
             />
           </div>
         </div>
 
         {weekly && (
-          <div className={`grid ${isGameMode ? 'grid-cols-3' : 'grid-cols-2'} gap-3 pt-3 border-t border-white/5`}>
+          <div className={`grid ${isGameMode ? 'grid-cols-3' : 'grid-cols-2'} gap-3 pt-3 border-t border-[color:var(--gm-track)]`}>
             <div>
-              <p className="text-xs text-zinc-500">Completion Rate</p>
-              <p className="text-lg font-bold text-white">{weekly.completion_rate}%</p>
+              <p className="text-xs text-[color:var(--gm-muted)]">Completion Rate</p>
+              <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)]">{weekly.completion_rate}%</p>
             </div>
             {isGameMode && (
               <div>
-                <p className="text-xs text-zinc-500">XP This Week</p>
-                <p className="text-lg font-bold text-white">{weekly.total_xp}</p>
+                <p className="text-xs text-[color:var(--gm-muted)]">XP This Week</p>
+                <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)]">{weekly.total_xp}</p>
               </div>
             )}
             <div>
-              <p className="text-xs text-zinc-500">Full Days</p>
-              <p className="text-lg font-bold text-white">{weekly.full_days}/7</p>
+              <p className="text-xs text-[color:var(--gm-muted)]">Full Days</p>
+              <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)]">{weekly.full_days}/7</p>
             </div>
           </div>
         )}
@@ -818,7 +829,7 @@ function ProgressSection({ isGameMode }) {
 }
 
 
-function ColorSettingsSection({ isGameMode }) {
+function ColorSettingsSection() {
   const { user, refreshUser } = useAuth();
   const [colors, setColors] = useState(null);
   const [updating, setUpdating] = useState(null);
@@ -879,11 +890,11 @@ function ColorSettingsSection({ isGameMode }) {
 
   return (
     <section className="mb-6" data-testid="color-settings">
-      <h2 className="text-xs sm:text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">Profile Colors</h2>
-      
+      <h2 className={`${SECTION_LABEL} mb-3`}>Profile Colors</h2>
+
       {/* Banner Color */}
       <div className="mb-4">
-        <p className="text-sm text-zinc-400 mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Banner Color</p>
+        <p className="text-sm text-[color:var(--gm-muted)] mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Banner Color</p>
         <div className="flex flex-wrap gap-2">
           <ColorSwatch hex="#1F2937" name="Default" selected={colors.selected_banner === '#1F2937'} owned={true} onSelect={() => handleReset('banner')} updating={updating === 'banner-#1F2937'} />
           {colors.banner_colors.map(c => (
@@ -894,7 +905,7 @@ function ColorSettingsSection({ isGameMode }) {
 
       {/* Main Color */}
       <div>
-        <p className="text-sm text-zinc-400 mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Main Color</p>
+        <p className="text-sm text-[color:var(--gm-muted)] mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Main Color</p>
         <div className="flex flex-wrap gap-2">
           <ColorSwatch hex="#1F2937" name="Default" selected={colors.selected_main === '#1F2937'} owned={true} onSelect={() => handleReset('main')} updating={updating === 'main-#1F2937'} />
           {colors.main_colors.map(c => (
@@ -913,7 +924,7 @@ function ColorSwatch({ hex, name, selected, owned, onSelect, updating }) {
       disabled={!owned || updating}
       title={owned ? name : `${name} (Unlock in Shop)`}
       className={`w-8 h-8 rounded-full border-2 transition-all relative ${
-        selected ? 'border-white scale-110' : owned ? 'border-white/20 hover:scale-105' : 'border-white/10 opacity-40 cursor-not-allowed'
+        selected ? 'border-[#95DEE6] scale-110' : owned ? 'border-[color:var(--gm-track)] hover:scale-105' : 'border-[color:var(--gm-track)] opacity-40 cursor-not-allowed'
       }`}
       style={{ backgroundColor: hex }}
       data-testid={`color-swatch-${hex}`}
