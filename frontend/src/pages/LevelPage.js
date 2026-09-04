@@ -21,9 +21,13 @@ export default function LevelPage() {
   const currentLevel = user?.rank || levelForXp(currentXP);
   const info = rankInfo(currentLevel);
   const accent = info.color; // protected 10-rank ladder color = rank identity
-  const xpInLevel = currentXP - info.min_xp;
-  const xpNeeded = info.max_xp - info.min_xp;
-  const xpProgress = xpNeeded > 0 ? Math.min((xpInLevel / xpNeeded) * 100, 100) : 100;
+  const isMaxLevel = currentLevel >= MAX_LEVEL;
+  // level_for_xp (server) advances at the NEXT rank's min_xp — which is this
+  // rank's max_xp + 1. Target that threshold so the bar/remaining don't read
+  // "full but 1 XP owed" (e.g. 250/250 saying "1 XP until…").
+  const nextThreshold = isMaxLevel ? info.max_xp : rankInfo(currentLevel + 1).min_xp;
+  const xpProgress = isMaxLevel ? 100 : Math.min(Math.max(((currentXP - info.min_xp) / (nextThreshold - info.min_xp)) * 100, 0), 100);
+  const xpRemaining = Math.max(0, nextThreshold - currentXP);
   const CurrentIcon = LEVEL_ICONS[currentLevel] || Star;
 
   return (
@@ -47,14 +51,14 @@ export default function LevelPage() {
         <div data-testid="level-xp-progress">
           <div className="flex justify-between font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.06em] mb-2">
             <span className="text-[color:var(--gm-ink)]">{currentXP} XP</span>
-            <span className="text-[color:var(--gm-muted)]">{info.max_xp === 999999 ? 'MAX' : `${info.max_xp} XP`}</span>
+            <span className="text-[color:var(--gm-muted)]">{isMaxLevel ? 'MAX' : `${nextThreshold} XP`}</span>
           </div>
           <div className="h-3 rounded-full overflow-hidden bg-[color:var(--gm-track)]">
             <div className="h-full rounded-full transition-all duration-700 ease-out"
               style={{ width: `${xpProgress}%`, backgroundColor: LIME }} />
           </div>
           <p className="font-['General_Sans'] text-sm text-[color:var(--gm-muted)] mt-2">
-            {currentLevel >= MAX_LEVEL ? 'Max level reached!' : `${Math.max(1, xpNeeded - xpInLevel)} XP until Level ${currentLevel + 1}`}
+            {isMaxLevel ? 'Max level reached!' : `${xpRemaining} XP until Level ${currentLevel + 1}`}
           </p>
         </div>
       </div>
