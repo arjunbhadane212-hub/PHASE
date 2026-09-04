@@ -14,6 +14,16 @@ const CHART_TYPES = [
   { id: 'column', icon: Columns3 || BarChart3, label: 'Column' },
 ];
 
+// Fixed metric identity palette — same surfaces Home uses, constant in both
+// themes (colored surface + dark ink text is the only way cyan/lime stay legible
+// in light AND dark). Each metric's tile color == its chart-series color.
+//   Gems = cyan · XP = purple · Tasks = lime
+const METRIC = {
+  gems:  { surface: '#95DEE6', ink: '#183A3F' }, // cyan  (Home streak-hero cyan)
+  xp:    { surface: '#A59BCC', ink: '#241A40' }, // purple (v2 accent)
+  tasks: { surface: '#DBF67F', ink: '#2A3B0B' }, // lime  (Home success/completed)
+};
+
 export default function ProgressPage() {
   const { user } = useAuth();
   const [range, setRange] = useState('weekly');
@@ -147,13 +157,13 @@ export default function ProgressPage() {
       <div className="max-w-4xl mx-auto animate-slide-up">
         <h1 className="text-xl sm:text-2xl font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em] mb-5">Progress</h1>
 
-        {/* Time Range Toggle */}
+        {/* Time Range Toggle — active pill is solid cyan (Home hero accent) */}
         <div className="inline-flex items-center gap-2 mb-6" data-testid="range-toggle">
           {['daily', 'weekly', 'monthly'].map(r => (
             <button key={r} onClick={() => setRange(r)}
               className={`px-4 py-2 rounded-full font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] transition-colors ${
                 range === r
-                  ? 'text-[color:var(--gm-ink)] ring-1 ring-[#A59BCC]'
+                  ? 'bg-[#95DEE6] text-[#183A3F]'
                   : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
               }`} data-testid={`range-${r}`}>
               {r}
@@ -165,20 +175,20 @@ export default function ProgressPage() {
           <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[color:var(--gm-muted)] animate-spin" /></div>
         ) : (
           <>
-            {/* Stat Cards */}
+            {/* Stat Cards — solid metric-identity surfaces (cyan / purple / lime) */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6" data-testid="stat-cards">
-              <StatCard icon={<Gem className="w-5 h-5" />} value={gemsEarned} label="Gems Earned" />
-              <StatCard icon={<Zap className="w-5 h-5" />} value={xpEarned} label="XP Earned" />
-              <StatCard icon={<CheckSquare className="w-5 h-5" />} value={tasksDone} label="Tasks Done" />
+              <StatCard icon={<Gem className="w-5 h-5" />} value={gemsEarned} label="Gems Earned" tone={METRIC.gems} />
+              <StatCard icon={<Zap className="w-5 h-5" />} value={xpEarned} label="XP Earned" tone={METRIC.xp} />
+              <StatCard icon={<CheckSquare className="w-5 h-5" />} value={tasksDone} label="Tasks Done" tone={METRIC.tasks} />
             </div>
 
-            {/* Chart Type Toolbar */}
+            {/* Chart Type Toolbar — active pill is solid lime (success accent) */}
             <div className="flex items-center gap-1 mb-4" data-testid="chart-toolbar">
               {CHART_TYPES.map(({ id, icon: Icon, label }) => (
                 <button key={id} onClick={() => setChartType(id)} title={label}
                   className={`p-2 rounded-lg transition-colors ${
                     chartType === id
-                      ? 'bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] ring-1 ring-[#A59BCC]'
+                      ? 'bg-[#DBF67F] text-[#2A3B0B]'
                       : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
                   }`} data-testid={`chart-${id}`}>
                   <Icon className="w-4 h-4" />
@@ -203,12 +213,12 @@ export default function ProgressPage() {
   );
 }
 
-function StatCard({ icon, value, label }) {
+function StatCard({ icon, value, label, tone }) {
   return (
-    <div className="rounded-2xl bg-[color:var(--gm-card)] p-4 sm:p-5 text-center" data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
-      <div className="flex justify-center mb-2 text-[color:var(--gm-ink)]">{icon}</div>
-      <p className="text-3xl sm:text-4xl font-['Archivo'] font-black text-[color:var(--gm-ink)] leading-none tracking-[-0.02em] tabular-nums">{value}</p>
-      <p className="mt-2 font-['JetBrains_Mono'] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">{label}</p>
+    <div className="rounded-2xl p-4 sm:p-5 text-center" style={{ backgroundColor: tone.surface }} data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
+      <div className="flex justify-center mb-2" style={{ color: tone.ink }}>{icon}</div>
+      <p className="text-3xl sm:text-4xl font-['Archivo'] font-black leading-none tracking-[-0.02em] tabular-nums" style={{ color: tone.ink }}>{value}</p>
+      <p className="mt-2 font-['JetBrains_Mono'] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.08em]" style={{ color: tone.ink, opacity: 0.72 }}>{label}</p>
     </div>
   );
 }
@@ -260,20 +270,23 @@ function ChartRenderer({ type, data }) {
   const yProps = yAxisProps(c);
   const tProps = tooltipProps(c);
 
+  // Data marks use the fixed metric identity (matches the stat tiles).
+  const XP = METRIC.xp.surface, GEMS = METRIC.gems.surface, TASKS = METRIC.tasks.surface;
+
   const hasData = Array.isArray(data) && data.some(d => (d.xp || 0) + (d.gems || 0) + (d.tasks || 0) > 0);
   if (!hasData) return <EmptyChart />;
 
   if (type === 'pie') {
     const pieData = [
-      { name: 'Gems', value: data.reduce((s, d) => s + d.gems, 0) },
-      { name: 'XP', value: data.reduce((s, d) => s + d.xp, 0) },
-      { name: 'Tasks', value: data.reduce((s, d) => s + d.tasks, 0) },
+      { name: 'Gems', value: data.reduce((s, d) => s + d.gems, 0), fill: GEMS },
+      { name: 'XP', value: data.reduce((s, d) => s + d.xp, 0), fill: XP },
+      { name: 'Tasks', value: data.reduce((s, d) => s + d.tasks, 0), fill: TASKS },
     ].filter(d => d.value > 0);
     return (
       <ResponsiveContainer width="100%" height={height}>
         <PieChart>
           <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
-            {pieData.map((e, i) => <Cell key={i} fill={c.series[i % c.series.length]} />)}
+            {pieData.map((e, i) => <Cell key={i} fill={e.fill} />)}
           </Pie>
           <Tooltip {...tProps} />
         </PieChart>
@@ -289,9 +302,9 @@ function ChartRenderer({ type, data }) {
           <XAxis {...xProps} />
           <YAxis {...yProps} />
           <Tooltip {...tProps} />
-          <Line type="monotone" dataKey="xp" stroke={c.series[0]} strokeWidth={2} dot={{ fill: c.series[0], r: 3 }} activeDot={{ r: 5 }} name="XP" />
-          <Line type="monotone" dataKey="gems" stroke={c.series[1]} strokeWidth={2} dot={{ fill: c.series[1], r: 3 }} activeDot={{ r: 5 }} name="Gems" />
-          <Line type="monotone" dataKey="tasks" stroke={c.series[2]} strokeWidth={2} dot={{ fill: c.series[2], r: 3 }} activeDot={{ r: 5 }} name="Tasks" />
+          <Line type="monotone" dataKey="xp" stroke={XP} strokeWidth={2} dot={{ fill: XP, r: 3 }} activeDot={{ r: 5 }} name="XP" />
+          <Line type="monotone" dataKey="gems" stroke={GEMS} strokeWidth={2} dot={{ fill: GEMS, r: 3 }} activeDot={{ r: 5 }} name="Gems" />
+          <Line type="monotone" dataKey="tasks" stroke={TASKS} strokeWidth={2} dot={{ fill: TASKS, r: 3 }} activeDot={{ r: 5 }} name="Tasks" />
         </LineChart>
       </ResponsiveContainer>
     );
@@ -303,25 +316,25 @@ function ChartRenderer({ type, data }) {
         <AreaChart data={data}>
           <defs>
             <linearGradient id="areaXp" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={c.series[0]} stopOpacity={0.35} />
-              <stop offset="100%" stopColor={c.series[0]} stopOpacity={0} />
+              <stop offset="0%" stopColor={XP} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={XP} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="areaGems" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={c.series[1]} stopOpacity={0.35} />
-              <stop offset="100%" stopColor={c.series[1]} stopOpacity={0} />
+              <stop offset="0%" stopColor={GEMS} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={GEMS} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="areaTasks" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={c.series[2]} stopOpacity={0.35} />
-              <stop offset="100%" stopColor={c.series[2]} stopOpacity={0} />
+              <stop offset="0%" stopColor={TASKS} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={TASKS} stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={c.track} />
           <XAxis {...xProps} />
           <YAxis {...yProps} />
           <Tooltip {...tProps} />
-          <Area type="monotone" dataKey="xp" fill="url(#areaXp)" stroke={c.series[0]} strokeWidth={2} name="XP" />
-          <Area type="monotone" dataKey="gems" fill="url(#areaGems)" stroke={c.series[1]} strokeWidth={2} name="Gems" />
-          <Area type="monotone" dataKey="tasks" fill="url(#areaTasks)" stroke={c.series[2]} strokeWidth={2} name="Tasks" />
+          <Area type="monotone" dataKey="xp" fill="url(#areaXp)" stroke={XP} strokeWidth={2} name="XP" />
+          <Area type="monotone" dataKey="gems" fill="url(#areaGems)" stroke={GEMS} strokeWidth={2} name="Gems" />
+          <Area type="monotone" dataKey="tasks" fill="url(#areaTasks)" stroke={TASKS} strokeWidth={2} name="Tasks" />
         </AreaChart>
       </ResponsiveContainer>
     );
@@ -334,9 +347,9 @@ function ChartRenderer({ type, data }) {
           <XAxis {...xProps} />
           <YAxis {...yProps} />
           <Tooltip {...tProps} />
-          <Bar dataKey="xp" fill={c.series[0]} radius={[8, 8, 0, 0]} name="XP" />
-          <Bar dataKey="gems" fill={c.series[1]} radius={[8, 8, 0, 0]} name="Gems" />
-          <Bar dataKey="tasks" fill={c.series[2]} radius={[8, 8, 0, 0]} name="Tasks" />
+          <Bar dataKey="xp" fill={XP} radius={[8, 8, 0, 0]} name="XP" />
+          <Bar dataKey="gems" fill={GEMS} radius={[8, 8, 0, 0]} name="Gems" />
+          <Bar dataKey="tasks" fill={TASKS} radius={[8, 8, 0, 0]} name="Tasks" />
         </BarChart>
       </ResponsiveContainer>
     );
@@ -349,9 +362,9 @@ function ChartRenderer({ type, data }) {
         <XAxis {...xProps} />
         <YAxis {...yProps} />
         <Tooltip {...tProps} />
-        <Bar dataKey="xp" fill={c.series[0]} radius={[8, 8, 0, 0]} name="XP" />
-        <Bar dataKey="gems" fill={c.series[1]} radius={[8, 8, 0, 0]} name="Gems" />
-        <Bar dataKey="tasks" fill={c.series[2]} radius={[8, 8, 0, 0]} name="Tasks" />
+        <Bar dataKey="xp" fill={XP} radius={[8, 8, 0, 0]} name="XP" />
+        <Bar dataKey="gems" fill={GEMS} radius={[8, 8, 0, 0]} name="Gems" />
+        <Bar dataKey="tasks" fill={TASKS} radius={[8, 8, 0, 0]} name="Tasks" />
       </BarChart>
     </ResponsiveContainer>
   );

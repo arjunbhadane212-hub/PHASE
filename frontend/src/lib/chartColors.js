@@ -1,6 +1,7 @@
-// Reads the live --gm-* design tokens off <html> so Recharts marks + frame flip
-// with the app theme (.light-mode toggle). Fallbacks are the v2 light values so a
-// paint before the tokens resolve still looks sane.
+// Reads the live --gm-* design tokens off <html> so the Recharts *frame*
+// (axes, grid, tooltip surface) flips with the app theme (.light-mode toggle).
+// Data-mark colors are NOT here — they come from the fixed metric identity
+// palette in ProgressPage (cyan/lime/purple, constant in both themes, matching Home).
 export function themedChartColors() {
   const cs = getComputedStyle(document.documentElement);
   const v = (name) => cs.getPropertyValue(name).trim();
@@ -10,8 +11,5 @@ export function themedChartColors() {
     track: v('--gm-track') || '#D9DBD6',
     card:  v('--gm-card')  || '#F2F3F0',
     bg:    v('--gm-bg')    || '#FAFAF7',
-    // Progress-only palette: blue is allowed here per v2 "progress indicators only".
-    // Five steps of the same blue so multi-series/pies read as monochrome-blue-progress.
-    series: ['#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE'],
   };
 }
