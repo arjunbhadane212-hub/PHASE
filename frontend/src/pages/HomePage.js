@@ -957,7 +957,8 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
 }
 
 
-const CONFETTI_COLORS_LEVEL = ['#1B6AE4', '#FFD700', '#7B2FBE', '#00D4AA'];
+// Confetti tuned to read on the lime takeover background (dark ink, deep teal, cyan, olive)
+const CONFETTI_COLORS_LEVEL = ['#0F1210', '#183A3F', '#95DEE6', '#2A3B0B'];
 
 function LevelUpCelebration({ data, onDismiss }) {
   const canvasRef = useRef(null);
@@ -1059,72 +1060,84 @@ function LevelUpCelebration({ data, onDismiss }) {
   }, []);
 
   const rewardGems = data.level_up_gems || 0;
+  const INK = '#0F1210';  // near-black text on the lime takeover
+  const SOFT = '#2A3B0B'; // deep olive for secondary text on lime
 
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
+      style={{ backgroundColor: '#DBF67F' }}
       onClick={onDismiss} data-testid="level-up-celebration"
     >
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
 
-      <div className="relative text-center p-8 z-10">
-        {/* Level number with golden glow */}
-        <motion.div
-          initial={{ scale: 0 }} animate={{ scale: [0, 1.3, 1.0] }}
-          transition={{ duration: 0.8, times: [0, 0.6, 1], ease: 'easeOut' }}
-          className="mb-6"
+      <div className="relative text-center px-8 z-10">
+        {/* Eyebrow */}
+        <motion.p
+          initial={{ y: -12, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.15 }}
+          className="font-['JetBrains_Mono',monospace] text-xs sm:text-sm font-bold uppercase tracking-[0.35em] mb-1"
+          style={{ color: INK }}
         >
-          <div className="text-8xl sm:text-9xl font-black font-['Archivo',sans-serif] text-transparent bg-clip-text"
-            style={{
-              backgroundImage: 'linear-gradient(135deg, #FFD700, #FFA500, #FFD700)',
-              filter: 'drop-shadow(0 0 30px rgba(255,215,0,0.5))',
-              WebkitTextStroke: '1px rgba(255,215,0,0.3)',
-            }}
-            data-testid="level-number"
-          >
-            {data.level}
-          </div>
+          Level Up
+        </motion.p>
+
+        {/* Giant level number — black on lime */}
+        <motion.div
+          initial={{ scale: 0, rotate: -8 }} animate={{ scale: [0, 1.25, 1], rotate: 0 }}
+          transition={{ duration: 0.7, times: [0, 0.6, 1], ease: 'easeOut' }}
+          className="text-[8rem] sm:text-[11rem] font-black font-['Archivo',sans-serif] leading-[0.85] tracking-[-0.04em]"
+          style={{ color: INK, textShadow: '0 6px 0 rgba(15,18,16,0.12)' }}
+          data-testid="level-number"
+        >
+          {data.level}
         </motion.div>
 
-        {/* LEVEL X UNLOCKED shimmer text */}
+        {/* Headline */}
         <motion.h2
-          initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-2xl sm:text-4xl font-black font-['Archivo',sans-serif] mb-2 level-up-shimmer-text"
+          initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.45 }}
+          className="text-2xl sm:text-4xl font-black font-['Archivo',sans-serif] uppercase tracking-[-0.01em] mt-3"
+          style={{ color: INK }}
           data-testid="level-up-text"
         >
-          LEVEL {data.level} UNLOCKED
+          Level {data.level} Unlocked
         </motion.h2>
 
+        {/* Rank name */}
         <motion.p
-          initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="text-lg sm:text-xl font-semibold text-zinc-300 mb-6"
+          initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="font-['General_Sans',sans-serif] text-lg sm:text-2xl font-semibold mt-1"
+          style={{ color: SOFT }}
         >
           {data.level_name}
         </motion.p>
 
-        {/* Reward display — flat +50 gems per level-up (Step 7) */}
+        {/* Reward — dark chip on lime */}
         {rewardGems > 0 && (
           <motion.div
-            initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 1.0 }}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl border"
-            style={{ backgroundColor: '#0C1220', borderColor: '#1B6AE4', boxShadow: '0 0 20px rgba(27,106,228,0.25)' }}
+            initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.85, type: 'spring', stiffness: 300, damping: 18 }}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full mt-7"
+            style={{ backgroundColor: INK }}
             data-testid="level-reward"
           >
-            <Gem className="w-4 h-4 text-[#4D8EF0]" />
-            <span className="text-sm font-medium text-white">+{rewardGems} Gems</span>
+            <Gem className="w-4 h-4" style={{ color: '#95DEE6' }} />
+            <span className="font-['JetBrains_Mono',monospace] text-sm font-bold uppercase tracking-[0.06em] text-white">+{rewardGems} Gems</span>
           </motion.div>
         )}
 
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          className="text-xs text-zinc-600 mt-6"
+          transition={{ delay: 1.4 }}
+          className="font-['JetBrains_Mono',monospace] text-[11px] uppercase tracking-[0.15em] mt-8"
+          style={{ color: SOFT, opacity: 0.7 }}
+          data-testid="level-up-dismiss"
         >
-          Tap anywhere to dismiss
+          Tap anywhere to continue
         </motion.p>
       </div>
     </motion.div>
