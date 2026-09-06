@@ -8,10 +8,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Gem, Star } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
+// Reveal tier colors mapped to the v2 accent language (rare = cyan, ultra = lime).
+// These render on the permanently-dark opening screen, so light pastels read fine.
 const TIER_COLOR = {
-  common: '#FFFFFF',
-  rare:   '#3B82F6',
-  ultra:  '#BFD9FF',
+  common: '#F4F5F2',
+  rare:   '#95DEE6',
+  ultra:  '#DBF67F',
 };
 
 const haptic = (pattern) => {
@@ -217,9 +219,9 @@ function RewardCard({ item, index, totalCount }) {
         border: `1.5px solid ${isUR ? tierColor : isRare ? tierColor : 'rgba(255,255,255,0.18)'}`,
         borderRadius: 16,
         boxShadow: isUR
-          ? '0 0 32px rgba(191, 217, 255, 0.45), inset 0 0 24px rgba(59, 130, 246, 0.18)'
+          ? '0 0 32px rgba(219, 246, 127, 0.45), inset 0 0 24px rgba(149, 222, 230, 0.16)'
           : isRare
-          ? '0 0 20px rgba(59, 130, 246, 0.32), inset 0 0 16px rgba(59, 130, 246, 0.1)'
+          ? '0 0 20px rgba(149, 222, 230, 0.32), inset 0 0 16px rgba(149, 222, 230, 0.1)'
           : '0 0 14px rgba(255, 255, 255, 0.06)',
         transformStyle: 'preserve-3d',
       }}
@@ -380,13 +382,8 @@ export default function BoxOpening({ boxId, rolledItems, onContinue }) {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
                 onClick={onContinue}
-                className="mt-8 px-10 py-3 rounded-2xl font-bold text-sm transition-transform active:scale-[0.97]"
-                style={{
-                  background: 'linear-gradient(180deg, #2C7BFF 0%, #1B6AE4 100%)',
-                  color: '#FFFFFF',
-                  boxShadow: '0 0 24px rgba(59, 130, 246, 0.35)',
-                  letterSpacing: '0.08em',
-                }}
+                className="mt-8 px-10 py-3 rounded-2xl font-['General_Sans'] font-bold text-sm transition-transform active:scale-[0.97] bg-[#95DEE6] text-[#183A3F]"
+                style={{ letterSpacing: '0.08em' }}
                 data-testid="opening-continue-btn"
               >
                 Continue

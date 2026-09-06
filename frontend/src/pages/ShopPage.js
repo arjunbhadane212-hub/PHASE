@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMode } from '../contexts/ModeContext';
 import { useGame } from '../contexts/GameContext';
 import { Gem, Lock, Clock, Check, Zap, Palette, Crown, Sparkles, Frame, Star, Swords } from 'lucide-react';
-import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
 import MysteryBoxesHeader from '../components/MysteryBoxesHeader';
@@ -15,6 +13,11 @@ import { animCssFor } from '../data/shopAnimations';
 import { effectCssFor } from '../data/shopEffects';
 
 const DEFAULT_IMAGE = '/shop-icons/crystal_cluster.png';
+
+// v2 card surface (shared with the rest of the app).
+const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
+// v2 gem currency (cyan surface / dark teal ink) + cyan gem icon for prices.
+const GEM_ICON = 'text-[#95DEE6]';
 
 // Map a shop_items.rarity to the 3 reveal/display tiers (legendary+mythic -> ultra).
 const rarityToTier = (r) => (r === 'common' ? 'common' : r === 'rare' ? 'rare' : 'ultra');
@@ -29,15 +32,13 @@ const adaptRolledItems = (items) => (items || []).map((it) => (
 
 const BOX_LABELS = { starter: 'STARTER', delta: 'DELTA', phase: 'PHASE' };
 
-const RARITY_BORDER = {
-  common: 'border-blue-900/40 hover:border-blue-700/50',
-  rare: 'border-purple-700/50 hover:border-purple-500/60',
-  legendary: 'border-amber-700/50 hover:border-amber-500/60',
-  mythic: 'border-pink-700/50 hover:border-pink-500/60',
-};
+// Rarity chips map to the v2 accent language (cyan/lime/purple) instead of the
+// old blue/amber/pink. common shows no chip.
 const RARITY_BADGE_STYLE = {
-  common: '', rare: 'bg-purple-500/20 text-purple-400',
-  legendary: 'bg-amber-500/20 text-amber-400', mythic: 'bg-pink-500/20 text-pink-400',
+  common: '',
+  rare: 'bg-[#95DEE6] text-[#183A3F]',
+  legendary: 'bg-[#DBF67F] text-[#2A3B0B]',
+  mythic: 'bg-[#A59BCC] text-[#1C1433]',
 };
 
 // Restock countdown removed with the fixed-catalog migration (Step 2a).
@@ -45,7 +46,6 @@ const RARITY_BADGE_STYLE = {
 
 export default function ShopPage() {
   const { refreshUser } = useAuth();
-  const { isGameMode } = useMode();
   const { gems, fetchGameStatus, activeBoostMultiplier } = useGame();
   const [tab, setTab] = useState('powerups');
   const [openedBoxId, setOpenedBoxId] = useState(null);
@@ -230,17 +230,17 @@ export default function ShopPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 sm:mb-6 relative z-10">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold font-['Satoshi'] text-white" data-testid="shop-title">Shop</h1>
+          <h1 className="text-xl sm:text-3xl font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em]" data-testid="shop-title">Shop</h1>
           {/* TODO: timed restock/rotation to be rebuilt in a future session.
               Static full catalog for now (fixed-catalog migration, Step 2a). */}
           <div className="flex items-center gap-2 mt-1">
-            <Clock className="w-3.5 h-3.5 text-zinc-500" />
-            <span className="text-xs text-zinc-500" data-testid="restock-timer">Full catalog</span>
+            <Clock className="w-3.5 h-3.5 text-[color:var(--gm-muted)]" />
+            <span className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)]" data-testid="restock-timer">Full catalog</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-[#0C1220] border border-[#1A2438]" data-testid="shop-gem-balance">
-          <Gem className="w-4 sm:w-5 h-4 sm:h-5 text-blue-400" />
-          <span className="text-base sm:text-lg font-bold text-blue-300">{gems ?? 0}</span>
+        <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-[#95DEE6]" data-testid="shop-gem-balance">
+          <Gem className="w-4 sm:w-5 h-4 sm:h-5 text-[#183A3F]" />
+          <span className="text-base sm:text-lg font-['Archivo'] font-black text-[#183A3F]">{gems ?? 0}</span>
         </div>
       </div>
 
@@ -289,8 +289,8 @@ export default function ShopPage() {
       <div className="flex gap-1.5 mb-4 sm:mb-6 overflow-x-auto no-scrollbar relative z-10" data-testid="shop-tabs">
         {TABS.map(({ id, icon: Icon, label }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-              tab === id ? 'bg-[#101828] text-[#4D8EF0] border border-[#1A2438]' : 'bg-[#0C1220] text-zinc-500 border border-transparent hover:text-zinc-300'
+            className={`flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              tab === id ? 'bg-[#95DEE6] text-[#183A3F]' : 'bg-[color:var(--gm-card)] text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
             }`} data-testid={`tab-${id}`}>
             <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {label}
           </button>
@@ -300,7 +300,7 @@ export default function ShopPage() {
       {/* Content */}
       <div className="relative z-10">
         {loading ? (
-          <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" /></div>
         ) : tab === 'powerups' ? (
           <PowerUpsGrid items={shopItems} gems={gems} buying={buying} onBuy={handleBuy} onActivate={handleActivateBoost} activeMultiplier={activeBoostMultiplier} />
         ) : tab === 'colors' ? (
@@ -313,19 +313,19 @@ export default function ShopPage() {
           <DecorationsGrid items={profileItems.decorations || []} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : (
           <div className="flex items-center justify-center py-16" data-testid="titles-placeholder">
-            <p className="text-sm text-white/50">Titles coming soon</p>
+            <p className="text-sm text-[color:var(--gm-muted)]">Titles coming soon</p>
           </div>
         )}
       </div>
 
       {/* How to Earn Gems */}
-      <div className="mt-6 sm:mt-8 rounded-2xl bg-[#0C1220] border border-[#1A2438] p-4 sm:p-5 relative z-10" data-testid="earn-gems-section">
-        <h3 className="text-xs sm:text-sm font-bold text-zinc-300 uppercase tracking-wider mb-3 sm:mb-4">How to Earn Gems</h3>
+      <div className={`mt-6 sm:mt-8 ${CARD} p-4 sm:p-5 relative z-10`} data-testid="earn-gems-section">
+        <h3 className="font-['JetBrains_Mono'] text-[11px] font-bold text-[color:var(--gm-muted)] uppercase tracking-[0.08em] mb-3 sm:mb-4">How to Earn Gems</h3>
         <div className="space-y-2 sm:space-y-3">
           {[{ label: 'Easy habit', amount: '+5' }, { label: 'Medium habit', amount: '+10' }, { label: 'Hard habit', amount: '+20' }, { label: 'Level up', amount: '+50' }, { label: 'All habits in a day', amount: '+10' }].map((row) => (
             <div key={row.label} className="flex items-center justify-between text-xs sm:text-sm">
-              <span className="text-zinc-400">{row.label}</span>
-              <span className="flex items-center gap-1.5 text-blue-400 font-medium"><Gem className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {row.amount}</span>
+              <span className="text-[color:var(--gm-muted)]">{row.label}</span>
+              <span className="flex items-center gap-1.5 text-[color:var(--gm-ink)] font-['JetBrains_Mono'] font-bold"><Gem className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${GEM_ICON}`} /> {row.amount}</span>
             </div>
           ))}
         </div>
@@ -339,7 +339,6 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid="powerups-grid">
       {items.map((item, idx) => {
         const imgSrc = item.icon || DEFAULT_IMAGE;
-        const border = RARITY_BORDER[item.rarity] || RARITY_BORDER.common;
         const isBuying = buying === item.id;
         const canAfford = (gems ?? 0) >= item.price;
 
@@ -350,18 +349,18 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
             <button key={`${idx}-${item.id}`}
               onClick={() => !isActive && canAfford && !isBuying && onActivate(item.id)}
               disabled={isActive || !canAfford || isBuying}
-              className={`relative p-3 sm:p-5 rounded-2xl border transition-all hover-lift text-center group ${border} ${isActive ? 'ring-1 ring-[#3B82F6]/40' : !canAfford ? 'opacity-60' : ''}`}
-              style={{ background: '#0C1220' }} data-testid={`shop-item-${item.id}`}>
+              className={`relative p-3 sm:p-5 ${CARD} transition-all hover-lift text-center group ${isActive ? 'ring-1 ring-[#95DEE6]' : !canAfford ? 'opacity-60' : ''}`}
+              data-testid={`shop-item-${item.id}`}>
               {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
               <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
                 <img src={imgSrc} alt={item.name} className="w-full h-full object-contain transition-transform group-hover:scale-110" />
               </div>
-              <p className="text-xs sm:text-sm font-medium text-white mb-0.5 truncate">{item.name}</p>
-              <p className="text-[9px] sm:text-[10px] text-zinc-600 mb-1.5 sm:mb-2.5">24h duration</p>
-              {isBuying ? <div className="w-4 h-4 mx-auto border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /> :
-               isActive ? <span className="flex items-center justify-center gap-1 text-[10px] sm:text-xs font-medium text-[#4D8EF0]"><Zap className="w-3 h-3" /> Active</span> :
-               !canAfford ? <span className="text-[10px] sm:text-xs text-zinc-600">Not enough</span> :
-               <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold text-blue-400"><Gem className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {item.price}</span>}
+              <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{item.name}</p>
+              <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 sm:mb-2.5">24h duration</p>
+              {isBuying ? <div className="w-4 h-4 mx-auto border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" /> :
+               isActive ? <span className="inline-flex items-center justify-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-[#95DEE6] text-[#183A3F]"><Zap className="w-3 h-3" /> Active</span> :
+               !canAfford ? <span className="text-[10px] sm:text-xs text-[color:var(--gm-muted)]">Not enough</span> :
+               <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-bold text-[color:var(--gm-ink)]"><Gem className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${GEM_ICON}`} /> {item.price}</span>}
             </button>
           );
         }
@@ -370,15 +369,15 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
         const isFull = item.owned >= item.max;
         return (
           <button key={`${idx}-${item.id}`} onClick={() => !isFull && canAfford && !isBuying && onBuy(item.id)} disabled={isFull || !canAfford || isBuying}
-            className={`relative p-3 sm:p-5 rounded-2xl border transition-all hover-lift text-center group ${border} ${isFull ? 'opacity-40' : !canAfford ? 'opacity-60' : ''}`}
-            style={{ background: '#0C1220' }} data-testid={`shop-item-${item.id}`}>
+            className={`relative p-3 sm:p-5 ${CARD} transition-all hover-lift text-center group ${isFull ? 'opacity-40' : !canAfford ? 'opacity-60' : ''}`}
+            data-testid={`shop-item-${item.id}`}>
             {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
             <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
               <img src={imgSrc} alt={item.name} className="w-full h-full object-contain transition-transform group-hover:scale-110" />
             </div>
-            <p className="text-xs sm:text-sm font-medium text-white mb-0.5 truncate">{item.name}</p>
-            <p className="text-[9px] sm:text-[10px] text-zinc-600 mb-1.5 sm:mb-2.5">{item.owned}/{item.max}</p>
-            {isBuying ? <div className="w-4 h-4 mx-auto border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /> : isFull ? <span className="flex items-center justify-center gap-1 text-[10px] sm:text-xs text-zinc-600"><Lock className="w-3 h-3" /> Full</span> : <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold text-blue-400"><Gem className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {item.price}</span>}
+            <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{item.name}</p>
+            <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 sm:mb-2.5">{item.owned}/{item.max}</p>
+            {isBuying ? <div className="w-4 h-4 mx-auto border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" /> : isFull ? <span className="flex items-center justify-center gap-1 text-[10px] sm:text-xs text-[color:var(--gm-muted)]"><Lock className="w-3 h-3" /> Full</span> : <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-bold text-[color:var(--gm-ink)]"><Gem className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${GEM_ICON}`} /> {item.price}</span>}
           </button>
         );
       })}
@@ -393,22 +392,24 @@ function ColorsGrid({ colors, gems, buying, onBuy }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid="colors-grid">
       {sorted.map((color) => {
-        const border = RARITY_BORDER[color.rarity] || RARITY_BORDER.common;
         const isBuying = buying === color.id;
         const canAfford = (gems ?? 0) >= color.price;
         return (
           <button key={`${color.colorType}-${color.hex}`} onClick={() => !color.owned && canAfford && !isBuying && onBuy(color.id)} disabled={color.owned || !canAfford || isBuying}
-            className={`relative p-3 sm:p-5 rounded-2xl border transition-all hover-lift text-center group ${border}`}
-            style={{ background: '#0C1220' }} data-testid={`color-${color.hex}`}>
+            className={`relative p-3 sm:p-5 ${CARD} transition-all hover-lift text-center group`}
+            data-testid={`color-${color.hex}`}>
             {color.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[color.rarity] || ''}`}>{color.rarity.toUpperCase()}</div>}
             <div className="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 relative flex items-center justify-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-white/10 group-hover:scale-105 transition-transform" style={{ backgroundColor: color.hex, boxShadow: `0 0 20px ${color.hex}30` }}>
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-[color:var(--gm-track)] group-hover:scale-105 transition-transform" style={{ backgroundColor: color.hex, boxShadow: `0 0 20px ${color.hex}30` }}>
                 {color.selected && <Check className="w-5 h-5 text-white absolute inset-0 m-auto" />}
               </div>
             </div>
-            <p className="text-xs sm:text-sm font-medium text-white mb-0.5 truncate">{color.name}</p>
-            <p className="text-[9px] sm:text-[10px] text-zinc-600 mb-1.5 capitalize">{color.colorType}</p>
-            {color.owned ? <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">{color.selected ? 'Equipped' : 'Owned'}</span> : isBuying ? <div className="w-4 h-4 mx-auto border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /> : <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold text-blue-400"><Gem className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {color.price}</span>}
+            <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{color.name}</p>
+            <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 capitalize">{color.colorType}</p>
+            {color.owned
+              ? <span className={`inline-block text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${color.selected ? 'bg-[#95DEE6] text-[#183A3F]' : 'bg-[#DBF67F] text-[#2A3B0B]'}`}>{color.selected ? 'Equipped' : 'Owned'}</span>
+              : isBuying ? <div className="w-4 h-4 mx-auto border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" />
+              : <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-bold text-[color:var(--gm-ink)]"><Gem className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${GEM_ICON}`} /> {color.price}</span>}
           </button>
         );
       })}
@@ -422,30 +423,29 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid={`${type}-grid`}>
       {sorted.map((item) => {
-        const border = RARITY_BORDER[item.rarity] || RARITY_BORDER.common;
         const isBuying = buying === item.id;
         const canAfford = (gems ?? 0) >= item.price;
         const animClass = type === 'animation' ? item.css || '' : '';
         return (
           <button key={item.key} onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.id)} disabled={item.owned || !canAfford || isBuying}
-            className={`relative p-3 sm:p-5 rounded-2xl border transition-all hover-lift text-center group ${border}`}
-            style={{ background: '#0C1220' }} data-testid={`shop-${type}-${item.key}`}>
+            className={`relative p-3 sm:p-5 ${CARD} transition-all hover-lift text-center group`}
+            data-testid={`shop-${type}-${item.key}`}>
             {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
             {/* Preview */}
             <div className="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
               {type === 'banner' ? (
                 <div className="w-full h-10 sm:h-14 rounded-lg" style={{ background: item.gradient || '#1F2937' }} />
               ) : type === 'animation' ? (
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-500/20 border border-blue-500/30 ${animClass}`} />
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[color:var(--gm-badge)] ${animClass}`} />
               ) : (
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-purple-500/15 border border-purple-500/20 flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-purple-400" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[color:var(--gm-badge)] flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-[color:var(--gm-ink)]" />
                 </div>
               )}
             </div>
-            <p className="text-xs sm:text-sm font-medium text-white mb-0.5 truncate">{item.name}</p>
-            <p className="text-[9px] sm:text-[10px] text-zinc-600 mb-1.5 capitalize">{item.rarity}</p>
-            {item.owned ? <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">Owned</span> : isBuying ? <div className="w-4 h-4 mx-auto border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /> : <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold text-blue-400"><Gem className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {item.price}</span>}
+            <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{item.name}</p>
+            <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 capitalize">{item.rarity}</p>
+            {item.owned ? <span className="inline-block text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-[#DBF67F] text-[#2A3B0B]">Owned</span> : isBuying ? <div className="w-4 h-4 mx-auto border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" /> : <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-bold text-[color:var(--gm-ink)]"><Gem className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${GEM_ICON}`} /> {item.price}</span>}
           </button>
         );
       })}
@@ -457,9 +457,9 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
 function DecorationsGrid({ items, gems, buying, onBuy }) {
   return (
     <div>
-      <div className="mb-4 p-3 rounded-xl bg-[#101828] border border-[#1A2438]">
-        <p className="text-xs text-[#4D8EF0] font-medium">Profile Effects</p>
-        <p className="text-[10px] text-zinc-500 mt-0.5">Full-width animated banners for your profile. Replaces your banner with a stunning animated scene.</p>
+      <div className="mb-4 p-3 rounded-xl bg-[color:var(--gm-badge)]">
+        <p className="text-xs text-[color:var(--gm-ink)] font-['General_Sans'] font-semibold">Profile Effects</p>
+        <p className="text-[10px] text-[color:var(--gm-muted)] mt-0.5">Full-width animated banners for your profile. Replaces your banner with a stunning animated scene.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="decorations-grid">
         {items.map((item) => {
@@ -470,8 +470,7 @@ function DecorationsGrid({ items, gems, buying, onBuy }) {
               key={item.key}
               onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.id)}
               disabled={item.owned || !canAfford || isBuying}
-              className="relative rounded-2xl border border-[#1A2438] overflow-hidden transition-all hover-lift text-left group"
-              style={{ background: '#0C1220' }}
+              className={`relative ${CARD} overflow-hidden transition-all hover-lift text-left group`}
               data-testid={`shop-deco-${item.key}`}
             >
               {/* Full-width animated banner preview.
@@ -482,16 +481,16 @@ function DecorationsGrid({ items, gems, buying, onBuy }) {
               />
               <div className="p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm font-medium text-white">{item.name}</p>
-                  <p className="text-[9px] text-zinc-600">Profile Effect</p>
+                  <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">{item.name}</p>
+                  <p className="text-[9px] text-[color:var(--gm-muted)]">Profile Effect</p>
                 </div>
                 {item.owned ? (
-                  <span className="text-[10px] sm:text-xs text-emerald-400 font-medium px-2 py-1 rounded-full bg-emerald-500/10">Owned</span>
+                  <span className="text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full bg-[#DBF67F] text-[#2A3B0B]">Owned</span>
                 ) : isBuying ? (
-                  <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${canAfford ? 'text-blue-400 bg-blue-500/10' : 'text-zinc-600 bg-zinc-800'}`}>
-                    <Gem className="w-3 h-3" /> {item.price.toLocaleString()}
+                  <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full bg-[color:var(--gm-badge)] ${canAfford ? 'text-[color:var(--gm-ink)]' : 'text-[color:var(--gm-muted)]'}`}>
+                    <Gem className={`w-3 h-3 ${GEM_ICON}`} /> {item.price.toLocaleString()}
                   </span>
                 )}
               </div>
@@ -507,9 +506,9 @@ function DecorationsGrid({ items, gems, buying, onBuy }) {
 function BattleEffectsGrid({ items, gems, buying, onBuy }) {
   return (
     <div>
-      <div className="mb-4 p-3 rounded-xl bg-[#101828] border border-[#1A2438]">
-        <p className="text-xs text-amber-400 font-medium flex items-center gap-1.5"><Swords className="w-3.5 h-3.5" /> Battle Scenes</p>
-        <p className="text-[10px] text-zinc-500 mt-0.5">Premium illustrated battle scenes for your profile banner. Epic hand-painted artwork.</p>
+      <div className="mb-4 p-3 rounded-xl bg-[color:var(--gm-badge)]">
+        <p className="text-xs text-[color:var(--gm-ink)] font-['General_Sans'] font-semibold flex items-center gap-1.5"><Swords className="w-3.5 h-3.5" /> Battle Scenes</p>
+        <p className="text-[10px] text-[color:var(--gm-muted)] mt-0.5">Premium illustrated battle scenes for your profile banner. Epic hand-painted artwork.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="battles-grid">
         {items.map((item) => {
@@ -520,8 +519,7 @@ function BattleEffectsGrid({ items, gems, buying, onBuy }) {
               key={item.key}
               onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.key, 'decoration')}
               disabled={item.owned || !canAfford || isBuying}
-              className="relative rounded-2xl border border-amber-900/30 overflow-hidden transition-all hover-lift text-left group"
-              style={{ background: '#0C1220' }}
+              className={`relative ${CARD} overflow-hidden transition-all hover-lift text-left group`}
               data-testid={`shop-battle-${item.key}`}
             >
               {/* Full-width battle scene image */}
@@ -535,16 +533,16 @@ function BattleEffectsGrid({ items, gems, buying, onBuy }) {
               </div>
               <div className="p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm font-medium text-white">{item.name}</p>
-                  <p className="text-[9px] text-amber-500/60">Premium Battle Scene</p>
+                  <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">{item.name}</p>
+                  <p className="text-[9px] text-[color:var(--gm-muted)]">Premium Battle Scene</p>
                 </div>
                 {item.owned ? (
-                  <span className="text-[10px] sm:text-xs text-emerald-400 font-medium px-2 py-1 rounded-full bg-emerald-500/10">Owned</span>
+                  <span className="text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full bg-[#DBF67F] text-[#2A3B0B]">Owned</span>
                 ) : isBuying ? (
-                  <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${canAfford ? 'text-amber-400 bg-amber-500/10' : 'text-zinc-600 bg-zinc-800'}`}>
-                    <Gem className="w-3 h-3" /> {item.price.toLocaleString()}
+                  <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full bg-[color:var(--gm-badge)] ${canAfford ? 'text-[color:var(--gm-ink)]' : 'text-[color:var(--gm-muted)]'}`}>
+                    <Gem className={`w-3 h-3 ${GEM_ICON}`} /> {item.price.toLocaleString()}
                   </span>
                 )}
               </div>

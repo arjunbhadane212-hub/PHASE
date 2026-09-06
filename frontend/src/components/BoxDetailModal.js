@@ -60,34 +60,20 @@ function LargeBoxArt({ boxId }) {
 // Item row — single drop entry in the drop-rates list.
 // =============================================================================
 function DropRow({ item }) {
-  const tierColorClass =
-    item.tier === 'common' ? 'text-white' :
-    item.tier === 'rare'   ? '' :
-                             'ur-pulse-text';
-  const tierStyle =
-    item.tier === 'rare'  ? { color: '#3B82F6' } :
-    item.tier === 'ultra' ? { color: '#BFD9FF' } :
-                            undefined;
   return (
     <div
       className="flex items-center justify-between py-1.5"
       data-testid={`drop-row-${item.id}`}
     >
-      <span
-        className={`text-[13px] font-medium tracking-wide ${tierColorClass}`}
-        style={tierStyle}
-      >
+      <span className="text-[13px] font-['General_Sans'] font-medium tracking-wide text-[color:var(--gm-ink)]">
         {item.name}
         {item.shared && (
-          <span className="ml-1.5 text-[10px] text-zinc-500 font-bold tracking-widest uppercase">
+          <span className="ml-1.5 text-[10px] text-[color:var(--gm-muted)] font-bold tracking-widest uppercase">
             · shared
           </span>
         )}
       </span>
-      <span
-        className={`text-[13px] font-bold tabular-nums ${tierColorClass}`}
-        style={tierStyle}
-      >
+      <span className="text-[13px] font-['JetBrains_Mono'] font-bold tabular-nums text-[color:var(--gm-muted)]">
         {item.percent.toFixed(1)}%
       </span>
     </div>
@@ -103,27 +89,13 @@ function DropRatesSection({ box }) {
     <div className="space-y-5" data-testid="drop-rates-list">
       {groups.map(({ tier, items }) => {
         const tierTotal = items.reduce((s, i) => s + i.percent, 0);
-        const headerColorClass =
-          tier === 'common' ? 'text-white/90' :
-          tier === 'rare'   ? '' :
-                              'ur-pulse-text';
-        const headerStyle =
-          tier === 'rare'  ? { color: '#3B82F6' } :
-          tier === 'ultra' ? { color: '#BFD9FF' } :
-                             undefined;
         return (
           <div key={tier} data-testid={`drop-tier-${tier}`}>
-            <div className="flex items-baseline justify-between mb-2 pb-1.5 border-b border-white/5">
-              <span
-                className={`text-[11px] font-black uppercase tracking-[0.22em] ${headerColorClass}`}
-                style={headerStyle}
-              >
+            <div className="flex items-baseline justify-between mb-2 pb-1.5 border-b border-[color:var(--gm-track)]">
+              <span className="text-[11px] font-['JetBrains_Mono'] font-black uppercase tracking-[0.22em] text-[color:var(--gm-ink)]">
                 {TIER_META[tier].label}
               </span>
-              <span
-                className={`text-[11px] font-bold tabular-nums ${headerColorClass}`}
-                style={headerStyle}
-              >
+              <span className="text-[11px] font-['JetBrains_Mono'] font-bold tabular-nums text-[color:var(--gm-muted)]">
                 {tierTotal.toFixed(1)}%
               </span>
             </div>
@@ -135,7 +107,7 @@ function DropRatesSection({ box }) {
       })}
 
       {/* Disclosure footer — Apple/Google loot box compliance */}
-      <div className="pt-4 mt-2 border-t border-white/5 text-[11px] leading-relaxed text-zinc-500">
+      <div className="pt-4 mt-2 border-t border-[color:var(--gm-track)] text-[11px] leading-relaxed text-[color:var(--gm-muted)]">
         <p>
           Drop rates are exact and apply to every box opened. Each item in this
           box has an independent chance to drop based on the rate shown above.
@@ -228,10 +200,9 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
                 maxWidth: 420,
                 height: 'auto',
                 borderRadius: 24,
-                background: '#0A0E14',
-                border: '1.5px solid rgba(59, 130, 246, 0.7)',
+                background: 'var(--gm-card)',
                 padding: '32px 24px',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 32px rgba(59, 130, 246, 0.15)',
+                boxShadow: 'var(--gm-shadow-card)',
                 pointerEvents: 'auto',
               }}
               onClick={(e) => e.stopPropagation()}
@@ -240,12 +211,11 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/5"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-colors bg-[color:var(--gm-badge)] hover:brightness-95"
               data-testid="box-modal-close-btn"
               aria-label="Close"
             >
-              <X className="w-4 h-4 text-zinc-400" />
+              <X className="w-4 h-4 text-[color:var(--gm-ink)]" />
             </button>
 
             {/* Hero: box art */}
@@ -255,33 +225,29 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
               {/* Name */}
               <div className="mt-6 flex items-center gap-2" data-testid="box-modal-name">
                 {box.id === 'phase' && (
-                  <Star className="w-3.5 h-3.5 text-[#BFD9FF]" fill="#BFD9FF" strokeWidth={0} />
+                  <Star className="w-3.5 h-3.5 text-[color:var(--gm-muted)]" fill="currentColor" strokeWidth={0} />
                 )}
                 <h2
-                  className="text-[11px] font-black uppercase leading-none"
-                  style={{ color: '#DCE7FA', letterSpacing: '0.22em' }}
+                  className="text-[11px] font-['JetBrains_Mono'] font-black uppercase leading-none text-[color:var(--gm-muted)]"
+                  style={{ letterSpacing: '0.22em' }}
                 >
                   {box.label}
                 </h2>
               </div>
-              <h1
-                className="mt-2 text-2xl font-black text-white text-center"
-                style={{ fontFamily: "'Satoshi', sans-serif" }}
-              >
+              <h1 className="mt-2 text-2xl font-['Archivo'] font-black text-[color:var(--gm-ink)] text-center">
                 {box.name}
               </h1>
-              <p className="mt-1 text-[12px] text-zinc-500 text-center">
+              <p className="mt-1 text-[12px] text-[color:var(--gm-muted)] text-center">
                 Drops {box.dropsPerOpen} items per open
               </p>
 
               {/* Cost */}
               <div
-                className="mt-5 flex items-center gap-1.5 px-4 py-2 rounded-full"
-                style={{ background: 'rgba(10, 14, 20, 0.85)', border: '1px solid rgba(59, 130, 246, 0.4)' }}
+                className="mt-5 flex items-center gap-1.5 px-4 py-2 rounded-full bg-[color:var(--gm-badge)]"
                 data-testid="box-modal-cost"
               >
-                <Gem className="w-4 h-4 text-[#4D8EF0]" strokeWidth={2.4} />
-                <span className="text-[15px] font-bold text-[#A6C7FF] tabular-nums leading-none">
+                <Gem className="w-4 h-4 text-[#95DEE6]" strokeWidth={2.4} />
+                <span className="text-[15px] font-['JetBrains_Mono'] font-bold text-[color:var(--gm-ink)] tabular-nums leading-none">
                   {box.cost}
                 </span>
               </div>
@@ -292,15 +258,10 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
               <button
                 onClick={() => onOpen?.(box.id)}
                 disabled={!canAfford}
-                className="w-full py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                style={{
-                  background: canAfford
-                    ? 'linear-gradient(180deg, #2C7BFF 0%, #1B6AE4 100%)'
-                    : 'rgba(27, 106, 228, 0.2)',
-                  color: '#FFFFFF',
-                  boxShadow: canAfford ? '0 0 24px rgba(59, 130, 246, 0.35)' : 'none',
-                  letterSpacing: '0.04em',
-                }}
+                className={`w-full py-3.5 rounded-2xl font-['General_Sans'] font-bold text-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                  canAfford ? 'bg-[#95DEE6] text-[#183A3F]' : 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)]'
+                }`}
+                style={{ letterSpacing: '0.04em' }}
                 data-testid="box-modal-open-btn"
               >
                 {canAfford ? (
@@ -318,12 +279,11 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
             <div className="px-6 pb-12">
               <button
                 onClick={() => setShowRates((v) => !v)}
-                className="w-full flex items-center justify-between py-3 px-4 rounded-xl transition-colors hover:bg-white/[0.03]"
-                style={{ background: 'rgba(10, 14, 20, 0.6)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                className="w-full flex items-center justify-between py-3 px-4 rounded-xl transition-colors bg-[color:var(--gm-badge)] hover:brightness-95"
                 data-testid="drop-rates-toggle"
                 aria-expanded={showRates}
               >
-                <span className="text-[12px] font-bold text-zinc-300 uppercase tracking-[0.16em]">
+                <span className="text-[12px] font-['JetBrains_Mono'] font-bold text-[color:var(--gm-ink)] uppercase tracking-[0.16em]">
                   View Drop Rates
                 </span>
                 <motion.span
@@ -331,7 +291,7 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
                   transition={{ duration: 0.2 }}
                   className="flex items-center justify-center"
                 >
-                  <ChevronDown className="w-4 h-4 text-zinc-400" />
+                  <ChevronDown className="w-4 h-4 text-[color:var(--gm-muted)]" />
                 </motion.span>
               </button>
 
