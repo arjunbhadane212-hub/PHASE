@@ -394,14 +394,35 @@ code {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(166, 199, 255, 0.0) 20%,
-    rgba(166, 199, 255, 0.85) 50%,
-    rgba(166, 199, 255, 0.0) 80%,
+    rgba(255, 255, 255, 0.0) 20%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.0) 80%,
     transparent 100%
   );
   animation: phase-shimmer-sweep 4s ease-in-out infinite;
   pointer-events: none;
   filter: blur(2px);
+  z-index: 2;
+}
+
+/* Mystery Box — legendary (PHASE) flourishes: rotating light rays + pulsing aura */
+.phase-rays {
+  position: absolute;
+  inset: -35%;
+  pointer-events: none;
+  z-index: 0;
+  animation: phase-rays-spin 14s linear infinite;
+  will-change: transform;
+}
+@keyframes phase-rays-spin { to { transform: rotate(360deg); } }
+
+.phase-legendary-pulse {
+  animation: phase-legendary-pulse 2.6s ease-in-out infinite;
+  will-change: box-shadow;
+}
+@keyframes phase-legendary-pulse {
+  0%, 100% { box-shadow: 0 0 22px rgba(219, 246, 127, 0.4), inset 0 0 30px rgba(219, 246, 127, 0.14); }
+  50%      { box-shadow: 0 0 44px rgba(219, 246, 127, 0.7), inset 0 0 42px rgba(219, 246, 127, 0.24); }
 }
 
 /* Mystery Box — Ultra-Rare text pulse (only the text glows, no background animation) */

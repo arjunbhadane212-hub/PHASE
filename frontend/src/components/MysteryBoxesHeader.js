@@ -1,128 +1,63 @@
 import { Gem, Star } from 'lucide-react';
+import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
 
 // Single source of truth for box data — shared across all shop tabs
 export const MYSTERY_BOXES = [
-  {
-    id: 'starter',
-    label: 'STARTER',
-    cost: 100,
-    borderOpacity: 0.6,
-    glowOpacity: 0.18,
-    innerGlowOpacity: 0.08,
-    starred: false,
-  },
-  {
-    id: 'delta',
-    label: 'DELTA',
-    cost: 500,
-    borderOpacity: 0.85,
-    glowOpacity: 0.28,
-    innerGlowOpacity: 0.14,
-    starred: false,
-  },
-  {
-    id: 'phase',
-    label: 'PHASE',
-    cost: 2000,
-    borderOpacity: 1.0,
-    glowOpacity: 0.4,
-    innerGlowOpacity: 0.22,
-    starred: true,
-    shimmer: true,
-  },
+  { id: 'starter', label: 'STARTER', cost: 100, starred: false },
+  { id: 'delta', label: 'DELTA', cost: 500, starred: false },
+  { id: 'phase', label: 'PHASE', cost: 2000, starred: true, legendary: true },
 ];
 
-// Placeholder box icon — controlled SVG, no stock VFX. Final art will be swapped in.
-function BoxIcon({ tierIntensity = 0.6 }) {
-  const lid = `rgba(77, 142, 240, ${0.55 + tierIntensity * 0.35})`;
-  const body = `rgba(27, 106, 228, ${0.18 + tierIntensity * 0.22})`;
-  const stroke = `rgba(77, 142, 240, ${0.7 + tierIntensity * 0.3})`;
-  return (
-    <svg viewBox="0 0 120 120" className="w-full h-full" aria-hidden="true">
-      <defs>
-        <linearGradient id={`box-grad-${tierIntensity}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={body} />
-          <stop offset="100%" stopColor="rgba(10,14,20,0.95)" />
-        </linearGradient>
-      </defs>
-      {/* Box body */}
-      <path
-        d="M20 50 L60 35 L100 50 L100 95 L60 110 L20 95 Z"
-        fill={`url(#box-grad-${tierIntensity})`}
-        stroke={stroke}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      {/* Box lid top face */}
-      <path
-        d="M20 50 L60 35 L100 50 L60 65 Z"
-        fill={lid}
-        stroke={stroke}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      {/* Center vertical seam */}
-      <line x1="60" y1="65" x2="60" y2="110" stroke={stroke} strokeWidth="1" opacity="0.6" />
-      {/* Subtle ribbon highlight */}
-      <path d="M55 35 L55 65 L65 65 L65 35 Z" fill={`rgba(77, 142, 240, ${0.35 + tierIntensity * 0.25})`} opacity="0.7" />
-      <line x1="60" y1="35" x2="60" y2="65" stroke={stroke} strokeWidth="1" opacity="0.5" />
-    </svg>
-  );
-}
-
 function BoxCard({ box, onOpen }) {
-  const borderColor = `rgba(59, 130, 246, ${box.borderOpacity})`;
-  const outerGlow = `0 0 24px rgba(59, 130, 246, ${box.glowOpacity})`;
-  const innerGlow = `inset 0 0 32px rgba(59, 130, 246, ${box.innerGlowOpacity})`;
-  const tierIntensity = box.borderOpacity; // 0.6, 0.85, 1.0
+  const t = tierFor(box.id);
+  const legendary = !!t.legendary;
 
   return (
     <div className="flex flex-col items-center gap-2" data-testid={`mystery-box-${box.id}`}>
       <button
         onClick={() => onOpen?.(box.id)}
-        className="relative w-full aspect-[2/3] overflow-hidden transition-transform active:scale-[0.97] hover:scale-[1.02]"
+        className={`relative w-full aspect-[2/3] overflow-hidden rounded-[22px] transition-transform active:scale-[0.97] hover:scale-[1.03] ${legendary ? 'phase-legendary-pulse' : ''}`}
         style={{
-          background: '#0A0E14',
-          border: `1.5px solid ${borderColor}`,
-          borderRadius: '20px',
-          boxShadow: `${outerGlow}, ${innerGlow}`,
+          background: `radial-gradient(ellipse at 50% 38%, rgba(${t.rgb}, ${legendary ? 0.24 : 0.12}) 0%, rgba(9, 12, 18, 0.98) 68%)`,
+          border: `1.5px solid rgba(${t.rgb}, ${legendary ? 0.9 : 0.5})`,
+          boxShadow: legendary
+            ? undefined // owned by the pulse animation
+            : `0 0 22px rgba(${t.rgb}, 0.22), inset 0 0 28px rgba(${t.rgb}, 0.08)`,
         }}
         data-testid={`mystery-box-${box.id}-btn`}
         aria-label={`Open ${box.label} box`}
       >
-        {/* Inner radial backdrop — controlled, no stock VFX */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse at center 40%, rgba(59, 130, 246, ${0.06 + tierIntensity * 0.08}) 0%, transparent 65%)`,
-          }}
-        />
+        {/* Legendary rotating light rays */}
+        {legendary && (
+          <div
+            className="phase-rays"
+            style={{
+              background: `conic-gradient(from 0deg, transparent 0 14deg, rgba(${t.rgb},0.14) 14deg 20deg, transparent 20deg 34deg, rgba(149,222,230,0.10) 34deg 40deg, transparent 40deg 54deg)`,
+            }}
+          />
+        )}
 
-        {/* Shimmer sweep — only for PHASE tier */}
-        {box.shimmer && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: '20px' }}>
+        {/* Shimmer sweep — legendary only */}
+        {legendary && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: '22px' }}>
             <div className="phase-shimmer-sweep" />
           </div>
         )}
 
-        {/* Box icon centered */}
-        <div className="absolute inset-0 flex items-center justify-center p-[18%] pb-[28%]">
-          <BoxIcon tierIntensity={tierIntensity} />
+        {/* Box art — gently floating */}
+        <div className="absolute inset-0 flex items-center justify-center p-[16%] pb-[26%]">
+          <PhaseBoxArt tier={box.id} className={`w-full h-full ${legendary ? 'animate-float' : ''}`} />
         </div>
 
         {/* Gem-cost pill at bottom */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
           <div
             className="flex items-center gap-1 px-2.5 py-1 rounded-full"
-            style={{
-              background: 'rgba(10, 14, 20, 0.85)',
-              border: `1px solid rgba(59, 130, 246, ${0.45 + tierIntensity * 0.3})`,
-              backdropFilter: 'blur(6px)',
-            }}
+            style={{ background: 'rgba(9, 12, 18, 0.82)', border: `1px solid rgba(${t.rgb}, 0.55)` }}
             data-testid={`mystery-box-${box.id}-cost`}
           >
-            <Gem className="w-3 h-3 text-[#4D8EF0]" strokeWidth={2.4} />
-            <span className="text-[11px] font-bold text-[#A6C7FF] tabular-nums leading-none">
+            <Gem className="w-3 h-3" style={{ color: t.edge }} strokeWidth={2.4} />
+            <span className="text-[11px] font-['JetBrains_Mono'] font-bold tabular-nums leading-none" style={{ color: t.edge }}>
               {box.cost}
             </span>
           </div>
@@ -132,18 +67,12 @@ function BoxCard({ box, onOpen }) {
       {/* Label pill BELOW the box */}
       <div
         className="flex items-center gap-1 px-2.5 py-0.5 rounded-md"
-        style={{
-          background: 'rgba(10, 14, 20, 0.7)',
-          border: `1px solid rgba(59, 130, 246, ${box.borderOpacity * 0.5})`,
-        }}
+        style={{ background: 'rgba(9, 12, 18, 0.7)', border: `1px solid rgba(${t.rgb}, 0.45)` }}
       >
-        {box.starred && <Star className="w-2.5 h-2.5 text-[#A6C7FF]" fill="#A6C7FF" strokeWidth={0} />}
+        {box.starred && <Star className="w-2.5 h-2.5" style={{ color: t.edge }} fill={t.edge} strokeWidth={0} />}
         <span
-          className="text-[11px] font-bold uppercase leading-none"
-          style={{
-            color: '#DCE7FA',
-            letterSpacing: '0.18em',
-          }}
+          className="text-[11px] font-['JetBrains_Mono'] font-bold uppercase leading-none"
+          style={{ color: t.edge, letterSpacing: '0.18em' }}
         >
           {box.label}
         </span>

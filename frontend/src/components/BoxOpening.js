@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gem, Star } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
+import { tierFor } from './PhaseBoxArt';
 
 // Reveal tier colors mapped to the v2 accent language (rare = cyan, ultra = lime).
 // These render on the permanently-dark opening screen, so light pastels read fine.
@@ -22,11 +23,12 @@ const haptic = (pattern) => {
 
 // ---------- Big animated box illustration (matches header/modal SVG) ----------
 function BigBox({ boxId, state, onClick }) {
-  // Tier intensity drives blue saturation
-  const intensity = boxId === 'phase' ? 1.0 : boxId === 'delta' ? 0.85 : 0.6;
-  const lid = `rgba(77, 142, 240, ${0.55 + intensity * 0.35})`;
-  const body = `rgba(27, 106, 228, ${0.18 + intensity * 0.22})`;
-  const stroke = `rgba(77, 142, 240, ${0.7 + intensity * 0.3})`;
+  // v2 tier palette (starter=cyan, delta=purple, phase=lime)
+  const t = tierFor(boxId);
+  const lid = t.edge;
+  const body = t.mid;
+  const stroke = t.edge;
+  const glowRGB = t.rgb;
 
   // State 1: idle bob @ scale 0.7
   // State 2: scale to 1.0, then shake (driven by .box-shake class)
@@ -58,7 +60,7 @@ function BigBox({ boxId, state, onClick }) {
       style={{
         width: 'min(64vw, 280px)',
         height: 'min(64vw, 280px)',
-        filter: `drop-shadow(0 0 ${state === 'buildup' ? 48 : 32}px rgba(59, 130, 246, ${0.3 + intensity * 0.3}))`,
+        filter: `drop-shadow(0 0 ${state === 'buildup' ? 48 : 32}px rgba(${glowRGB}, 0.55))`,
         willChange: 'transform, filter',
       }}
       data-testid="opening-box"
@@ -68,7 +70,7 @@ function BigBox({ boxId, state, onClick }) {
         <path
           d="M20 50 L60 35 L100 50 L100 95 L60 110 L20 95 Z"
           fill="none"
-          stroke="#3B82F6"
+          stroke={stroke}
           strokeWidth={state === 'buildup' || state === 'crack' ? 1.8 : 0}
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -77,7 +79,7 @@ function BigBox({ boxId, state, onClick }) {
             strokeDasharray: 1,
             strokeDashoffset: state === 'buildup' || state === 'crack' || state === 'reveal' ? 0 : 1,
             transition: 'stroke-dashoffset 0.4s ease-out, stroke-width 0.2s ease-out',
-            filter: 'drop-shadow(0 0 6px rgba(59,130,246,0.7))',
+            filter: `drop-shadow(0 0 6px rgba(${glowRGB}, 0.7))`,
           }}
         />
       </svg>
@@ -337,7 +339,7 @@ export default function BoxOpening({ boxId, rolledItems, onContinue }) {
       transition={{ duration: 0.25 }}
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
       style={{
-        background: 'radial-gradient(ellipse at center, #0A0E14 0%, #000000 80%)',
+        background: `radial-gradient(ellipse at center, rgba(${tierFor(boxId).rgb}, 0.14) 0%, #05070B 78%)`,
       }}
       data-testid="box-opening-screen"
     >

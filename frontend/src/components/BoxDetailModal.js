@@ -3,55 +3,20 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronDown, Gem, Star, Lock } from 'lucide-react';
 import { groupPoolByTier, TIER_META } from '../data/boxDrops';
+import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
 
 // =============================================================================
-// Large box illustration — scaled-up version of the header card icon.
-// Tier intensity drives blue saturation; no purple, no stock VFX.
+// Large box illustration — the shared v2 crystal-box art, scaled up.
 // =============================================================================
 function LargeBoxArt({ boxId }) {
-  const intensity = boxId === 'phase' ? 1.0 : boxId === 'delta' ? 0.85 : 0.6;
-  const lid = `rgba(77, 142, 240, ${0.55 + intensity * 0.35})`;
-  const body = `rgba(27, 106, 228, ${0.18 + intensity * 0.22})`;
-  const stroke = `rgba(77, 142, 240, ${0.7 + intensity * 0.3})`;
+  const t = tierFor(boxId);
   return (
     <div
-      className="relative"
-      style={{
-        width: 'min(60vw, 240px)',
-        height: 'min(60vw, 240px)',
-        filter: `drop-shadow(0 0 32px rgba(59, 130, 246, ${0.25 + intensity * 0.25}))`,
-      }}
+      className={`relative ${t.legendary ? 'animate-float' : ''}`}
+      style={{ width: 'min(60vw, 240px)', height: 'min(60vw, 240px)' }}
       data-testid={`box-modal-art-${boxId}`}
     >
-      <svg viewBox="0 0 120 120" className="w-full h-full" aria-hidden="true">
-        <defs>
-          <linearGradient id={`box-grad-large-${boxId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={body} />
-            <stop offset="100%" stopColor="rgba(10,14,20,0.95)" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M20 50 L60 35 L100 50 L100 95 L60 110 L20 95 Z"
-          fill={`url(#box-grad-large-${boxId})`}
-          stroke={stroke}
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M20 50 L60 35 L100 50 L60 65 Z"
-          fill={lid}
-          stroke={stroke}
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-        <line x1="60" y1="65" x2="60" y2="110" stroke={stroke} strokeWidth="1" opacity="0.6" />
-        <path
-          d="M55 35 L55 65 L65 65 L65 35 Z"
-          fill={`rgba(77, 142, 240, ${0.35 + intensity * 0.25})`}
-          opacity="0.7"
-        />
-        <line x1="60" y1="35" x2="60" y2="65" stroke={stroke} strokeWidth="1" opacity="0.5" />
-      </svg>
+      <PhaseBoxArt tier={boxId} className="w-full h-full" />
     </div>
   );
 }
