@@ -108,6 +108,17 @@
   --gm-shadow-nav: 0 12px 26px -10px rgba(15,18,16,0.16);
 }
 
+/* Explicit box-shadow utilities. Tailwind reads `shadow-[var(--gm-shadow-*)]`
+   as a shadow COLOR (bare var is ambiguous) and emits no box-shadow, so these
+   card/hero/nav lifts silently did nothing. Define the escaped class names
+   directly so every existing usage renders its intended shadow. */
+.shadow-\[var\(--gm-shadow-card\)\] { box-shadow: var(--gm-shadow-card); }
+.shadow-\[var\(--gm-shadow-hero\)\] { box-shadow: var(--gm-shadow-hero); }
+.shadow-\[var\(--gm-shadow-lime\)\] { box-shadow: var(--gm-shadow-lime); }
+.shadow-\[var\(--gm-shadow-cyan\)\] { box-shadow: var(--gm-shadow-cyan); }
+.shadow-\[var\(--gm-shadow-fab\)\]  { box-shadow: var(--gm-shadow-fab); }
+.shadow-\[var\(--gm-shadow-nav\)\]  { box-shadow: var(--gm-shadow-nav); }
+
 * {
   margin: 0;
   padding: 0;
