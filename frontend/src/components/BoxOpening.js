@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Gem, Star } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 import { tierFor } from './PhaseBoxArt';
+import { ShopItemIcon } from './ShopIcons';
 
 // Reveal tier colors mapped to the v2 accent language (rare = cyan, ultra = lime).
 // These render on the permanently-dark opening screen, so light pastels read fine.
@@ -25,8 +26,9 @@ const haptic = (pattern) => {
 function BigBox({ boxId, state, onClick }) {
   // v2 tier palette (starter=cyan, delta=purple, phase=lime)
   const t = tierFor(boxId);
-  const lid = t.edge;
-  const body = t.mid;
+  const lid = t.lid;
+  const body = t.faceTop;
+  const bodyBot = t.faceBot;
   const stroke = t.edge;
   const glowRGB = t.rgb;
 
@@ -94,8 +96,8 @@ function BigBox({ boxId, state, onClick }) {
       >
         <defs>
           <linearGradient id={`opening-box-grad-${boxId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={body} />
-            <stop offset="100%" stopColor="rgba(10,14,20,0.95)" />
+            <stop offset="0%" stopColor={body} stopOpacity="0.95" />
+            <stop offset="100%" stopColor={bodyBot} stopOpacity="0.95" />
           </linearGradient>
         </defs>
 
@@ -270,6 +272,10 @@ function RewardCard({ item, index, totalCount }) {
 // ---------- Reward type icon (small, controlled SVG/Lucide) ----------
 function RewardIcon({ item, color }) {
   if (item.type === 'gems') return <Gem className="w-7 h-7" style={{ color }} strokeWidth={2.2} />;
+  const k = item.item_key || '';
+  if (k === 'streak_shield' || k === 'streak_revive' || k.startsWith('boost_xp_')) {
+    return <ShopItemIcon itemKey={k} className="w-8 h-8" />;
+  }
   if (item.tier === 'ultra') return <Star className="w-7 h-7" style={{ color }} fill={color} strokeWidth={0} />;
   // Generic mini box-shape for other types
   return (

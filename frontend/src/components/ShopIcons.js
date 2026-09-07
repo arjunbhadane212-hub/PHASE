@@ -48,17 +48,43 @@ export function ReviveIcon({ className }) {
   );
 }
 
-export function BoltIcon({ className }) {
-  // XP boost — lightning, lime energy.
+export function BoltIcon({ className, level = 2 }) {
+  // XP boost — a lime lightning bolt in a cyan energy core. The charge escalates
+  // with the multiplier: x2 bare, x3 gains a hex energy ring, x5 adds radiating
+  // rays + a brighter core (a fully "charged" bolt).
+  const ring = level >= 3;
+  const rays = level >= 5;
+  const glow = level >= 5 ? LIME : level >= 3 ? `${LIME}dd` : `${LIME}aa`;
   return (
-    <Wrap glow={`${LIME}bb`} className={className}>
+    <Wrap glow={glow} className={className}>
       <defs>
-        <linearGradient id="bi-g" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`bi-g-${level}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={LIME_HI} /><stop offset="100%" stopColor={LIME_DK} />
         </linearGradient>
+        <radialGradient id={`bi-core-${level}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={CYAN_HI} stopOpacity={level >= 5 ? 0.9 : 0.6} />
+          <stop offset="100%" stopColor={CYAN} stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <path d="M27 3 L11 27 H21 L19 45 L37 19 H26 Z"
-        fill="url(#bi-g)" stroke={LIME} strokeWidth="2" strokeLinejoin="round" />
+
+      {rays && (
+        <g stroke={CYAN} strokeWidth="2" strokeLinecap="round" opacity="0.9">
+          <line x1="24" y1="1" x2="24" y2="6" /><line x1="24" y1="42" x2="24" y2="47" />
+          <line x1="1" y1="24" x2="6" y2="24" /><line x1="42" y1="24" x2="47" y2="24" />
+          <line x1="8" y1="8" x2="12" y2="12" /><line x1="40" y1="8" x2="36" y2="12" />
+          <line x1="8" y1="40" x2="12" y2="36" /><line x1="40" y1="40" x2="36" y2="36" />
+        </g>
+      )}
+
+      <circle cx="24" cy="24" r="16" fill={`url(#bi-core-${level})`} />
+
+      {ring && (
+        <polygon points="24,6 39,15 39,33 24,42 9,33 9,15"
+          fill="none" stroke={CYAN} strokeWidth="2" strokeLinejoin="round" opacity="0.85" />
+      )}
+
+      <path d="M27 6 L13 26 H21 L20 42 L35 21 H26 Z"
+        fill={`url(#bi-g-${level})`} stroke={LIME} strokeWidth="2" strokeLinejoin="round" />
     </Wrap>
   );
 }
@@ -94,6 +120,9 @@ export function SparkleIcon({ className }) {
 export function ShopItemIcon({ itemKey = '', className }) {
   if (itemKey === 'streak_shield') return <ShieldIcon className={className} />;
   if (itemKey === 'streak_revive') return <ReviveIcon className={className} />;
-  if (itemKey.startsWith('boost_xp_')) return <BoltIcon className={className} />;
+  if (itemKey.startsWith('boost_xp_')) {
+    const m = itemKey.match(/(\d+)x/);
+    return <BoltIcon className={className} level={m ? parseInt(m[1], 10) : 2} />;
+  }
   return <GemBoxIcon className={className} />;
 }
