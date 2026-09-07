@@ -11,8 +11,7 @@ import { supabase } from '../lib/supabaseClient';
 import { boostIconFor } from '../data/shopIcons';
 import { animCssFor } from '../data/shopAnimations';
 import { effectCssFor } from '../data/shopEffects';
-
-const DEFAULT_IMAGE = '/shop-icons/crystal_cluster.png';
+import { ShopItemIcon, SparkleIcon } from '../components/ShopIcons';
 
 // v2 card surface (shared with the rest of the app).
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
@@ -338,7 +337,6 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid="powerups-grid">
       {items.map((item, idx) => {
-        const imgSrc = item.icon || DEFAULT_IMAGE;
         const isBuying = buying === item.id;
         const canAfford = (gems ?? 0) >= item.price;
 
@@ -353,7 +351,7 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
               data-testid={`shop-item-${item.id}`}>
               {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
               <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
-                <img src={imgSrc} alt={item.name} className="w-full h-full object-contain transition-transform group-hover:scale-110" />
+                <ShopItemIcon itemKey={item.key} className="w-full h-full transition-transform group-hover:scale-110" />
               </div>
               <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{item.name}</p>
               <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 sm:mb-2.5">24h duration</p>
@@ -373,7 +371,7 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
             data-testid={`shop-item-${item.id}`}>
             {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
             <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
-              <img src={imgSrc} alt={item.name} className="w-full h-full object-contain transition-transform group-hover:scale-110" />
+              <ShopItemIcon itemKey={item.key} className="w-full h-full transition-transform group-hover:scale-110" />
             </div>
             <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{item.name}</p>
             <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 sm:mb-2.5">{item.owned}/{item.max}</p>
@@ -439,7 +437,7 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
                 <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[color:var(--gm-badge)] ${animClass}`} />
               ) : (
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[color:var(--gm-badge)] flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-[color:var(--gm-ink)]" />
+                  <SparkleIcon className="w-7 h-7" />
                 </div>
               )}
             </div>
