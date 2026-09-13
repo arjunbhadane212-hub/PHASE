@@ -1,396 +1,262 @@
 // =============================================================================
-// BoxOpening — full-screen choreographed opening sequence (no particles, no
-// stock VFX). 5 states: ANTICIPATION → BUILDUP → CRACK → REVEAL → SETTLE.
+// BoxOpening — interactive, tap-to-crack loot box opening.
+//   1. CHARGE: the real crystal box (PhaseBoxArt). Each tap grows it + adds a
+//      crack; on the 3rd tap it bursts open.
+//   2. REVEAL: items come out ONE AT A TIME. Commons/rares pop in normally; an
+//      ultra (legendary/mythic) triggers a full black-screen flash + giant
+//      screen-covering pop that settles next to the others.
+//   3. DONE: all items shown in a row + Continue.
+// Flat dark stage (no shiny vignette).
 // =============================================================================
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gem, Star } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
-import { tierFor } from './PhaseBoxArt';
+import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
 import { ShopItemIcon } from './ShopIcons';
 
-// Reveal tier colors mapped to the v2 accent language (rare = cyan, ultra = lime).
-// These render on the permanently-dark opening screen, so light pastels read fine.
-const TIER_COLOR = {
-  common: '#F4F5F2',
-  rare:   '#95DEE6',
-  ultra:  '#DBF67F',
-};
+const TIER_COLOR = { common: '#F4F5F2', rare: '#95DEE6', ultra: '#DBF67F' };
+const TIER_LABEL = { common: 'COMMON', rare: 'RARE', ultra: 'ULTRA-RARE' };
+const CRACKS_NEEDED = 3;
 
-const haptic = (pattern) => {
-  try { navigator.vibrate?.(pattern); } catch { /* unsupported */ }
-};
+const haptic = (p) => { try { navigator.vibrate?.(p); } catch { /* unsupported */ } };
 
-// ---------- Big animated box illustration (matches header/modal SVG) ----------
-function BigBox({ boxId, state, onClick }) {
-  // v2 tier palette (starter=cyan, delta=purple, phase=lime)
-  const t = tierFor(boxId);
-  const lid = t.lid;
-  const body = t.faceTop;
-  const bodyBot = t.faceBot;
-  const stroke = t.edge;
-  const glowRGB = t.rgb;
-
-  // State 1: idle bob @ scale 0.7
-  // State 2: scale to 1.0, then shake (driven by .box-shake class)
-  // State 3: hold visible (crack overlay handles the rest)
-  // State 4: split + fade out
-
-  const scale = state === 'anticipation' ? 0.7 : 1.0;
-  const showHalves = state === 'reveal';
-  const isShaking = state === 'buildup';
-  const isInteractive = state === 'anticipation';
-  const fadeBox = state === 'reveal';
-
-  return (
-    <motion.div
-      onClick={isInteractive ? onClick : undefined}
-      role={isInteractive ? 'button' : undefined}
-      tabIndex={isInteractive ? 0 : -1}
-      onKeyDown={(e) => { if (isInteractive && (e.key === 'Enter' || e.key === ' ')) onClick?.(); }}
-      animate={{
-        scale,
-        y: state === 'anticipation' ? [0, -4, 0] : 0,
-      }}
-      transition={
-        state === 'anticipation'
-          ? { scale: { duration: 0.4 }, y: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' } }
-          : { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] /* slight overshoot */ }
-      }
-      className={`relative ${isShaking ? 'box-shake' : ''} ${isInteractive ? 'cursor-pointer select-none' : ''}`}
-      style={{
-        width: 'min(64vw, 280px)',
-        height: 'min(64vw, 280px)',
-        filter: `drop-shadow(0 0 ${state === 'buildup' ? 48 : 32}px rgba(${glowRGB}, 0.55))`,
-        willChange: 'transform, filter',
-      }}
-      data-testid="opening-box"
-    >
-      {/* Circuit-trace outline that powers on during BUILDUP */}
-      <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full pointer-events-none">
-        <path
-          d="M20 50 L60 35 L100 50 L100 95 L60 110 L20 95 Z"
-          fill="none"
-          stroke={stroke}
-          strokeWidth={state === 'buildup' || state === 'crack' ? 1.8 : 0}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          pathLength="1"
-          style={{
-            strokeDasharray: 1,
-            strokeDashoffset: state === 'buildup' || state === 'crack' || state === 'reveal' ? 0 : 1,
-            transition: 'stroke-dashoffset 0.4s ease-out, stroke-width 0.2s ease-out',
-            filter: `drop-shadow(0 0 6px rgba(${glowRGB}, 0.7))`,
-          }}
-        />
-      </svg>
-
-      {/* Box body — two halves so we can split them in REVEAL */}
-      <motion.svg
-        viewBox="0 0 120 120"
-        className="absolute inset-0 w-full h-full"
-        animate={{ opacity: fadeBox ? 0 : 1 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        aria-hidden="true"
-      >
-        <defs>
-          <linearGradient id={`opening-box-grad-${boxId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={body} stopOpacity="0.95" />
-            <stop offset="100%" stopColor={bodyBot} stopOpacity="0.95" />
-          </linearGradient>
-        </defs>
-
-        {/* Left half (translates left in reveal) */}
-        <motion.g animate={{ x: showHalves ? -22 : 0, opacity: showHalves ? 0 : 1 }} transition={{ duration: 0.55, ease: 'easeOut' }}>
-          <path
-            d="M20 50 L60 35 L60 65 L60 110 L20 95 Z"
-            fill={`url(#opening-box-grad-${boxId})`}
-            stroke={stroke}
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-          <path d="M20 50 L60 35 L60 65 Z" fill={lid} stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" />
-        </motion.g>
-
-        {/* Right half */}
-        <motion.g animate={{ x: showHalves ? 22 : 0, opacity: showHalves ? 0 : 1 }} transition={{ duration: 0.55, ease: 'easeOut' }}>
-          <path
-            d="M60 35 L100 50 L100 95 L60 110 L60 65 Z"
-            fill={`url(#opening-box-grad-${boxId})`}
-            stroke={stroke}
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-          <path d="M60 35 L100 50 L60 65 Z" fill={lid} stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" />
-        </motion.g>
-
-        {/* Center seam highlight */}
-        <line x1="60" y1="35" x2="60" y2="110" stroke={stroke} strokeWidth="1" opacity="0.5" />
-
-        {/* Linear directional crack with one branch — appears during CRACK */}
-        {(state === 'crack' || state === 'reveal') && (
-          <g style={{ filter: 'drop-shadow(0 0 6px rgba(191,217,255,0.9))' }}>
-            <path
-              d="M60 38 L58 55 L62 70 L57 88 L60 108"
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              pathLength="1"
-              style={{
-                strokeDasharray: 1,
-                strokeDashoffset: state === 'crack' || state === 'reveal' ? 0 : 1,
-                animation: 'crack-trace 0.22s ease-out forwards',
-              }}
-            />
-            {/* Single branch near the end */}
-            <path
-              d="M57 88 L48 96"
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth="1"
-              strokeLinecap="round"
-              pathLength="1"
-              style={{
-                strokeDasharray: 1,
-                strokeDashoffset: state === 'crack' || state === 'reveal' ? 0 : 1,
-                animation: 'crack-trace 0.12s ease-out 0.18s forwards',
-              }}
-            />
-          </g>
-        )}
-      </motion.svg>
-
-      {/* Anticipation prompt */}
-      {isInteractive && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.4 }}
-          className="absolute left-1/2 -translate-x-1/2 -bottom-12 text-[11px] uppercase tracking-[0.22em] text-zinc-400 whitespace-nowrap"
-          data-testid="opening-tap-prompt"
-        >
-          Tap to open
-        </motion.div>
-      )}
-    </motion.div>
-  );
-}
-
-// ---------- Single reward card revealed after the crack ----------
-function RewardCard({ item, index, totalCount }) {
-  const isUR = item.tier === 'ultra';
-  const isRare = item.tier === 'rare';
-  const tierColor = TIER_COLOR[item.tier];
-  const tierLabel = item.tier === 'common' ? 'COMMON' : isRare ? 'RARE' : 'ULTRA-RARE';
-
-  // Stagger: 0.15s between each
-  const delay = index * 0.15;
-
-  // UR-only flourish: lift + 5° tilt then settle. Run once at the end of the
-  // entrance overshoot.
-  const flourishKeyframes = isUR
-    ? { y: [0, -10, -8, 0], rotateZ: [0, 5, -2, 0], rotateX: [0, 4, -2, 0] }
-    : undefined;
-
-  return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0, y: 30 }}
-      animate={{
-        scale: [0.8, 1.05, 1.0],
-        opacity: 1,
-        y: 0,
-        ...flourishKeyframes,
-      }}
-      transition={{
-        delay,
-        duration: isUR ? 1.0 : 0.45,
-        times: isUR ? [0, 0.25, 0.4, 0.6, 0.8, 1] : [0, 0.6, 1],
-        ease: 'easeOut',
-      }}
-      onAnimationStart={() => {
-        // UR haptic flourish: stronger pattern fires per UR card
-        if (isUR) {
-          setTimeout(() => {
-            haptic([30, 40, 60]);
-            soundEngine.urFlourish?.();
-          }, delay * 1000 + 200);
-        }
-      }}
-      style={{
-        background: '#0A0E14',
-        border: `1.5px solid ${isUR ? tierColor : isRare ? tierColor : 'rgba(255,255,255,0.18)'}`,
-        borderRadius: 16,
-        boxShadow: isUR
-          ? '0 0 32px rgba(219, 246, 127, 0.45), inset 0 0 24px rgba(149, 222, 230, 0.16)'
-          : isRare
-          ? '0 0 20px rgba(149, 222, 230, 0.32), inset 0 0 16px rgba(149, 222, 230, 0.1)'
-          : '0 0 14px rgba(255, 255, 255, 0.06)',
-        transformStyle: 'preserve-3d',
-      }}
-      className="relative w-full px-3 py-4 flex flex-col items-center"
-      data-testid={`reward-card-${index}`}
-    >
-      {/* Rarity tag pill in corner */}
-      <div
-        className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md"
-        style={{
-          background: 'rgba(0,0,0,0.55)',
-          border: `1px solid ${tierColor}55`,
-        }}
-      >
-        <span
-          className={`text-[8px] font-black uppercase tracking-[0.18em] ${isUR ? 'ur-pulse-text' : ''}`}
-          style={{ color: tierColor, letterSpacing: '0.18em' }}
-        >
-          {tierLabel}
-        </span>
-      </div>
-
-      {/* Icon */}
-      <div className="w-10 h-10 mb-2 flex items-center justify-center">
-        <RewardIcon item={item} color={tierColor} />
-      </div>
-
-      {/* Name */}
-      <p
-        className={`text-[12px] font-bold text-center leading-tight ${isUR ? 'ur-pulse-text' : ''}`}
-        style={{ color: tierColor }}
-      >
-        {item.type === 'gems' && item.amount ? `+${item.amount} Gems` : item.name}
-        {item.shared && item.tier_tag && (
-          <span className="block mt-1 text-[8px] tracking-[0.2em] text-zinc-500 font-bold">
-            {item.tier_tag} DROP
-          </span>
-        )}
-      </p>
-    </motion.div>
-  );
-}
-
-// ---------- Reward type icon (small, controlled SVG/Lucide) ----------
-function RewardIcon({ item, color }) {
-  if (item.type === 'gems') return <Gem className="w-7 h-7" style={{ color }} strokeWidth={2.2} />;
+// ---------- reward icon ----------
+function RewardIcon({ item, color, size = 'w-8 h-8' }) {
+  if (item.type === 'gems') return <Gem className={size} style={{ color }} strokeWidth={2.2} />;
   const k = item.item_key || '';
   if (k === 'streak_shield' || k === 'streak_revive' || k.startsWith('boost_xp_')) {
-    return <ShopItemIcon itemKey={k} className="w-8 h-8" />;
+    return <span style={{ color }}><ShopItemIcon itemKey={k} className={size} /></span>;
   }
-  if (item.tier === 'ultra') return <Star className="w-7 h-7" style={{ color }} fill={color} strokeWidth={0} />;
-  // Generic mini box-shape for other types
+  if (item.tier === 'ultra') return <Star className={size} style={{ color }} fill={color} strokeWidth={0} />;
   return (
-    <svg viewBox="0 0 24 24" className="w-7 h-7" aria-hidden="true">
-      <path
-        d="M4 9 L12 5 L20 9 L20 18 L12 22 L4 18 Z M4 9 L12 13 L20 9 M12 13 L12 22"
-        fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"
-        style={{ filter: `drop-shadow(0 0 3px ${color}55)` }}
-      />
+    <svg viewBox="0 0 24 24" className={size} aria-hidden="true">
+      <path d="M4 9 L12 5 L20 9 L20 18 L12 22 L4 18 Z M4 9 L12 13 L20 9 M12 13 L12 22"
+        fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   );
 }
 
-// =============================================================================
-// Main BoxOpening component
+// ---------- crack overlay (grows with charge) ----------
+function CrackOverlay({ level, color }) {
+  const cracks = [
+    'M60 26 L57 52 L63 76 L60 102',
+    'M60 58 L36 70 L27 92',
+    'M60 54 L86 64 L96 86',
+  ];
+  return (
+    <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full pointer-events-none">
+      {cracks.slice(0, level).map((d, i) => (
+        <path key={i} d={d} fill="none" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round"
+          style={{ filter: `drop-shadow(0 0 5px ${color})` }} />
+      ))}
+    </svg>
+  );
+}
+
+// ---------- reward card (center stage + docked chip) ----------
+function RewardCard({ item, chip = false }) {
+  const color = TIER_COLOR[item.tier] || TIER_COLOR.common;
+  const isUltra = item.tier === 'ultra';
+  return (
+    <div
+      className={`relative flex flex-col items-center ${chip ? 'px-3 py-3 w-[92px]' : 'px-5 py-6 w-[180px]'}`}
+      style={{
+        background: '#0E1216',
+        border: `1.5px solid ${isUltra ? color : item.tier === 'rare' ? color : 'rgba(255,255,255,0.16)'}`,
+        borderRadius: chip ? 14 : 20,
+        boxShadow: isUltra ? `0 0 30px ${color}66` : item.tier === 'rare' ? `0 0 18px ${color}44` : '0 0 12px rgba(255,255,255,0.05)',
+      }}
+    >
+      <div className={`absolute top-1.5 right-1.5 rounded-md px-1.5 py-0.5 ${chip ? 'hidden' : ''}`}
+        style={{ background: 'rgba(0,0,0,0.5)', border: `1px solid ${color}55` }}>
+        <span className={`text-[8px] font-black uppercase tracking-[0.16em] ${isUltra ? 'ur-pulse-text' : ''}`} style={{ color }}>
+          {TIER_LABEL[item.tier]}
+        </span>
+      </div>
+      <RewardIcon item={item} color={color} size={chip ? 'w-6 h-6' : 'w-10 h-10'} />
+      <p className={`font-['General_Sans',sans-serif] font-bold text-center leading-tight mt-2 ${chip ? 'text-[10px]' : 'text-sm'} ${isUltra ? 'ur-pulse-text' : ''}`}
+        style={{ color }}>
+        {item.type === 'gems' && item.amount ? `+${item.amount} Gems` : item.name}
+      </p>
+    </div>
+  );
+}
+
+// ---------- rays burst behind an ultra reveal ----------
+function RaysBurst({ color }) {
+  return (
+    <>
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{ width: 40, height: 40, background: color, filter: 'blur(30px)' }}
+        initial={{ opacity: 0, scale: 0 }} animate={{ opacity: [0, 0.9, 0.6], scale: [0, 8, 6] }}
+        transition={{ duration: 1.4, ease: 'easeOut' }}
+      />
+      <motion.div
+        className="absolute inset-0 m-auto rounded-full pointer-events-none"
+        style={{
+          width: '140%', height: '140%', left: '-20%', top: '-20%',
+          background: `conic-gradient(from 0deg, transparent 0 10deg, ${color}22 10deg 16deg, transparent 16deg 30deg)`,
+        }}
+        initial={{ opacity: 0, rotate: 0 }} animate={{ opacity: [0, 0.7, 0.5], rotate: 90 }}
+        transition={{ duration: 1.8, ease: 'easeOut' }}
+      />
+    </>
+  );
+}
+
 // =============================================================================
 export default function BoxOpening({ boxId, rolledItems, onContinue }) {
-  // Possible states
-  const [state, setState] = useState('anticipation'); // anticipation | buildup | crack | reveal | settle
-  const [flashOn, setFlashOn] = useState(false);
+  const [phase, setPhase] = useState('charge'); // charge | reveal | done
+  const [charge, setCharge] = useState(0);
+  const [flash, setFlash] = useState(false);
+  const [shown, setShown] = useState([]);
+  const [current, setCurrent] = useState(null); // { item, big }
+  const alive = useRef(true);
+  const timers = useRef([]);
 
-  // Compute highest tier in drops for flash intensity
-  const highestTier = useMemo(() => {
-    const order = { common: 0, rare: 1, ultra: 2 };
-    return rolledItems.reduce((acc, it) => (order[it.tier] > order[acc] ? it.tier : acc), 'common');
+  const t = tierFor(boxId);
+
+  useEffect(() => {
+    alive.current = true;
+    const list = timers.current;
+    return () => { alive.current = false; list.forEach(clearTimeout); };
+  }, []);
+  const after = (ms, fn) => { const id = setTimeout(() => { if (alive.current) fn(); }, ms); timers.current.push(id); };
+
+  const step = useCallback((i) => {
+    if (i >= rolledItems.length) { setPhase('done'); return; }
+    const item = rolledItems[i];
+    const big = item.tier === 'ultra';
+    if (big) {
+      setFlash(true); haptic([40, 40, 120]); soundEngine.urFlourish?.();
+      after(240, () => setFlash(false));
+    } else {
+      haptic([25]);
+    }
+    setCurrent({ item, big });
+    after(big ? 2100 : 950, () => {
+      setShown((prev) => [...prev, item]);
+      setCurrent(null);
+      after(300, () => step(i + 1));
+    });
   }, [rolledItems]);
 
-  // Reveal allows Continue once stagger completes
-  useEffect(() => {
-    if (state === 'reveal') {
-      const finalDelay = rolledItems.length * 150 + 1100; // last card + UR flourish
-      const t = setTimeout(() => setState('settle'), finalDelay);
-      return () => clearTimeout(t);
+  const onTap = useCallback(() => {
+    if (phase !== 'charge') return;
+    const next = charge + 1;
+    setCharge(next);
+    soundEngine.boxCrack?.();
+    if (next >= CRACKS_NEEDED) {
+      haptic([60, 30, 140]);
+      setFlash(true);
+      after(360, () => { setFlash(false); setPhase('reveal'); step(0); });
+    } else {
+      haptic([30]);
     }
-  }, [state, rolledItems.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, charge, step]);
 
-  const beginOpen = useCallback(() => {
-    if (state !== 'anticipation') return;
-    soundEngine.boxRise?.();
-    setState('buildup');
-
-    // Buildup → Crack (0.8s)
-    setTimeout(() => {
-      soundEngine.boxCrack?.();
-      haptic(highestTier === 'ultra' ? [60, 30, 120] : [40]);
-      setFlashOn(true);
-      setState('crack');
-
-      // Flash hold: 0.15s common/rare, 0.3s UR
-      const flashHold = highestTier === 'ultra' ? 300 : 150;
-      setTimeout(() => setFlashOn(false), flashHold);
-
-      // Crack → Reveal (0.3s)
-      setTimeout(() => setState('reveal'), 300);
-    }, 800);
-  }, [state, highestTier]);
-
-  const flashColor = highestTier === 'ultra'
-    ? 'rgba(191, 217, 255, 0.95)'
-    : 'rgba(220, 231, 250, 0.7)';
+  const boxScale = 0.82 + charge * 0.17; // 0.82, 0.99, 1.16, then burst
+  const promptText = charge === 0 ? 'Tap to open' : charge < CRACKS_NEEDED ? 'Keep tapping!' : '';
+  const dark = !!current?.big;
 
   return createPortal(
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
-      style={{
-        background: `radial-gradient(ellipse at center, rgba(${tierFor(boxId).rgb}, 0.14) 0%, #05070B 78%)`,
-      }}
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
+      style={{ background: dark ? '#000000' : '#0B0D10', transition: 'background 0.4s ease' }}
       data-testid="box-opening-screen"
     >
-      {/* Rarity-tiered flash overlay */}
+      {/* flash overlay */}
       <AnimatePresence>
-        {flashOn && (
+        {flash && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.08 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
             className="absolute inset-0 pointer-events-none z-50"
-            style={{ background: flashColor, mixBlendMode: 'screen' }}
-            data-testid="rarity-flash"
+            style={{ background: dark ? 'rgba(219,246,127,0.9)' : 'rgba(255,255,255,0.7)', mixBlendMode: 'screen' }}
           />
         )}
       </AnimatePresence>
 
-      {/* States 1-3: box centered */}
-      {(state === 'anticipation' || state === 'buildup' || state === 'crack') && (
-        <BigBox boxId={boxId} state={state} onClick={beginOpen} />
+      {/* CHARGE */}
+      {phase === 'charge' && (
+        <div className="flex flex-col items-center">
+          <motion.div
+            onClick={onTap} role="button" tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onTap(); }}
+            animate={{ scale: boxScale }}
+            transition={{ type: 'spring', stiffness: 320, damping: 12 }}
+            className="relative cursor-pointer select-none"
+            style={{ width: 'min(70vw, 300px)', height: 'min(70vw, 300px)', filter: `drop-shadow(0 0 ${20 + charge * 12}px rgba(${t.rgb},0.6))` }}
+            data-testid="opening-box"
+          >
+            <motion.div key={charge} animate={charge > 0 ? { x: [0, -7, 7, -4, 4, 0] } : {}} transition={{ duration: 0.32 }} className="w-full h-full">
+              <PhaseBoxArt tier={boxId} className="w-full h-full" />
+            </motion.div>
+            <CrackOverlay level={charge} color={t.core} />
+          </motion.div>
+          {promptText && (
+            <motion.p
+              key={promptText}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+              className="mt-12 font-['JetBrains_Mono',monospace] text-[12px] uppercase tracking-[0.28em]"
+              style={{ color: charge > 0 ? t.edge : 'rgba(255,255,255,0.5)' }}
+              data-testid="opening-tap-prompt"
+            >
+              {promptText}
+            </motion.p>
+          )}
+        </div>
       )}
 
-      {/* State 4-5: reward grid */}
-      {(state === 'reveal' || state === 'settle') && (
-        <div className="w-full max-w-md px-6 flex flex-col items-center justify-center" data-testid="rewards-grid">
-          <div
-            className={`grid w-full ${rolledItems.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}
-            style={{ gap: 12 }}
-          >
-            {rolledItems.map((it, i) => (
-              <RewardCard key={i} item={it} index={i} totalCount={rolledItems.length} />
-            ))}
+      {/* REVEAL / DONE */}
+      {phase !== 'charge' && (
+        <div className="w-full max-w-md px-6 flex flex-col items-center justify-center">
+          {/* current center-stage item */}
+          <div className="relative flex items-center justify-center" style={{ minHeight: 220 }}>
+            <AnimatePresence mode="wait">
+              {current && (
+                <motion.div
+                  key={`cur-${shown.length}`}
+                  initial={{ scale: 0, opacity: 0, y: 20 }}
+                  animate={current.big
+                    ? { scale: [0, 2.3, 1.2], opacity: 1, y: 0 }
+                    : { scale: [0, 1.15, 1], opacity: 1, y: 0 }}
+                  transition={current.big
+                    ? { duration: 1.9, times: [0, 0.55, 1], ease: 'easeOut' }
+                    : { duration: 0.55, times: [0, 0.6, 1], ease: 'easeOut' }}
+                  className="relative flex items-center justify-center"
+                >
+                  {current.big && <RaysBurst color={TIER_COLOR.ultra} />}
+                  <RewardCard item={current.item} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Continue button — appears only after settle */}
+          {/* collected row */}
+          {shown.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-6" data-testid="rewards-grid">
+              {shown.map((it, i) => (
+                <motion.div key={i} initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 320, damping: 22 }}>
+                  <RewardCard item={it} chip />
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Continue */}
           <AnimatePresence>
-            {state === 'settle' && (
+            {phase === 'done' && (
               <motion.button
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
                 onClick={onContinue}
-                className="mt-8 px-10 py-3 rounded-2xl font-['General_Sans'] font-bold text-sm transition-transform active:scale-[0.97] bg-[#95DEE6] text-[#183A3F]"
+                className="mt-9 px-10 py-3 rounded-2xl font-['General_Sans',sans-serif] font-bold text-sm transition-transform active:scale-[0.97] bg-[#95DEE6] text-[#183A3F]"
                 style={{ letterSpacing: '0.08em' }}
                 data-testid="opening-continue-btn"
               >
