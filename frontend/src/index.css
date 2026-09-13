@@ -119,6 +119,9 @@
 .shadow-\[var\(--gm-shadow-fab\)\]  { box-shadow: var(--gm-shadow-fab); }
 .shadow-\[var\(--gm-shadow-nav\)\]  { box-shadow: var(--gm-shadow-nav); }
 
+/* Kill the "Made with Emergent" badge for good, even if a cached loader re-injects it */
+#emergent-badge { display: none !important; }
+
 * {
   margin: 0;
   padding: 0;
@@ -294,10 +297,10 @@ code {
 }
 
 @keyframes xp-pop {
-  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
-  20% { opacity: 1; transform: translateY(0) scale(1.1); }
-  40% { transform: translateY(-15px) scale(1); }
-  100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
+  0%   { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.85); }
+  14%  { opacity: 1; transform: translate3d(0, 0, 0) scale(1.12); }
+  28%  { opacity: 1; transform: translate3d(0, -6px, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(0, -72px, 0) scale(0.96); }
 }
 
 @keyframes level-badge-glow {
@@ -315,7 +318,7 @@ code {
 .animate-flame { animation: flame-breathe 1.5s ease-in-out infinite; }
 .animate-flame-glow { animation: flame-glow 2s ease-in-out infinite; }
 .animate-gem-shimmer { animation: gem-shimmer 3s ease-in-out infinite; }
-.animate-xp-pop { animation: xp-pop 1.5s ease-out forwards; }
+.animate-xp-pop { animation: xp-pop 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; will-change: transform, opacity; }
 .animate-level-glow { animation: level-badge-glow 3s ease-in-out infinite; }
 .animate-slide-up { animation: slide-up-fade 0.4s ease-out forwards; }
 

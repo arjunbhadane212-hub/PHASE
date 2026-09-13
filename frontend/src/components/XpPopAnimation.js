@@ -11,7 +11,7 @@ export default function XpPopAnimation({ xpEvents }) {
     
     const timer = setTimeout(() => {
       setPops(prev => prev.filter(p => p.id !== latest.id));
-    }, 1600);
+    }, 1300);
     
     return () => clearTimeout(timer);
   }, [xpEvents]);
@@ -26,13 +26,13 @@ export default function XpPopAnimation({ xpEvents }) {
           className="absolute animate-xp-pop"
           style={{ top: `calc(40% - ${i * 30}px)` }}
         >
-          <span className={`text-2xl sm:text-3xl font-black font-['Satoshi'] tracking-tight ${
+          <span className={`text-2xl sm:text-3xl font-black font-['Archivo',sans-serif] tracking-tight ${
             pop.boost
-              ? 'text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]'
-              : 'text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.5)]'
+              ? 'text-[#DBF67F] drop-shadow-[0_0_14px_rgba(219,246,127,0.55)]'
+              : 'text-[#95DEE6] drop-shadow-[0_0_14px_rgba(149,222,230,0.55)]'
           }`}>
             +{pop.amount} XP
-            {pop.boost && <span className="text-base ml-1 text-amber-300">2x</span>}
+            {pop.boost && <span className="text-base ml-1 text-[#DBF67F]">2x</span>}
           </span>
         </div>
       ))}
