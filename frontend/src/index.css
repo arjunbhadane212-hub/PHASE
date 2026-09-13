@@ -348,13 +348,11 @@ code {
 
 /* Roast toast notification */
 .roast-toast {
-  background: rgba(12, 18, 32, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(27, 106, 228, 0.25);
-  border-radius: 16px;
+  background: var(--gm-card);
+  border: none;
+  border-radius: 18px;
   padding: 14px 16px;
-  box-shadow: 0 0 20px rgba(27, 106, 228, 0.12), 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--gm-shadow-card);
 }
 
 /* Focus session colon pulse */

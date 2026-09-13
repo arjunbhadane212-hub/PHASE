@@ -38,11 +38,11 @@ export default function RoastNotification() {
             data-testid="roast-notification"
           >
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(27,106,228,0.2)' }}>
-                <Flame className="w-4 h-4 text-[#4D8EF0]" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(185,28,28,0.15)' }}>
+                <Flame className="w-4 h-4 text-[#B91C1C]" />
               </div>
-              <p className="text-sm text-white/90 leading-snug flex-1 pt-0.5">{roast.text}</p>
-              <button onClick={() => dismiss(roast.id)} className="p-1 text-white/30 hover:text-white/70 transition-colors flex-shrink-0" data-testid="roast-dismiss">
+              <p className="text-sm font-['General_Sans',sans-serif] text-[color:var(--gm-ink)] leading-snug flex-1 pt-0.5">{roast.text}</p>
+              <button onClick={() => dismiss(roast.id)} className="p-1 text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)] transition-colors flex-shrink-0" data-testid="roast-dismiss">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -85,11 +85,11 @@ export function RoastListener() {
             className="roast-toast"
           >
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)' }}>
-                <Zap className="w-4 h-4 text-red-400" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(185,28,28,0.15)' }}>
+                <Zap className="w-4 h-4 text-[#B91C1C]" />
               </div>
-              <p className="text-sm text-white/90 leading-snug flex-1 pt-0.5">{roast.text}</p>
-              <button onClick={() => dismiss(roast.id)} className="p-1 text-white/30 hover:text-white/70 flex-shrink-0">
+              <p className="text-sm font-['General_Sans',sans-serif] text-[color:var(--gm-ink)] leading-snug flex-1 pt-0.5">{roast.text}</p>
+              <button onClick={() => dismiss(roast.id)} className="p-1 text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)] flex-shrink-0">
                 <X className="w-4 h-4" />
               </button>
             </div>

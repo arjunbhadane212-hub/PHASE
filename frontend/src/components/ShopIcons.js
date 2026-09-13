@@ -1,14 +1,11 @@
-// v2 shop item icons — custom glowing SVGs replacing the old PNGs.
-// cyan = utility/defense (shield, revive), lime = energy/gains (XP boost).
-// Each scales to its container; glow via drop-shadow on the wrapper.
+// v2 shop item icons — clean 2px outline set (CLAUDE icon system), single color
+// via currentColor so they sit dark on solid cyan/lime badge tiles (Home feel).
+// No gradients, no glow.
 
-const CYAN = '#95DEE6', CYAN_HI = '#E4FBFE', CYAN_DK = '#12464D', CYAN_INK = '#08272C';
-const LIME = '#DBF67F', LIME_HI = '#F6FFD6', LIME_DK = '#42571C', LIME_INK = '#20300A';
-
-function Wrap({ children, glow, className, viewBox = '0 0 48 48' }) {
+function Svg({ children, className }) {
   return (
-    <svg viewBox={viewBox} className={className} aria-hidden="true"
-      style={{ filter: `drop-shadow(0 0 6px ${glow})`, overflow: 'visible' }}>
+    <svg viewBox="0 0 48 48" className={className} fill="none" stroke="currentColor"
+      strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {children}
     </svg>
   );
@@ -16,107 +13,62 @@ function Wrap({ children, glow, className, viewBox = '0 0 48 48' }) {
 
 export function ShieldIcon({ className }) {
   return (
-    <Wrap glow={`${CYAN}aa`} className={className}>
-      <defs>
-        <linearGradient id="si-sh" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={CYAN_HI} /><stop offset="100%" stopColor={CYAN_DK} />
-        </linearGradient>
-      </defs>
-      <path d="M24 4 L41 10 V23 C41 33.5 33.7 41.5 24 44.5 C14.3 41.5 7 33.5 7 23 V10 Z"
-        fill="url(#si-sh)" stroke={CYAN} strokeWidth="2" strokeLinejoin="round" />
-      <path d="M16.5 24 L21.5 29.5 L32 17.5" fill="none" stroke={CYAN_INK} strokeWidth="3.2"
-        strokeLinecap="round" strokeLinejoin="round" />
-    </Wrap>
+    <Svg className={className}>
+      <path d="M24 5 L40 11 V23 C40 33 33 41 24 44 C15 41 8 33 8 23 V11 Z" />
+      <path d="M17 24 l5 5 l9 -11" />
+    </Svg>
   );
 }
 
 export function ReviveIcon({ className }) {
-  // Hourglass with a glowing core — the streak-revive/time icon.
+  // Hourglass.
   return (
-    <Wrap glow={`${CYAN}aa`} className={className}>
-      <defs>
-        <linearGradient id="ri-g" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={CYAN_HI} /><stop offset="100%" stopColor={CYAN_DK} />
-        </linearGradient>
-      </defs>
-      <path d="M13 6 H35" stroke={CYAN} strokeWidth="3" strokeLinecap="round" />
-      <path d="M13 42 H35" stroke={CYAN} strokeWidth="3" strokeLinecap="round" />
-      <path d="M15 7 C15 16 24 20 24 24 C24 28 15 32 15 41 L33 41 C33 32 24 28 24 24 C24 20 33 16 33 7 Z"
-        fill="url(#ri-g)" stroke={CYAN} strokeWidth="2" strokeLinejoin="round" />
-      <circle cx="24" cy="24" r="2.6" fill={CYAN_HI} />
-    </Wrap>
+    <Svg className={className}>
+      <path d="M14 6 H34" /><path d="M14 42 H34" />
+      <path d="M16 6 C16 16 24 20 24 24 C24 28 16 32 16 42" />
+      <path d="M32 6 C32 16 24 20 24 24 C24 28 32 32 32 42" />
+    </Svg>
   );
 }
 
 export function BoltIcon({ className, level = 2 }) {
-  // XP boost — a lime lightning bolt in a cyan energy core. The charge escalates
-  // with the multiplier: x2 bare, x3 gains a hex energy ring, x5 adds radiating
-  // rays + a brighter core (a fully "charged" bolt).
+  // XP boost — escalates: x2 bare bolt, x3 adds a hex charge ring, x5 adds
+  // radiating sparks. Single outline color.
   const ring = level >= 3;
   const rays = level >= 5;
-  const glow = level >= 5 ? LIME : level >= 3 ? `${LIME}dd` : `${LIME}aa`;
   return (
-    <Wrap glow={glow} className={className}>
-      <defs>
-        <linearGradient id={`bi-g-${level}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={LIME_HI} /><stop offset="100%" stopColor={LIME_DK} />
-        </linearGradient>
-        <radialGradient id={`bi-core-${level}`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={CYAN_HI} stopOpacity={level >= 5 ? 0.9 : 0.6} />
-          <stop offset="100%" stopColor={CYAN} stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
+    <Svg className={className}>
       {rays && (
-        <g stroke={CYAN} strokeWidth="2" strokeLinecap="round" opacity="0.9">
-          <line x1="24" y1="1" x2="24" y2="6" /><line x1="24" y1="42" x2="24" y2="47" />
-          <line x1="1" y1="24" x2="6" y2="24" /><line x1="42" y1="24" x2="47" y2="24" />
-          <line x1="8" y1="8" x2="12" y2="12" /><line x1="40" y1="8" x2="36" y2="12" />
-          <line x1="8" y1="40" x2="12" y2="36" /><line x1="40" y1="40" x2="36" y2="36" />
+        <g strokeWidth="2">
+          <path d="M24 1.5 V5.5" /><path d="M24 42.5 V46.5" />
+          <path d="M1.5 24 H5.5" /><path d="M42.5 24 H46.5" />
         </g>
       )}
-
-      <circle cx="24" cy="24" r="16" fill={`url(#bi-core-${level})`} />
-
-      {ring && (
-        <polygon points="24,6 39,15 39,33 24,42 9,33 9,15"
-          fill="none" stroke={CYAN} strokeWidth="2" strokeLinejoin="round" opacity="0.85" />
-      )}
-
-      <path d="M27 6 L13 26 H21 L20 42 L35 21 H26 Z"
-        fill={`url(#bi-g-${level})`} stroke={LIME} strokeWidth="2" strokeLinejoin="round" />
-    </Wrap>
+      {ring && <polygon points="24,7 38,15.5 38,32.5 24,41 10,32.5 10,15.5" />}
+      <path d="M26 9 L15 26 H22 L21 39 L33 22 H26 Z" />
+    </Svg>
   );
 }
 
 export function GemBoxIcon({ className }) {
-  // Generic crystal — default fallback.
   return (
-    <Wrap glow={`${CYAN}aa`} className={className}>
-      <defs>
-        <linearGradient id="gi-g" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={CYAN_HI} /><stop offset="100%" stopColor={CYAN_DK} />
-        </linearGradient>
-      </defs>
-      <path d="M24 4 L40 17 L24 44 L8 17 Z" fill="url(#gi-g)" stroke={CYAN} strokeWidth="2" strokeLinejoin="round" />
-      <path d="M8 17 H40 M24 4 L24 44 M16 17 L24 44 M32 17 L24 44" stroke={CYAN} strokeWidth="1.3" opacity="0.6" fill="none" />
-    </Wrap>
+    <Svg className={className}>
+      <path d="M24 5 L39 16 L24 43 L9 16 Z" />
+      <path d="M9 16 H39 M16 16 L24 43 M32 16 L24 43" />
+    </Svg>
   );
 }
 
-// Sparkle burst — used for effect/decoration previews.
 export function SparkleIcon({ className }) {
   return (
-    <Wrap glow={`${LIME}aa`} className={className}>
-      <path d="M24 6 C25 16 27 18 37 19 C27 20 25 22 24 32 C23 22 21 20 11 19 C21 18 23 16 24 6 Z"
-        fill={LIME_HI} stroke={LIME} strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M37 30 C37.5 34 38 34.5 42 35 C38 35.5 37.5 36 37 40 C36.5 36 36 35.5 32 35 C36 34.5 36.5 34 37 30 Z"
-        fill={CYAN_HI} stroke={CYAN} strokeWidth="1.2" strokeLinejoin="round" />
-    </Wrap>
+    <Svg className={className}>
+      <path d="M24 6 C25 15 27 17 36 18 C27 19 25 21 24 30 C23 21 21 19 12 18 C21 17 23 15 24 6 Z" />
+      <path d="M37 30 C37.4 33.5 37.6 33.8 41 34.2 C37.6 34.6 37.4 34.9 37 38.4 C36.6 34.9 36.4 34.6 33 34.2 C36.4 33.8 36.6 33.5 37 30 Z" />
+    </Svg>
   );
 }
 
-// Resolve a boost item's key to its icon component.
+// Resolve an item key to its icon.
 export function ShopItemIcon({ itemKey = '', className }) {
   if (itemKey === 'streak_shield') return <ShieldIcon className={className} />;
   if (itemKey === 'streak_revive') return <ReviveIcon className={className} />;
@@ -125,4 +77,10 @@ export function ShopItemIcon({ itemKey = '', className }) {
     return <BoltIcon className={className} level={m ? parseInt(m[1], 10) : 2} />;
   }
   return <GemBoxIcon className={className} />;
+}
+
+// The tile color a boost item sits on (cyan = utility, lime = XP/energy).
+export function shopItemTone(itemKey = '') {
+  if (itemKey.startsWith('boost_xp_')) return { bg: '#DBF67F', ink: '#2A3B0B' };
+  return { bg: '#95DEE6', ink: '#183A3F' };
 }

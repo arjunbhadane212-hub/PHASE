@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabaseClient';
 import { boostIconFor } from '../data/shopIcons';
 import { animCssFor } from '../data/shopAnimations';
 import { effectCssFor } from '../data/shopEffects';
-import { ShopItemIcon, SparkleIcon } from '../components/ShopIcons';
+import { ShopItemIcon, SparkleIcon, shopItemTone } from '../components/ShopIcons';
 
 // v2 card surface (shared with the rest of the app).
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
@@ -224,7 +224,6 @@ export default function ShopPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-32 md:pb-8 animate-slide-up relative" data-testid="shop-page">
-      <div className="shop-stars" />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4 sm:mb-6 relative z-10">
@@ -339,6 +338,7 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
       {items.map((item, idx) => {
         const isBuying = buying === item.id;
         const canAfford = (gems ?? 0) >= item.price;
+        const tone = shopItemTone(item.key);
 
         // XP boosts: duration-based -> Activate 24h / Active, via buy_xp_boost.
         if (item.isXpBoost) {
@@ -347,11 +347,11 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
             <button key={`${idx}-${item.id}`}
               onClick={() => !isActive && canAfford && !isBuying && onActivate(item.id)}
               disabled={isActive || !canAfford || isBuying}
-              className={`relative p-3 sm:p-5 ${CARD} transition-all hover-lift text-center group ${isActive ? 'ring-1 ring-[#95DEE6]' : !canAfford ? 'opacity-60' : ''}`}
+              className={`relative p-3 sm:p-5 ${CARD} transition-all text-center ${isActive ? 'ring-1 ring-[#95DEE6]' : !canAfford ? 'opacity-60' : ''}`}
               data-testid={`shop-item-${item.id}`}>
               {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
-              <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
-                <ShopItemIcon itemKey={item.key} className="w-full h-full transition-transform group-hover:scale-110" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-2xl flex items-center justify-center" style={{ backgroundColor: tone.bg, color: tone.ink }}>
+                <ShopItemIcon itemKey={item.key} className="w-8 h-8 sm:w-10 sm:h-10" />
               </div>
               <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{item.name}</p>
               <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 sm:mb-2.5">24h duration</p>
@@ -367,11 +367,11 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
         const isFull = item.owned >= item.max;
         return (
           <button key={`${idx}-${item.id}`} onClick={() => !isFull && canAfford && !isBuying && onBuy(item.id)} disabled={isFull || !canAfford || isBuying}
-            className={`relative p-3 sm:p-5 ${CARD} transition-all hover-lift text-center group ${isFull ? 'opacity-40' : !canAfford ? 'opacity-60' : ''}`}
+            className={`relative p-3 sm:p-5 ${CARD} transition-all text-center ${isFull ? 'opacity-40' : !canAfford ? 'opacity-60' : ''}`}
             data-testid={`shop-item-${item.id}`}>
             {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
-            <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
-              <ShopItemIcon itemKey={item.key} className="w-full h-full transition-transform group-hover:scale-110" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-2xl flex items-center justify-center" style={{ backgroundColor: tone.bg, color: tone.ink }}>
+              <ShopItemIcon itemKey={item.key} className="w-8 h-8 sm:w-10 sm:h-10" />
             </div>
             <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{item.name}</p>
             <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 sm:mb-2.5">{item.owned}/{item.max}</p>
@@ -394,7 +394,7 @@ function ColorsGrid({ colors, gems, buying, onBuy }) {
         const canAfford = (gems ?? 0) >= color.price;
         return (
           <button key={`${color.colorType}-${color.hex}`} onClick={() => !color.owned && canAfford && !isBuying && onBuy(color.id)} disabled={color.owned || !canAfford || isBuying}
-            className={`relative p-3 sm:p-5 ${CARD} transition-all hover-lift text-center group`}
+            className={`relative p-3 sm:p-5 ${CARD} transition-all text-center`}
             data-testid={`color-${color.hex}`}>
             {color.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[color.rarity] || ''}`}>{color.rarity.toUpperCase()}</div>}
             <div className="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 relative flex items-center justify-center">
@@ -426,7 +426,7 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
         const animClass = type === 'animation' ? item.css || '' : '';
         return (
           <button key={item.key} onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.id)} disabled={item.owned || !canAfford || isBuying}
-            className={`relative p-3 sm:p-5 ${CARD} transition-all hover-lift text-center group`}
+            className={`relative p-3 sm:p-5 ${CARD} transition-all text-center`}
             data-testid={`shop-${type}-${item.key}`}>
             {item.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[item.rarity] || ''}`}>{item.rarity.toUpperCase()}</div>}
             {/* Preview */}
@@ -455,11 +455,18 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
 function DecorationsGrid({ items, gems, buying, onBuy }) {
   return (
     <div>
-      <div className="mb-4 p-3 rounded-xl bg-[color:var(--gm-badge)]">
-        <p className="text-xs text-[color:var(--gm-ink)] font-['General_Sans'] font-semibold">Profile Effects</p>
-        <p className="text-[10px] text-[color:var(--gm-muted)] mt-0.5">Full-width animated banners for your profile. Replaces your banner with a stunning animated scene.</p>
+      {/* Section header — cyan sparkle chip */}
+      <div className={`mb-4 flex items-center gap-3 p-3.5 ${CARD}`}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#95DEE6', color: '#183A3F' }}>
+          <SparkleIcon className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Profile Effects</p>
+          <p className="text-[11px] text-[color:var(--gm-muted)] mt-0.5">Animated auras for your public profile — flex on everyone who visits.</p>
+        </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="decorations-grid">
+
+      <div className="grid grid-cols-2 gap-3" data-testid="decorations-grid">
         {items.map((item) => {
           const isBuying = buying === item.id;
           const canAfford = (gems ?? 0) >= item.price;
@@ -468,30 +475,29 @@ function DecorationsGrid({ items, gems, buying, onBuy }) {
               key={item.key}
               onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.id)}
               disabled={item.owned || !canAfford || isBuying}
-              className={`relative ${CARD} overflow-hidden transition-all hover-lift text-left group`}
+              className={`relative ${CARD} p-4 flex flex-col items-center text-center transition-all`}
               data-testid={`shop-deco-${item.key}`}
             >
-              {/* Full-width animated banner preview.
-                  Step 2a fallback: hex/gradient swatch until effect CSS is ported (Step 2d). */}
-              <div
-                className={`h-24 sm:h-28 w-full ${item.css || ''}`}
-                style={item.css ? undefined : { background: item.bg || '#1F2937' }}
-              />
-              <div className="p-3 flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">{item.name}</p>
-                  <p className="text-[9px] text-[color:var(--gm-muted)]">Profile Effect</p>
-                </div>
-                {item.owned ? (
-                  <span className="text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full bg-[#DBF67F] text-[#2A3B0B]">Owned</span>
-                ) : isBuying ? (
-                  <div className="w-4 h-4 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full bg-[color:var(--gm-badge)] ${canAfford ? 'text-[color:var(--gm-ink)]' : 'text-[color:var(--gm-muted)]'}`}>
-                    <Gem className={`w-3 h-3 ${GEM_ICON}`} /> {item.price.toLocaleString()}
-                  </span>
-                )}
+              {/* Circular aura medallion — the effect animates inside the ring */}
+              <div className="relative w-24 h-24 mb-3">
+                <div
+                  className={`absolute inset-0 rounded-full overflow-hidden ${item.css || ''}`}
+                  style={item.css ? undefined : { background: item.bg || 'var(--gm-badge)' }}
+                />
+                <div className="absolute inset-0 rounded-full ring-1 ring-[#95DEE6]/50" />
+                <div className="absolute inset-0 rounded-full" style={{ boxShadow: 'inset 0 0 24px rgba(9,12,18,0.55)' }} />
               </div>
+              <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] truncate w-full">{item.name}</p>
+              <p className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-0.5 mb-2">Profile Effect</p>
+              {item.owned ? (
+                <span className="text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full bg-[#DBF67F] text-[#2A3B0B]">Owned</span>
+              ) : isBuying ? (
+                <div className="w-4 h-4 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <span className={`flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full ${canAfford ? 'bg-[#95DEE6] text-[#183A3F]' : 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)]'}`}>
+                  <Gem className="w-3 h-3" /> {item.price.toLocaleString()}
+                </span>
+              )}
             </button>
           );
         })}

@@ -186,7 +186,7 @@ function App() {
           <ModeProvider>
             <GameProvider>
               <AppRoutes />
-              <Toaster position="top-right" richColors />
+              <Toaster position="top-right" />
               <RoastNotification />
               <RoastListener />
             </GameProvider>
