@@ -4,6 +4,8 @@ import { Check } from 'lucide-react';
 import { fireRoast } from './RoastNotification';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
+import { getAura, hexA, DEFAULT_GRACE_MS } from '../data/focusAuras';
 
 // One line is chosen at random when a session mounts and held for the whole
 // session (see the useState(() => ...) below — random-once, not per-tick).
@@ -30,6 +32,32 @@ const COMPLETE_LINES = [
 ];
 
 export default function FocusSession({ habit, duration, onComplete, onAbandon }) {
+  const { user } = useAuth();
+  const aura = getAura(user?.equipped_focus_aura);
+  // Grace Extender (shop_items category 'focus_boost'): the highest tier owned
+  // raises the tab-switch grace window below from the 3s default. Fetched once
+  // on mount; the tab-switch effect reads it via a ref so a late-arriving value
+  // doesn't force that effect to re-subscribe mid-session.
+  const graceMsRef = useRef(DEFAULT_GRACE_MS);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('user_inventory')
+          .select('quantity, shop_items!inner(key, metadata, category)')
+          .eq('shop_items.category', 'focus_boost')
+          .gt('quantity', 0);
+        const best = (data || []).reduce((max, row) => {
+          const ms = row.shop_items?.metadata?.grace_ms;
+          return typeof ms === 'number' && ms > max ? ms : max;
+        }, DEFAULT_GRACE_MS);
+        if (!cancelled) graceMsRef.current = best;
+      } catch { /* keep default */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const totalSeconds = duration * 60;
   const startTimeRef = useRef(Date.now());
   // Wall-clock derived state — never tick-based, immune to tab/app
@@ -89,8 +117,8 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   useEffect(() => {
     // Tunable: brief flickers (an OS notification stealing focus for an instant,
     // a quick accidental alt-tab) shouldn't cost gems. Mirrors game_config
-    // focus_tab_switch_grace_seconds on the server.
-    const TAB_SWITCH_GRACE_MS = 3000;
+    // focus_tab_switch_grace_seconds on the server. Defaults to 3s; a purchased
+    // Grace Extender (see graceMsRef above) raises it.
     let graceTimer = null;
     const clearGrace = () => { if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; } };
     // True once the wall-clock timer has already reached zero.
@@ -118,7 +146,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       if (document.hidden) {
         if (penalizedRef.current || showModalRef.current || naturallyDone()) return;
         clearGrace();
-        graceTimer = setTimeout(penalize, TAB_SWITCH_GRACE_MS);
+        graceTimer = setTimeout(penalize, graceMsRef.current);
       } else {
         clearGrace();
       }
@@ -290,7 +318,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       {timerStr}
     </span>
   );
-  const renderRemaining = (color = '#183A3F') => (
+  const renderRemaining = (color = aura.ink, opacity = 0.65) => (
     <span
       className="uppercase"
       style={{
@@ -299,6 +327,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         fontWeight: 700,
         letterSpacing: '0.15em',
         color,
+        opacity,
         marginTop: '10px',
       }}
     >
@@ -320,7 +349,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif",
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.02em',
-            color: '#0F1210',
+            color: aura.ink,
             fontSize: 'min(24vw, 118px)',
             textShadow: '0 1px 0 rgba(255,255,255,0.3)',
           }}
@@ -333,7 +362,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           className="mt-8"
           style={{ width: '100%', maxWidth: 'min(80vmin, 640px)', height: '26px', borderRadius: '999px', background: 'rgba(255,255,255,0.4)', overflow: 'hidden' }}
         >
-          <div style={{ width: `${progress * 100}%`, height: '100%', borderRadius: '999px', background: '#0F1210', transition: 'width 1s linear' }} />
+          <div style={{ width: `${progress * 100}%`, height: '100%', borderRadius: '999px', background: aura.ink, transition: 'width 1s linear' }} />
         </div>
       </div>
     );
@@ -353,12 +382,12 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             ...numberVars(orbSize),
             width: orbSize,
             height: orbSize,
-            background: '#0F1210',
-            boxShadow: '0 0 0 12px rgba(15,18,16,0.10), 0 30px 60px -20px rgba(15,18,16,0.5)',
+            background: aura.orbBg,
+            boxShadow: `0 0 0 12px ${hexA(aura.accent, 0.12)}, 0 30px 60px -20px rgba(15,18,16,0.5)`,
           }}
         >
-          {renderNumber('#4ECDDE')}
-          {renderRemaining('rgba(78,205,222,0.65)')}
+          {renderNumber(aura.accent)}
+          {renderRemaining(aura.accent, 0.65)}
         </div>
       </>
     );
@@ -379,19 +408,23 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             <line
               key={i}
               x1="140" y1="14" x2="140" y2="36"
-              stroke={i < filled ? '#0F1210' : 'rgba(255,255,255,0.4)'}
+              stroke={i < filled ? aura.ink : 'rgba(255,255,255,0.4)'}
               strokeWidth="6"
               strokeLinecap="round"
               transform={`rotate(${i * 7.5} 140 140)`}
             />
           ))}
         </svg>
-        {renderNumber('#0F1210')}
+        {renderNumber(aura.ink)}
         {renderRemaining()}
       </div>
     );
   } else if (styleIdx === 4) {
-    // Style 4 — Sweeping Pie (conic donut). Inner disc holds the number.
+    // Style 4 — Sweeping Pie (conic donut). Inner disc holds the number. The
+    // disc is always filled with the aura's bright accent tint (by design all
+    // four are light), so its number stays a fixed dark ink for contrast
+    // regardless of which aura is equipped — this one spot doesn't use
+    // aura.ink, since aura.ink flips to near-white for the dark 'glow' aura.
     const discSize = 'min(80vmin, 320px)';
     const innerSize = 'calc(min(80vmin, 320px) * 0.61)';
     timerVisual = (
@@ -400,17 +433,17 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         style={{
           width: discSize,
           height: discSize,
-          background: `conic-gradient(#0F1210 0turn ${progress}turn, rgba(255,255,255,0.4) ${progress}turn 1turn)`,
+          background: `conic-gradient(${aura.ink} 0turn ${progress}turn, rgba(255,255,255,0.4) ${progress}turn 1turn)`,
           boxShadow: '0 20px 50px -18px rgba(15,18,16,0.4)',
           transition: 'background 1s linear',
         }}
       >
         <div
           className="flex flex-col items-center justify-center rounded-full"
-          style={{ ...numberVars(innerSize), width: innerSize, height: innerSize, background: '#4ECDDE' }}
+          style={{ ...numberVars(innerSize), width: innerSize, height: innerSize, background: aura.accent }}
         >
           {renderNumber('#0F1210')}
-          {renderRemaining()}
+          {renderRemaining('#0F1210')}
         </div>
       </div>
     );
@@ -429,7 +462,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="15" />
           <circle
             cx="140" cy="140" r="120" fill="none"
-            stroke="#0F1210"
+            stroke={aura.ink}
             strokeWidth="15"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -437,7 +470,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
         </svg>
-        {renderNumber('#0F1210')}
+        {renderNumber(aura.ink)}
         {renderRemaining()}
       </div>
     );
@@ -449,9 +482,33 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6"
-      style={{ backgroundColor: '#4ECDDE' }}
+      style={{ backgroundColor: aura.bg }}
       data-testid="focus-session"
     >
+      <style>{`
+        .focus-abandon-btn { color: ${aura.ink}; opacity: .45; }
+        .focus-abandon-btn:hover { opacity: .75; }
+        @keyframes focus-aura-glow-pulse { 0%,100% { opacity: 0.35; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.08); } }
+        .focus-aura-glow { animation: focus-aura-glow-pulse 4.5s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .focus-aura-glow { animation: none; opacity: 0.45; } }
+      `}</style>
+
+      {/* Aura glow — only the 'glow'-style aura (Violet Focus) gets this soft
+          pulsing halo behind the timer; 'wash' auras are a full-bleed color
+          field and don't need it. transform+opacity only, GPU-cheap. */}
+      {aura.style === 'glow' && (
+        <div
+          className="focus-aura-glow pointer-events-none"
+          style={{
+            position: 'absolute', top: '50%', left: '50%',
+            width: 'min(90vmin, 720px)', height: 'min(90vmin, 720px)',
+            marginLeft: 'calc(min(90vmin, 720px) / -2)', marginTop: 'calc(min(90vmin, 720px) / -2)',
+            borderRadius: '9999px',
+            background: `radial-gradient(circle, ${hexA(aura.accent, 0.28)} 0%, ${hexA(aura.accent, 0)} 70%)`,
+          }}
+        />
+      )}
+
       {/* One of 5 full-screen timer styles, chosen at random per session
           (styleIdx). The screen is deliberately stripped — nothing above the
           timer pulls you away. */}
@@ -470,8 +527,8 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="text-center mt-8 max-w-[300px]"
-        style={{ fontFamily: "'General Sans', sans-serif", fontSize: '15px', fontWeight: 600, color: '#183A3F' }}
+        className="text-center mt-8 max-w-[300px] z-10"
+        style={{ fontFamily: "'General Sans', sans-serif", fontSize: '15px', fontWeight: 600, color: aura.ink, opacity: 0.85 }}
         data-testid="session-motivation"
       >
         {ACTIVE_LINES[lineIndex]}
@@ -482,8 +539,8 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9 }}
-        className="uppercase text-center absolute bottom-6 px-6"
-        style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.05em', color: 'rgba(24,58,63,0.55)' }}
+        className="uppercase text-center absolute bottom-6 px-6 z-10"
+        style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.05em', color: aura.ink, opacity: 0.5 }}
       >
         Stay on this screen · Phase will let you know when time's up
       </motion.p>
@@ -494,7 +551,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
         onClick={() => setShowAbandonModal(true)}
-        className="text-xs text-[#0F1210]/45 hover:text-[#0F1210]/75 transition-colors z-10 mt-6"
+        className="focus-abandon-btn text-xs transition-opacity z-10 mt-6"
         data-testid="abandon-session-btn"
       >
         Abandon Session

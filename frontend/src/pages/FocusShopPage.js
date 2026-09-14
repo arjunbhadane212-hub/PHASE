@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
-import { Gem, Flame, Shield, Loader2 } from 'lucide-react';
+import { Gem, Flame, Shield, Clock, Check, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
+import { AURA_ORDER, getAura, hexA, GRACE_TIERS } from '../data/focusAuras';
 
 // v2 system: borderless cards on --gm-card with card shadow, cyan (#95DEE6/ink
 // #183A3F) as the primary/active accent, Archivo/JetBrains/General Sans type.
@@ -12,28 +13,51 @@ const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card
 const GEM_ICON = 'text-[#95DEE6]';
 
 export default function FocusShopPage() {
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { gems } = useGame();
   const [revive, setRevive] = useState(null);
   const [owned, setOwned] = useState(0);
+  const [graceItems, setGraceItems] = useState([]); // shop_items rows for focus_boost
+  const [graceOwned, setGraceOwned] = useState({}); // key -> quantity
+  const [auraItems, setAuraItems] = useState([]); // shop_items rows for focus_aura
+  const [auraOwned, setAuraOwned] = useState({}); // key -> quantity
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
+  const [graceBusy, setGraceBusy] = useState(false);
+  const [auraBusy, setAuraBusy] = useState(null); // key currently mid-purchase/equip
 
-  // Focus Mode shop is Revive-only (Step 6 override). The sole purchase here is
-  // Streak Revive via the canonical purchase_shop_item RPC. XP boosts are banned
-  // in Focus; the Streak Shield is the 500g home-screen button (buy_focus_shield),
-  // not sold here.
+  // Focus Mode shop was Revive-only (Step 6 override). It now also carries two
+  // Focus-native gem sinks that don't touch XP: Grace Extender (a tab-switch
+  // grace-period upgrade FocusSession.js reads) and Timer Aura (an equippable
+  // color skin for the full-screen session). Streak Shield stays the 500g
+  // home-screen button (buy_focus_shield), not sold here.
   const fetchShop = useCallback(async () => {
     try {
-      const { data: item } = await supabase
-        .from('shop_items').select('id,name,price_gems,max_owned')
-        .eq('key', 'streak_revive').maybeSingle();
-      setRevive(item || null);
-      if (item) {
+      const { data: allItems } = await supabase
+        .from('shop_items')
+        .select('id,key,name,price_gems,max_owned,category')
+        .in('category', ['boost', 'focus_boost', 'focus_aura']);
+
+      const items = allItems || [];
+      const item = items.find((r) => r.key === 'streak_revive') || null;
+      setRevive(item);
+
+      const grace = items.filter((r) => r.category === 'focus_boost');
+      const aura = items.filter((r) => r.category === 'focus_aura');
+      setGraceItems(grace);
+      setAuraItems(aura);
+
+      const ids = items.map((r) => r.id);
+      if (ids.length) {
         const { data: inv } = await supabase
-          .from('user_inventory').select('quantity')
-          .eq('shop_item_id', item.id).maybeSingle();
-        setOwned(inv?.quantity ?? 0);
+          .from('user_inventory').select('shop_item_id, quantity').in('shop_item_id', ids);
+        const byId = {};
+        (inv || []).forEach((r) => { byId[r.shop_item_id] = r.quantity; });
+        if (item) setOwned(byId[item.id] ?? 0);
+        const gOwned = {}; grace.forEach((r) => { gOwned[r.key] = byId[r.id] ?? 0; });
+        setGraceOwned(gOwned);
+        const aOwned = {}; aura.forEach((r) => { aOwned[r.key] = byId[r.id] ?? 0; });
+        setAuraOwned(aOwned);
       }
     } catch { /* ignore */ } finally { setLoading(false); }
   }, []);
@@ -51,6 +75,50 @@ export default function FocusShopPage() {
     } catch (e) {
       toast.error(e?.message || 'Purchase failed');
     } finally { setBuying(false); }
+  };
+
+  // Grace Extender: two permanent tiers, highest owned applies (FocusSession.js
+  // reads whichever is owned). The button always offers the next un-owned tier.
+  const graceOwnedKeys = useMemo(() => new Set(Object.keys(graceOwned).filter((k) => graceOwned[k] > 0)), [graceOwned]);
+  const currentGraceTier = [...GRACE_TIERS].reverse().find((t) => graceOwnedKeys.has(t.key));
+  const nextGraceTier = GRACE_TIERS.find((t) => !graceOwnedKeys.has(t.key));
+  const nextGraceItem = nextGraceTier ? graceItems.find((r) => r.key === nextGraceTier.key) : null;
+
+  const handleBuyGrace = async () => {
+    if (!nextGraceItem) return;
+    setGraceBusy(true);
+    try {
+      const { error } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: nextGraceItem.id });
+      if (error) throw error;
+      toast.success(`${nextGraceItem.name} unlocked!`);
+      await Promise.all([refreshUser(), fetchShop()]);
+    } catch (e) {
+      toast.error(e?.message || 'Purchase failed');
+    } finally { setGraceBusy(false); }
+  };
+
+  // Timer Aura: tapping an unowned swatch buys + equips in one step; tapping an
+  // owned-but-unequipped swatch just equips. This is the "real small space to
+  // equip it" — inline in the shop, not a separate screen.
+  const equippedAuraKey = user?.equipped_focus_aura || 'focus_aura_cyan_pulse';
+
+  const handleAuraTap = async (item) => {
+    if (auraBusy) return;
+    if (item.key === equippedAuraKey) return;
+    setAuraBusy(item.key);
+    try {
+      const alreadyOwned = (auraOwned[item.key] ?? 0) > 0;
+      if (!alreadyOwned) {
+        const { error: buyErr } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: item.id });
+        if (buyErr) throw buyErr;
+      }
+      const { error: eqErr } = await supabase.rpc('equip_item', { p_shop_item_id: item.id });
+      if (eqErr) throw eqErr;
+      toast.success(`${item.name} equipped`);
+      await Promise.all([refreshUser(), fetchShop()]);
+    } catch (e) {
+      toast.error(e?.message || 'Could not equip');
+    } finally { setAuraBusy(null); }
   };
 
   if (loading) return (
@@ -75,7 +143,7 @@ export default function FocusShopPage() {
         </div>
       </div>
 
-      {/* Streak Revive — the only purchase on this screen */}
+      {/* Streak Revive */}
       {revive && (
         <div className={`p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-streak_revive">
           <div className="w-12 h-12 rounded-xl bg-[#95DEE6] flex items-center justify-center flex-shrink-0">
@@ -101,6 +169,101 @@ export default function FocusShopPage() {
           </Button>
         </div>
       )}
+
+      {/* Grace Extender — extends the tab-switch grace window before a session
+          auto-fails, read live by FocusSession.js. Permanent, tiered upgrade. */}
+      <div className={`mt-3 p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-grace-extender">
+        <div className="w-12 h-12 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
+          <Clock className="w-6 h-6 text-[#95DEE6]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Grace Extender</p>
+          <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">
+            {currentGraceTier ? `${currentGraceTier.name} · ${currentGraceTier.graceMs / 1000}s grace active` : 'Longer buffer before a tab-switch fails your session'}
+          </p>
+          {nextGraceTier && (
+            <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">
+              Next: {nextGraceTier.name} · {nextGraceTier.graceMs / 1000}s
+            </p>
+          )}
+        </div>
+        {nextGraceItem ? (
+          <Button
+            onClick={handleBuyGrace}
+            disabled={graceBusy || (gems ?? 0) < nextGraceItem.price_gems}
+            className={`text-sm px-4 h-9 rounded-full flex-shrink-0 font-bold ${
+              (gems ?? 0) < nextGraceItem.price_gems ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
+            }`}
+            data-testid="focus-buy-grace-extender"
+          >
+            {graceBusy ? <Loader2 className="w-4 h-4 animate-spin" /> :
+             (gems ?? 0) < nextGraceItem.price_gems ? 'Not enough' :
+             <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> {nextGraceItem.price_gems}</span>}
+          </Button>
+        ) : (
+          <span className="text-xs font-['JetBrains_Mono'] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] flex-shrink-0">Maxed</span>
+        )}
+      </div>
+
+      {/* Timer Aura — a compact, equippable swatch strip. The buy/equip action
+          lives right on each swatch: no separate page, no separate section. */}
+      <div className={`mt-3 p-4 ${CARD}`} data-testid="focus-aura-section">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Timer Aura</p>
+          <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">
+            {getAura(equippedAuraKey).name}
+          </p>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {AURA_ORDER.map((key) => {
+            const aura = getAura(key);
+            const item = auraItems.find((r) => r.key === key);
+            const isEquipped = key === equippedAuraKey;
+            const busy = auraBusy === key;
+            const priceLabel = item?.price_gems ? item.price_gems : 0;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => item && handleAuraTap(item)}
+                disabled={!item || busy || isEquipped}
+                className="flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors disabled:cursor-default"
+                style={{
+                  background: isEquipped ? 'var(--gm-track)' : 'transparent',
+                }}
+                data-testid={`focus-aura-swatch-${key}`}
+              >
+                <span
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: aura.bg,
+                    // Glow-style auras always show their soft signature halo;
+                    // the equipped ring itself is always aura.ink (guaranteed
+                    // to contrast against aura.bg, unlike accent which can be
+                    // close in tone to bg on some auras).
+                    boxShadow: [
+                      aura.style === 'glow' ? `0 0 10px 2px ${hexA(aura.accent, 0.45)}` : null,
+                      isEquipped ? `0 0 0 2px ${aura.ink}` : null,
+                    ].filter(Boolean).join(', ') || 'none',
+                  }}
+                >
+                  {isEquipped && <Check className="w-4 h-4" style={{ color: aura.ink }} strokeWidth={3} />}
+                </span>
+                <span className="text-[9px] font-['JetBrains_Mono'] uppercase tracking-[0.02em] text-[color:var(--gm-muted)] text-center leading-tight">
+                  {aura.name}
+                </span>
+                <span className="text-[10px] font-bold text-[color:var(--gm-ink)]">
+                  {busy ? <Loader2 className="w-3 h-3 animate-spin" /> :
+                   isEquipped ? 'Equipped' :
+                   (auraOwned[key] ?? 0) > 0 ? 'Equip' :
+                   priceLabel === 0 ? 'Free' :
+                   <span className="flex items-center gap-1"><Gem className="w-3 h-3 text-[#95DEE6]" />{priceLabel}</span>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Streak Shield pointer — not sold here (500g home-screen button) */}
       <div className={`mt-3 p-4 ${CARD} flex items-center gap-3`} data-testid="focus-shield-pointer">
