@@ -54,15 +54,18 @@ export default function DashboardLayout() {
     <div className={`min-h-screen ${isGameMode ? 'mode-game' : 'mode-focus'}`} style={{ backgroundColor: 'var(--color-bg)' }} data-testid="dashboard-layout">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 flex-col items-center py-8 gap-1 glass-nav border-r border-white/[0.06] shadow-[var(--gm-shadow-nav)] z-50" data-testid="desktop-sidebar">
-        {/* Profile button at top */}
-        <button
-          onClick={() => setProfileOpen(true)}
-          className="w-16 py-3 rounded-xl transition-all duration-200 flex flex-col items-center gap-1.5 text-[var(--gm-muted)] hover:text-[var(--gm-ink)] hover:bg-[var(--gm-card)] mb-2"
-          data-testid="nav-desktop-profile"
-        >
-          <User className="w-5 h-5" strokeWidth={1.8} />
-          <span className="text-[10px] font-medium">Profile</span>
-        </button>
+        {/* Profile button at top — Game Mode only (Focus Mode has no cosmetic
+            profile: no titles/banners/effects to customize). */}
+        {isGameMode && (
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="w-16 py-3 rounded-xl transition-all duration-200 flex flex-col items-center gap-1.5 text-[var(--gm-muted)] hover:text-[var(--gm-ink)] hover:bg-[var(--gm-card)] mb-2"
+            data-testid="nav-desktop-profile"
+          >
+            <User className="w-5 h-5" strokeWidth={1.8} />
+            <span className="text-[10px] font-medium">Profile</span>
+          </button>
+        )}
 
         {navItems.map((item) => (
           <NavLink
@@ -97,16 +100,18 @@ export default function DashboardLayout() {
       <nav className="fixed bottom-0 left-0 right-0 md:hidden z-[9999]" data-testid="mobile-nav" style={{ pointerEvents: 'none' }}>
         <div className="mx-2 mb-8 glass-nav rounded-2xl border border-white/[0.06] shadow-[var(--gm-shadow-nav)]" style={{ pointerEvents: 'auto' }}>
           <div className="flex items-stretch justify-around h-14 px-1">
-            {/* Profile button in mobile nav */}
-            <button
-              onClick={() => setProfileOpen(true)}
-              className="flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 rounded-lg text-[var(--gm-muted)]"
-              data-testid="nav-profile"
-              style={{ pointerEvents: 'auto' }}
-            >
-              <User className="w-5 h-5" strokeWidth={1.5} />
-              <span className="text-[9px] font-medium">Profile</span>
-            </button>
+            {/* Profile button in mobile nav — Game Mode only */}
+            {isGameMode && (
+              <button
+                onClick={() => setProfileOpen(true)}
+                className="flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 rounded-lg text-[var(--gm-muted)]"
+                data-testid="nav-profile"
+                style={{ pointerEvents: 'auto' }}
+              >
+                <User className="w-5 h-5" strokeWidth={1.5} />
+                <span className="text-[9px] font-medium">Profile</span>
+              </button>
+            )}
             {navItems.map((item) => (
               <MobileNavItem key={item.to} item={item} isGameMode={isGameMode} />
             ))}
