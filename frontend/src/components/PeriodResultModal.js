@@ -57,20 +57,20 @@ export default function PeriodResultModal() {
         data-testid="period-result-modal"
       >
         <motion.div
-          className="relative w-full max-w-sm rounded-3xl border border-white/[0.08] overflow-hidden"
-          style={{ background: '#14141c' }}
+          className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-[var(--gm-shadow-card)]"
+          style={{ background: 'var(--gm-card)' }}
           initial={{ scale: 0.9, y: 20, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 320, damping: 26 }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="absolute inset-0" style={{ background: `radial-gradient(110% 70% at 50% -10%, ${tier.a}55, transparent 60%)`, opacity: 0.6 }} />
           <div className="relative text-center px-6 pt-8 pb-6">
-            <p className="text-[11px] font-extrabold tracking-[0.2em] uppercase text-zinc-500 mb-4">Weekly League · Results</p>
+            <p className="font-['JetBrains_Mono'] text-[11px] font-bold tracking-[0.2em] uppercase text-[color:var(--gm-muted)] mb-4">Weekly League · Results</p>
             <div className="mx-auto mb-3" style={{ width: 132 }}>
               <TierEmblem tier={res.current_tier} size={132} />
             </div>
-            <h2 className="text-2xl font-black text-white" style={{ fontFamily: "'Satoshi', sans-serif" }}>{headline}</h2>
-            <p className="text-sm text-zinc-400 mt-1">{sub}</p>
+            <h2 className="text-2xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{headline}</h2>
+            <p className="text-sm text-[color:var(--gm-muted)] mt-1">{sub}</p>
 
             <div className="flex items-stretch gap-3 mt-5">
               <Stat label="Final rank" value={`#${res.final_rank ?? '-'}`} />
@@ -79,13 +79,13 @@ export default function PeriodResultModal() {
 
             <button
               onClick={() => { dismiss(); navigate('/dashboard/leaderboard'); }}
-              className="mt-6 w-full py-3 rounded-2xl text-sm font-extrabold"
-              style={{ background: tier.a, color: '#0a0a0f' }}
+              className="mt-6 w-full py-3 rounded-2xl text-sm font-['General_Sans'] font-bold"
+              style={promoted ? { background: '#DBF67F', color: '#2A3B0B' } : { background: '#95DEE6', color: '#183A3F' }}
               data-testid="period-result-cta"
             >
               {promoted ? 'Enter your new league' : 'View your league'}
             </button>
-            <button onClick={dismiss} className="mt-2 w-full py-2 text-xs font-semibold text-zinc-500 hover:text-zinc-300">
+            <button onClick={dismiss} className="mt-2 w-full py-2 text-xs font-semibold text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]">
               Dismiss
             </button>
           </div>
@@ -97,9 +97,9 @@ export default function PeriodResultModal() {
 
 function Stat({ label, value }) {
   return (
-    <div className="flex-1 rounded-2xl bg-white/[0.03] border border-white/[0.06] py-3">
-      <p className="text-lg font-black text-white tabular-nums">{value}</p>
-      <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">{label}</p>
+    <div className="flex-1 rounded-2xl bg-[color:var(--gm-badge)] py-3">
+      <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)] tabular-nums">{value}</p>
+      <p className="font-['JetBrains_Mono'] text-[10px] text-[color:var(--gm-muted)] font-bold mt-0.5 uppercase tracking-[0.06em]">{label}</p>
     </div>
   );
 }
