@@ -86,9 +86,19 @@ export default function ProfilePanel({ open, onClose }) {
   const allOwnedEffects = owned.effects;
 
   const mainColor = user?.selected_main_color;
-  const bannerColor = user?.selected_banner_color || '#1B6AE4';
-  const avatarBg = mainColor && mainColor !== '#1F2937' ? mainColor : '#374151';
-  const lowerBg = mainColor && mainColor !== '#1F2937' ? mainColor : '#0C1220';
+  // When the user has an equipped main color, the lower section becomes that
+  // saturated cosmetic surface (white ink reads on it, as before). Otherwise it
+  // falls back to the theme-aware v2 card surface with gm ink/muted. Panel-scoped
+  // CSS vars below let every child pick the right ink/tile/line for either case.
+  const hasColor = mainColor && mainColor !== '#1F2937';
+  const avatarBg = hasColor ? mainColor : '#95DEE6';
+  const lowerBg = hasColor ? mainColor : 'var(--gm-card)';
+  const panelVars = {
+    '--panel-ink': hasColor ? '#ffffff' : 'var(--gm-ink)',
+    '--panel-muted': hasColor ? 'rgba(255,255,255,0.55)' : 'var(--gm-muted)',
+    '--panel-tile': hasColor ? 'rgba(0,0,0,0.22)' : 'var(--gm-badge)',
+    '--panel-line': hasColor ? 'rgba(255,255,255,0.10)' : 'var(--gm-track)',
+  };
 
   // Animations carry no css preview in shop_items (the old backend synthesized
   // css_class); the avatar animation class degrades to none. See NOTES_FOR_SACHIN.md.
@@ -110,16 +120,16 @@ export default function ProfilePanel({ open, onClose }) {
         className="fixed z-[9991] overflow-y-auto overflow-x-hidden
           sm:right-0 sm:top-0 sm:h-full sm:w-[420px] sm:animate-slide-in-right
           max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:h-[90vh] max-sm:rounded-t-[20px] max-sm:animate-slide-in-up"
-        style={{ backgroundColor: '#0a0e1a' }}
+        style={{ backgroundColor: 'var(--gm-bg)' }}
         data-testid="profile-panel"
       >
         {/* Mobile drag handle */}
         <div className="sm:hidden flex justify-center pt-3 pb-1">
-          <div className="w-12 h-1.5 rounded-full bg-white/20" />
+          <div className="w-12 h-1.5 rounded-full bg-[color:var(--gm-track)]" />
         </div>
 
         {/* Close */}
-        <button onClick={onClose} className="absolute top-3 right-3 z-20 p-2 rounded-xl bg-black/40 backdrop-blur-sm text-white/60 hover:text-white transition-colors" data-testid="profile-close">
+        <button onClick={onClose} className="absolute top-3 right-3 z-20 p-2 rounded-xl bg-black/40 backdrop-blur-sm text-white/70 hover:text-white transition-colors" data-testid="profile-close">
           <X className="w-5 h-5" />
         </button>
 
@@ -131,19 +141,19 @@ export default function ProfilePanel({ open, onClose }) {
         </div>
 
         {/* Lower section with equipped main color */}
-        <div className="relative -mt-10 rounded-t-3xl min-h-[60vh] px-5 pt-1 pb-8" style={{ backgroundColor: lowerBg }}>
+        <div className="relative -mt-10 rounded-t-3xl min-h-[60vh] px-5 pt-1 pb-8" style={{ backgroundColor: lowerBg, ...panelVars }}>
           {/* Avatar */}
           <div className="flex items-end gap-4 mb-4 -mt-6">
             <div
-              className={`w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-black text-white ${animClass}`}
-              style={{ backgroundColor: avatarBg, border: `4px solid ${lowerBg}`, boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
+              className={`w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-['Archivo'] font-black text-[color:var(--panel-ink)] ${animClass}`}
+              style={{ backgroundColor: avatarBg, color: hasColor ? '#ffffff' : '#183A3F', border: `4px solid ${lowerBg}`, boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}
               data-testid="panel-avatar"
             >
               {user?.first_name?.[0]}{user?.last_name?.[0]}
             </div>
             <div className="pb-1 flex-1 min-w-0">
-              <h2 className="text-lg font-black text-white font-['Satoshi'] truncate">{user?.first_name} {user?.last_name}</h2>
-              <p className="text-xs text-white/40">@{user?.username}</p>
+              <h2 className="text-lg font-['Archivo'] font-extrabold text-[color:var(--panel-ink)] truncate">{user?.first_name} {user?.last_name}</h2>
+              <p className="text-xs text-[color:var(--panel-muted)]">@{user?.username}</p>
             </div>
           </div>
 
@@ -164,23 +174,23 @@ export default function ProfilePanel({ open, onClose }) {
           {/* Public link */}
           {user?.username && (
             <Link to={`/profile/${user.username}`} onClick={onClose}
-              className="inline-flex items-center gap-1.5 text-[11px] text-white/30 hover:text-white/60 transition-colors mb-5">
+              className="inline-flex items-center gap-1.5 text-[11px] text-[color:var(--panel-muted)] hover:opacity-80 transition-opacity mb-5">
               <ExternalLink className="w-3 h-3" /> View public profile
             </Link>
           )}
 
           {/* Stats */}
           <div className="grid grid-cols-4 gap-2 mb-5">
-            <StatBox icon={<Target className="w-4 h-4 text-[#4D8EF0]" />} value={user?.total_xp_all_time || 0} label="XP" />
-            <StatBox icon={<FlameGlyph stage={streakTier(user?.current_streak).flame} size={16} style={{ color: '#4D8EF0' }} />} value={user?.current_streak || 0} label="Streak" />
-            <StatBox icon={<Shield className="w-4 h-4 text-[#3B82F6]" />} value={user?.longest_streak_ever || 0} label="Best" />
-            <StatBox icon={<Calendar className="w-4 h-4 text-emerald-400" />} value={user?.total_habits_completed || 0} label="Done" />
+            <StatBox icon={<Target className="w-4 h-4 text-[color:var(--panel-ink)]" />} value={user?.total_xp_all_time || 0} label="XP" />
+            <StatBox icon={<FlameGlyph stage={streakTier(user?.current_streak).flame} size={16} style={{ color: 'var(--panel-ink)' }} />} value={user?.current_streak || 0} label="Streak" />
+            <StatBox icon={<Shield className="w-4 h-4 text-[color:var(--panel-ink)]" />} value={user?.longest_streak_ever || 0} label="Best" />
+            <StatBox icon={<Calendar className="w-4 h-4 text-[color:var(--panel-ink)]" />} value={user?.total_habits_completed || 0} label="Done" />
           </div>
 
-          <div className="h-px bg-white/[0.06] mb-5" />
+          <div className="h-px bg-[color:var(--panel-line)] mb-5" />
 
           {/* Customize */}
-          <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold mb-4">Customize Profile</p>
+          <p className="font-['JetBrains_Mono'] text-[10px] text-[color:var(--panel-muted)] uppercase tracking-[0.08em] font-bold mb-4">Customize Profile</p>
 
           {/* Titles */}
           <Section title="Titles" count={earnedTitles.length} expanded={expandedSection === 'titles'} onToggle={() => toggle('titles')}>
@@ -217,9 +227,9 @@ export default function ProfilePanel({ open, onClose }) {
                   const artKey = BANNER_KEY_TO_ART[b.key];
                   return (
                     <div key={b.key}
-                      className={`w-full rounded-xl overflow-hidden border transition-all ${isEquipped ? 'border-[#3B82F6]/70 ring-1 ring-[#3B82F6]/25' : 'border-white/[0.06]'}`}
+                      className={`w-full rounded-xl overflow-hidden border transition-all ${isEquipped ? 'border-[#95DEE6] ring-1 ring-[#95DEE6]/40' : 'border-[color:var(--panel-line)]'}`}
                       data-testid={`banner-preview-${b.key}`}
-                      style={{ backgroundColor: '#0A0E14' }}
+                      style={{ backgroundColor: 'var(--panel-tile)' }}
                     >
                       <div className="flex items-stretch">
                         {/* Preview thumbnail: 60px height */}
@@ -227,21 +237,21 @@ export default function ProfilePanel({ open, onClose }) {
                           {artKey ? (
                             <div className="absolute inset-0"><PhaseBanner bannerKey={artKey} /></div>
                           ) : (
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03]">
-                              <span className="text-[9px] uppercase tracking-widest text-white/25">{b.name}</span>
+                            <div className="absolute inset-0 flex items-center justify-center bg-[color:var(--panel-tile)]">
+                              <span className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--panel-muted)]">{b.name}</span>
                             </div>
                           )}
                         </div>
                         {/* Label + action */}
                         <div className="flex items-center gap-2 px-3" style={{ minWidth: 128 }}>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-bold text-white truncate">{b.name}</p>
-                            <p className="text-[9px] uppercase tracking-widest text-white/40">{b.rarity}</p>
+                            <p className="text-[12px] font-['General_Sans'] font-bold text-[color:var(--panel-ink)] truncate">{b.name}</p>
+                            <p className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--panel-muted)]">{b.rarity}</p>
                           </div>
                           <button
                             onClick={() => (isEquipped ? handleUnequip('banner') : handleEquip('banner', b))}
                             disabled={equipping === `banner-${b.key}` || equipping === 'banner-null'}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${isEquipped ? 'bg-[#3B82F6]/25 text-[#BFD9FF]' : 'bg-[#3B82F6] text-white hover:brightness-110'} disabled:opacity-50`}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${isEquipped ? 'bg-[#DBF67F] text-[#2A3B0B]' : 'bg-[#95DEE6] text-[#183A3F] hover:brightness-105'} disabled:opacity-50`}
                             data-testid={`banner-equip-${b.key}`}
                           >
                             {isEquipped ? 'Equipped' : 'Equip'}
@@ -270,14 +280,14 @@ export default function ProfilePanel({ open, onClose }) {
                     const grad = d.gradient_value;
                     return (
                       <button key={d.key} onClick={() => handleEquip('effect', d)}
-                        className={`h-16 rounded-xl overflow-hidden border transition-all ${user?.equipped_decoration === d.key ? 'border-white/30 ring-1 ring-white/10' : 'border-white/[0.06]'}`}>
+                        className={`h-16 rounded-xl overflow-hidden border transition-all ${user?.equipped_decoration === d.key ? 'border-[#95DEE6] ring-1 ring-[#95DEE6]/40' : 'border-[color:var(--panel-line)]'}`}>
                         {css ? (
                           <div className={`w-full h-full ${css}`} />
                         ) : grad ? (
                           <div className="w-full h-full" style={{ background: grad }} />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-white/[0.03]">
-                            <span className="text-[9px] uppercase tracking-widest text-white/25">{d.name}</span>
+                          <div className="w-full h-full flex items-center justify-center bg-[color:var(--panel-tile)]">
+                            <span className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--panel-muted)]">{d.name}</span>
                           </div>
                         )}
                       </button>
@@ -290,8 +300,8 @@ export default function ProfilePanel({ open, onClose }) {
 
           {/* Shop link */}
           {isGameMode && (
-            <p className="text-[10px] text-white/20 text-center mt-6">
-              <Gem className="w-3 h-3 inline text-[#4D8EF0]/50" /> More in <Link to="/dashboard/shop" onClick={onClose} className="text-[#4D8EF0]/60 hover:text-[#4D8EF0]">Shop</Link>
+            <p className="text-[10px] text-[color:var(--panel-muted)] text-center mt-6">
+              <Gem className="w-3 h-3 inline text-[color:var(--panel-muted)]" /> More in <Link to="/dashboard/shop" onClick={onClose} className="font-['General_Sans'] font-semibold text-[color:var(--panel-ink)] hover:opacity-80">Shop</Link>
             </p>
           )}
         </div>
@@ -302,20 +312,20 @@ export default function ProfilePanel({ open, onClose }) {
 
 function StatBox({ icon, value, label }) {
   return (
-    <div className="p-2.5 rounded-xl text-center" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.04)' }}>
+    <div className="p-2.5 rounded-xl text-center" style={{ background: 'var(--panel-tile)', border: '1px solid var(--panel-line)' }}>
       <div className="flex justify-center mb-1">{icon}</div>
-      <p className="text-base font-black text-white">{typeof value === 'number' ? value.toLocaleString() : value}</p>
-      <p className="text-[8px] text-white/30 uppercase tracking-wider">{label}</p>
+      <p className="text-base font-['Archivo'] font-black text-[color:var(--panel-ink)]">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+      <p className="font-['JetBrains_Mono'] text-[8px] text-[color:var(--panel-muted)] uppercase tracking-[0.08em]">{label}</p>
     </div>
   );
 }
 
 function Section({ title, count, expanded, onToggle, children }) {
   return (
-    <div className="mb-2.5 rounded-2xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.04)' }}>
+    <div className="mb-2.5 rounded-2xl overflow-hidden" style={{ background: 'var(--panel-tile)', border: '1px solid var(--panel-line)' }}>
       <button onClick={onToggle} className="w-full flex items-center justify-between px-4 py-3 text-left">
-        <span className="text-xs font-bold text-white/70">{title} <span className="text-white/20 font-normal">({count})</span></span>
-        {expanded ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
+        <span className="text-xs font-['General_Sans'] font-bold text-[color:var(--panel-ink)]">{title} <span className="text-[color:var(--panel-muted)] font-normal">({count})</span></span>
+        {expanded ? <ChevronUp className="w-4 h-4 text-[color:var(--panel-muted)]" /> : <ChevronDown className="w-4 h-4 text-[color:var(--panel-muted)]" />}
       </button>
       {expanded && <div className="px-4 pb-4">{children}</div>}
     </div>
@@ -323,13 +333,13 @@ function Section({ title, count, expanded, onToggle, children }) {
 }
 
 function Empty({ text }) {
-  return <p className="text-[10px] text-white/20">{text}</p>;
+  return <p className="text-[10px] text-[color:var(--panel-muted)]">{text}</p>;
 }
 
 function Pill({ label, active, onClick, loading, className = '', variant }) {
-  const style = variant === 'remove' ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : active ? 'border-white/25 bg-white/10 text-white' : 'border-white/[0.06] text-white/40 hover:bg-white/5';
+  const style = variant === 'remove' ? 'border-[#B91C1C]/40 text-[#B91C1C] hover:bg-[#B91C1C]/10' : active ? 'border-transparent bg-[#95DEE6] text-[#183A3F]' : 'border-[color:var(--panel-line)] text-[color:var(--panel-muted)] hover:opacity-80';
   return (
-    <button onClick={onClick} disabled={loading} className={`text-[10px] font-medium px-3 py-1.5 rounded-xl border transition-all ${style} ${className}`}>
+    <button onClick={onClick} disabled={loading} className={`text-[10px] font-['General_Sans'] font-semibold px-3 py-1.5 rounded-xl border transition-all ${style} ${className}`}>
       {loading ? <span className="w-2.5 h-2.5 border border-current border-t-transparent rounded-full animate-spin inline-block" /> : <>
         {label}{active && !variant && <Check className="w-2.5 h-2.5 inline ml-0.5" />}
       </>}
