@@ -32,7 +32,7 @@ function MobileNavItem({ item, isGameMode }) {
           ? isGameMode
             ? 'py-2 px-4 rounded-[14px] text-[#A59BCC] bg-[#A59BCC]/10'
             : 'py-2 px-4 rounded-[14px] text-[var(--gm-ink)] bg-[var(--gm-card)]'
-          : 'py-1.5 px-3 rounded-lg text-zinc-600'
+          : 'py-1.5 px-3 rounded-lg text-[var(--gm-muted)]'
       }`}
       data-testid={`nav-${item.label.toLowerCase()}`}
       style={{ pointerEvents: 'auto' }}
@@ -57,7 +57,7 @@ export default function DashboardLayout() {
         {/* Profile button at top */}
         <button
           onClick={() => setProfileOpen(true)}
-          className="w-16 py-3 rounded-xl transition-all duration-200 flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] mb-2"
+          className="w-16 py-3 rounded-xl transition-all duration-200 flex flex-col items-center gap-1.5 text-[var(--gm-muted)] hover:text-[var(--gm-ink)] hover:bg-[var(--gm-card)] mb-2"
           data-testid="nav-desktop-profile"
         >
           <User className="w-5 h-5" strokeWidth={1.8} />
@@ -75,7 +75,7 @@ export default function DashboardLayout() {
                 ? isGameMode
                   ? 'text-[#A59BCC] bg-[#A59BCC]/10'
                   : 'text-[var(--gm-ink)] bg-[var(--gm-card)]'
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
+                : 'text-[var(--gm-muted)] hover:text-[var(--gm-ink)] hover:bg-[var(--gm-card)]'
               }
             `}
             data-testid={`nav-desktop-${item.label.toLowerCase()}`}
@@ -100,7 +100,7 @@ export default function DashboardLayout() {
             {/* Profile button in mobile nav */}
             <button
               onClick={() => setProfileOpen(true)}
-              className="flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 rounded-lg text-zinc-600"
+              className="flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 rounded-lg text-[var(--gm-muted)]"
               data-testid="nav-profile"
               style={{ pointerEvents: 'auto' }}
             >

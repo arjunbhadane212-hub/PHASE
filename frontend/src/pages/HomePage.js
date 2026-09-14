@@ -724,7 +724,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
         <div className="flex-1 min-w-0">
           <p className={`${
             habit.failed_today
-              ? 'font-medium text-zinc-400 line-through'
+              ? 'font-medium text-[var(--gm-muted)] line-through'
               : habit.completed_today
                 ? 'font-bold text-[#0F1210]'
                 : 'font-medium text-[var(--gm-ink)]'

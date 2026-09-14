@@ -240,11 +240,13 @@ code {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Default nav (Focus Mode — Game Mode overrides via .mode-game .glass-nav
+   above). Theme-aware v2 surface so the Focus nav bar follows light/dark. */
 .glass-nav {
-  background: rgba(6, 8, 15, 0.9);
+  background: var(--gm-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--gm-track);
 }
 
 /* Glow effects - reduced */
