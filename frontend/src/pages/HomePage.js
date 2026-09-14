@@ -62,6 +62,7 @@ export default function HomePage() {
   const xpIdRef = useRef(0);
   const [focusSession, setFocusSession] = useState(null); // { habit, duration }
   const [weeklyXpEarned, setWeeklyXpEarned] = useState(0);
+  const [todayXpEarned, setTodayXpEarned] = useState(0);
 
   const fetchHabits = useCallback(async () => {
     if (!user?.id) return;
@@ -109,28 +110,33 @@ export default function HomePage() {
     fetchHabits();
   }, [fetchHabits]);
 
-  // Weekly XP earned for the home header's "This Week" ring. Same weekly window
-  // as StreakCard's pip bar: CALENDAR WEEK, Monday-start. daily_logs.xp_earned_today
+  // Weekly + today's XP for the home header tiles. Same weekly window as
+  // StreakCard's pip bar: CALENDAR WEEK, Monday-start. daily_logs.xp_earned_today
   // is the authoritative per-day XP (complete_habit writes it, uncomplete_habit
-  // decrements it), so summing it is accurate. Read-only SELECT — no writes,
-  // no schema/RPC changes. Re-runs on current_xp change so it stays fresh after
-  // a completion (refreshUser updates current_xp).
+  // decrements it) and is keyed by log_date, so today's row IS the reset-daily
+  // total — no separate "reset at midnight" logic needed, a new day just gets a
+  // new row. Read-only SELECT — no writes, no schema/RPC changes. Re-runs on
+  // current_xp change so it stays fresh after a completion (refreshUser updates
+  // current_xp).
   const fetchWeeklyXp = useCallback(async () => {
     if (!user?.id) return;
     const now = new Date();
+    const todayStr = localDateStr(now);
     const diffToMonday = (now.getDay() + 6) % 7; // 0=Sun..6=Sat -> days since Monday
     const monday = new Date(now);
     monday.setDate(now.getDate() - diffToMonday);
     const { data, error } = await supabase
       .from('daily_logs')
-      .select('xp_earned_today')
+      .select('log_date, xp_earned_today')
       .eq('user_id', user.id)
       .gte('log_date', localDateStr(monday));
     if (error) {
       console.error('Failed to load weekly XP', error);
       return;
     }
-    setWeeklyXpEarned((data || []).reduce((s, r) => s + (r.xp_earned_today || 0), 0));
+    const rows = data || [];
+    setWeeklyXpEarned(rows.reduce((s, r) => s + (r.xp_earned_today || 0), 0));
+    setTodayXpEarned(rows.find(r => r.log_date === todayStr)?.xp_earned_today || 0);
     // current_xp is not read in the body; it's an intentional dependency so the
     // ring refetches after a completion (refreshUser bumps current_xp). The
     // exhaustive-deps rule flags it as "unnecessary", which fails the CI build.
@@ -317,13 +323,18 @@ export default function HomePage() {
           {isGameMode && (
             <>
               <div className="grid grid-cols-3 gap-3 mt-4">
-                {/* Tile 1 — Total XP */}
+                {/* Tile 1 — Today's XP. Sourced from daily_logs.xp_earned_today
+                    (see fetchWeeklyXp), which is keyed by log_date — a new day
+                    is a new row, so this resets automatically at local midnight
+                    with no client-side reset logic to get wrong. All-time total
+                    XP still lives on the Settings page; it's intentionally not
+                    duplicated here. */}
                 <div className="rounded-2xl bg-[var(--gm-card)] p-4" data-testid="stat-tile-xp">
                   <div className="font-['Archivo'] font-black text-[var(--gm-ink)] text-2xl sm:text-3xl leading-none">
-                    {currentXP.toLocaleString()}
+                    {todayXpEarned.toLocaleString()}
                   </div>
                   <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[var(--gm-muted)] mt-2" style={{ letterSpacing: '0.08em' }}>
-                    Total XP
+                    XP Today
                   </div>
                 </div>
 
