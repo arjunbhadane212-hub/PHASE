@@ -8,7 +8,6 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Progress } from '../components/ui/progress';
 import { Plus, Check, Sunrise, Sun, Moon, Flame, Sparkles, Loader2, Gem, Heart, Shield, Zap, X, Award, Play, Clock } from 'lucide-react';
 import StreakCard from '../components/StreakCard';
@@ -792,6 +791,34 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
   );
 }
 
+// v2 create-habit form primitives: JetBrains Mono eyebrow label + tactile
+// segmented pills (cyan #95DEE6 / ink #183A3F when selected) replacing the old
+// native-style dropdowns.
+function HabitFieldLabel({ children }) {
+  return (
+    <Label className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">
+      {children}
+    </Label>
+  );
+}
+
+function OptionPill({ selected, onClick, children, testid }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testid}
+      className={`rounded-xl px-3 py-2 text-sm font-['General_Sans'] transition-all ${
+        selected
+          ? 'bg-[#95DEE6] text-[#183A3F] font-bold'
+          : 'bg-[color:var(--gm-bg)] text-[color:var(--gm-muted)] border border-[color:var(--gm-track)] hover:text-[color:var(--gm-ink)]'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -850,7 +877,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
       {!trigger && (
         <DialogTrigger asChild>
           <Button
-            className={`${isGameMode ? 'bg-purple-600 hover:bg-purple-700 glow-purple-sm' : 'bg-[#95DEE6] text-[#183A3F] hover:opacity-90'}`}
+            className="bg-[#95DEE6] text-[#183A3F] hover:opacity-90 font-['General_Sans'] font-bold"
             data-testid="add-first-habit-btn"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -862,100 +889,84 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
         <DialogHeader>
           <DialogTitle className="font-['Archivo',sans-serif] font-extrabold">Create New Habit</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-5 mt-4">
           <div className="space-y-2">
-            <Label className="text-[var(--gm-muted)]">Habit Name</Label>
+            <HabitFieldLabel>Habit Name</HabitFieldLabel>
             <Input
               placeholder="e.g., Morning workout"
               value={formData.habit_name}
               onChange={(e) => setFormData({ ...formData, habit_name: e.target.value })}
-              className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]"
+              className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)] focus-visible:ring-[#95DEE6]"
               data-testid="habit-name-input"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[var(--gm-muted)]">Time of Day</Label>
-            <Select
-              value={formData.time_of_day}
-              onValueChange={(v) => setFormData({ ...formData, time_of_day: v })}
-            >
-              <SelectTrigger className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]" data-testid="habit-time-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[var(--gm-card)] border-[var(--gm-track)]">
-                <SelectItem value="morning">Morning</SelectItem>
-                <SelectItem value="afternoon">Afternoon</SelectItem>
-                <SelectItem value="night">Night</SelectItem>
-              </SelectContent>
-            </Select>
+            <HabitFieldLabel>Time of Day</HabitFieldLabel>
+            <div className="grid grid-cols-3 gap-2" data-testid="habit-time-select">
+              {[['morning', 'Morning'], ['afternoon', 'Afternoon'], ['night', 'Night']].map(([v, l]) => (
+                <OptionPill key={v} selected={formData.time_of_day === v} onClick={() => setFormData({ ...formData, time_of_day: v })} testid={`habit-time-${v}`}>
+                  {l}
+                </OptionPill>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[var(--gm-muted)]">Difficulty</Label>
-            <Select
-              value={formData.difficulty}
-              onValueChange={(v) => setFormData({ ...formData, difficulty: v })}
-            >
-              <SelectTrigger className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]" data-testid="habit-difficulty-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[var(--gm-card)] border-[var(--gm-track)]">
-                <SelectItem value="easy">
-                  Easy (+{xpValues.easy} XP{isGameMode ? ` • +${gemValues.easy} gems` : ''})
-                </SelectItem>
-                <SelectItem value="medium">
-                  Medium (+{xpValues.medium} XP{isGameMode ? ` • +${gemValues.medium} gems` : ''})
-                </SelectItem>
-                <SelectItem value="hard">
-                  Hard (+{xpValues.hard} XP{isGameMode ? ` • +${gemValues.hard} gems` : ''})
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <HabitFieldLabel>Difficulty</HabitFieldLabel>
+            <div className="grid grid-cols-3 gap-2" data-testid="habit-difficulty-select">
+              {[['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']].map(([v, l]) => {
+                const sel = formData.difficulty === v;
+                // Focus Mode earns no XP — show the gem reward there instead.
+                const reward = isGameMode ? `+${xpValues[v]} XP · +${gemValues[v]}g` : `+${gemValues[v]} gems`;
+                return (
+                  <button
+                    type="button"
+                    key={v}
+                    onClick={() => setFormData({ ...formData, difficulty: v })}
+                    data-testid={`habit-difficulty-${v}`}
+                    className={`rounded-xl px-2 py-3 text-center transition-all ${
+                      sel ? 'bg-[#95DEE6]' : 'bg-[color:var(--gm-bg)] border border-[color:var(--gm-track)] hover:opacity-90'
+                    }`}
+                  >
+                    <span className={`block text-sm font-['General_Sans'] font-bold ${sel ? 'text-[#183A3F]' : 'text-[color:var(--gm-ink)]'}`}>{l}</span>
+                    <span className={`block font-['JetBrains_Mono'] text-[9px] mt-1 ${sel ? 'text-[#183A3F]/80' : 'text-[color:var(--gm-muted)]'}`}>{reward}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[var(--gm-muted)]">Repeat</Label>
-            <Select
-              value={formData.repeat_schedule}
-              onValueChange={(v) => setFormData({ ...formData, repeat_schedule: v })}
-            >
-              <SelectTrigger className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]" data-testid="habit-repeat-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[var(--gm-card)] border-[var(--gm-track)]">
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekdays">Weekdays</SelectItem>
-                <SelectItem value="weekends">Weekends</SelectItem>
-              </SelectContent>
-            </Select>
+            <HabitFieldLabel>Repeat</HabitFieldLabel>
+            <div className="grid grid-cols-3 gap-2" data-testid="habit-repeat-select">
+              {[['daily', 'Daily'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends']].map(([v, l]) => (
+                <OptionPill key={v} selected={formData.repeat_schedule === v} onClick={() => setFormData({ ...formData, repeat_schedule: v })} testid={`habit-repeat-${v}`}>
+                  {l}
+                </OptionPill>
+              ))}
+            </div>
           </div>
 
           {/* Session Duration - Focus Mode only */}
           {!isGameMode && (
             <div className="space-y-2">
-              <Label className="text-[var(--gm-muted)]">Session Duration</Label>
-              <Select
-                value={String(formData.session_duration)}
-                onValueChange={(v) => setFormData({ ...formData, session_duration: Number(v) })}
-              >
-                <SelectTrigger className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)]" data-testid="habit-duration-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[var(--gm-card)] border-[var(--gm-track)]">
-                  {[5, 10, 15, 20, 30, 45, 60].map(m => (
-                    <SelectItem key={m} value={String(m)}>{m} min</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <HabitFieldLabel>Session Duration</HabitFieldLabel>
+              <div className="flex flex-wrap gap-2" data-testid="habit-duration-select">
+                {[5, 10, 15, 20, 30, 45, 60].map(m => (
+                  <OptionPill key={m} selected={formData.session_duration === m} onClick={() => setFormData({ ...formData, session_duration: m })} testid={`habit-duration-${m}`}>
+                    {m} min
+                  </OptionPill>
+                ))}
+              </div>
             </div>
           )}
 
-          <div className="pt-4">
+          <div className="pt-2">
             <Button
               type="submit"
               disabled={loading || !formData.habit_name.trim()}
-              className={`w-full ${isGameMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-[#95DEE6] text-[#183A3F] hover:opacity-90'}`}
+              className="w-full bg-[#95DEE6] text-[#183A3F] hover:opacity-90 font-['General_Sans'] font-bold"
               data-testid="create-habit-btn"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Habit'}
