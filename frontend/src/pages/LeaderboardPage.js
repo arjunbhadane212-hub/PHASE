@@ -140,7 +140,7 @@ export default function LeaderboardPage() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-['General_Sans'] font-bold text-[color:var(--gm-ink)] truncate">{r.display_name || 'Phase user'}</p>
+            <p className="text-sm font-['General_Sans'] font-bold text-[color:var(--gm-ink)] truncate">{r.display_name || 'Player'}</p>
             {r.is_me && (
               <span className="text-[9px] font-['JetBrains_Mono'] font-bold px-1.5 py-0.5 rounded-md" style={{ background: '#95DEE6', color: '#183A3F' }}>YOU</span>
             )}

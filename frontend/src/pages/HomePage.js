@@ -292,18 +292,9 @@ export default function HomePage() {
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between gap-3">
-            {/* Wordmark */}
-            <h1
-              className="font-['Archivo',sans-serif] font-black uppercase text-xl sm:text-2xl text-[var(--gm-ink)]"
-              style={{ letterSpacing: '-0.01em' }}
-              data-testid="wordmark"
-            >
-              PHASE
-            </h1>
-
             {/* Game Mode Stats (gems / shields) — light pills on the light bg */}
             {isGameMode && (
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--gm-card)] cursor-default" data-testid="gems-display">
                   <Gem className="w-4 h-4 text-blue-500 animate-gem-shimmer" />
                   <span className="text-sm font-bold text-[var(--gm-ink)]">{user?.gems ?? 0}</span>

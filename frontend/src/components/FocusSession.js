@@ -159,16 +159,20 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
     };
   }, [habitId, totalSeconds, onAbandon]);
 
-  // Update page title with timer
+  // Update page title with timer; restore whatever the title was on unmount.
+  const originalTitleRef = useRef(document.title);
   useEffect(() => {
     const mins = Math.floor(secondsLeft / 60);
     const secs = secondsLeft % 60;
     document.title = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} — ${habit.habit_name}`;
-    return () => { document.title = 'Phase'; };
   }, [secondsLeft, habit.habit_name]);
+  useEffect(() => {
+    const original = originalTitleRef.current;
+    return () => { document.title = original; };
+  }, []);
 
   // Session complete: the completion screen now persists until the user taps
-  // "Back to Phase" (which calls onComplete). No auto-advance — a finished
+  // "Back" (which calls onComplete). No auto-advance — a finished
   // deep-work block deserves to be seen, not flashed past.
 
   const handleAbandon = useCallback(async () => {
@@ -207,7 +211,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   const circumference = 2 * Math.PI * 120;
   const strokeOffset = circumference * (1 - progress);
 
-  // Completion screen — persists until the user taps "Back to Phase".
+  // Completion screen — persists until the user taps "Back".
   if (completed) {
     // Stats are wired only from data this component actually holds: `duration`
     // (the session length) and the `habit` prop's real columns — xp_value (the
@@ -290,7 +294,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, padding: '15px 28px' }}
           data-testid="back-to-phase-btn"
         >
-          Back to Phase
+          Back
         </motion.button>
       </motion.div>
     );
@@ -542,7 +546,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         className="uppercase text-center absolute bottom-6 px-6 z-10"
         style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.05em', color: aura.ink, opacity: 0.5 }}
       >
-        Stay on this screen · Phase will let you know when time's up
+        Stay on this screen · you'll be notified when time's up
       </motion.p>
 
       {/* Abandon button — the single subtle exit (no pause; the app has no pause capability) */}
