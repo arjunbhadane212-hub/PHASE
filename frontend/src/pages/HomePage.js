@@ -295,9 +295,9 @@ export default function HomePage() {
             {/* Game Mode Stats (gems / shields) — light pills on the light bg */}
             {isGameMode && (
               <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--gm-card)] cursor-default" data-testid="gems-display">
-                  <Gem className="w-4 h-4 text-blue-500 animate-gem-shimmer" />
-                  <span className="text-sm font-bold text-[var(--gm-ink)]">{user?.gems ?? 0}</span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#95DEE6] cursor-default" data-testid="gems-display">
+                  <Gem className="w-4 h-4 text-[#183A3F]" />
+                  <span className="text-sm font-['Archivo'] font-black text-[#183A3F]">{user?.gems ?? 0}</span>
                 </div>
                 {streakShields > 0 && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--gm-card)]" data-testid="shields-display">
