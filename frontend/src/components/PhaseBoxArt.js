@@ -1,67 +1,54 @@
-// Shared loot-box artwork (v2). A bright, glowing crystal vault — one component,
-// tier-driven, cyan/lime only (no purple). Starter = cyan, Delta = lime,
-// Phase = legendary cyan body + lime lid with a white-hot core.
+// Shared loot-box artwork (v3 — "solid object" redesign).
+// A matte graphite parcel rendered as a flat-faceted isometric cube: no glow
+// filters, no luminous core, no gradients-as-light. Depth comes from three flat
+// face tones only. Tier is signalled by ONE restrained accent (steel / cyan /
+// lime) on the lid seam + a small front emblem — matching how the rest of the
+// v2 UI puts a single accent on a flat surface. Elevation is the card's job
+// (--gm-shadow-*), not the art's.
+//
+// The graphite body is intentionally theme-invariant (like the cyan streak card
+// and lime completed rows): the same premium object reads well on both the dark
+// #1F2123 and light #F2F3F0 cards it sits on.
 export const BOX_TIERS = {
-  starter: { key: 'starter', label: 'STARTER', edge: '#BFF0F5', lid: '#A8E8EF', faceTop: '#6FCAD6', faceBot: '#123E44', core: '#EAFDFF', rgb: '149,222,230' },
-  delta:   { key: 'delta',   label: 'DELTA',   edge: '#EDFBB0', lid: '#E6FB9C', faceTop: '#C2E86A', faceBot: '#35461A', core: '#F7FFDC', rgb: '219,246,127' },
-  phase:   { key: 'phase',   label: 'PHASE',   edge: '#E6FB9C', lid: '#E6FB9C', faceTop: '#95DEE6', faceBot: '#173F45', core: '#FFFFFF', rgb: '219,246,127', legendary: true },
+  starter: { key: 'starter', label: 'STARTER', accent: '#9BA09C' },
+  delta:   { key: 'delta',   label: 'DELTA',   accent: '#95DEE6' },
+  phase:   { key: 'phase',   label: 'PHASE',   accent: '#DBF67F', legendary: true },
 };
 
 export const tierFor = (id) => BOX_TIERS[id] || BOX_TIERS.starter;
 
+// Flat graphite face tones — top lit, right mid, left shaded. Solid fills only.
+const FACE = { top: '#2B2F35', right: '#20242A', left: '#171A1F', seam: '#0F1114' };
+
 export default function PhaseBoxArt({ tier = 'starter', className = '', style }) {
   const t = tierFor(tier);
-  const g = `pb-${t.key}`;
+  const a = t.accent;
   return (
     <svg
       viewBox="0 0 120 120"
       className={className}
       aria-hidden="true"
-      style={{ filter: `drop-shadow(0 0 20px rgba(${t.rgb},0.6))`, overflow: 'visible', ...style }}
+      style={{ overflow: 'visible', ...style }}
     >
-      <defs>
-        <linearGradient id={`${g}-fl`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={t.faceTop} stopOpacity="0.95" />
-          <stop offset="100%" stopColor={t.faceBot} stopOpacity="0.95" />
-        </linearGradient>
-        <linearGradient id={`${g}-fr`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={t.faceTop} stopOpacity="1" />
-          <stop offset="100%" stopColor={t.faceBot} stopOpacity="1" />
-        </linearGradient>
-        <linearGradient id={`${g}-lid`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={t.lid} stopOpacity="1" />
-          <stop offset="100%" stopColor={t.faceTop} stopOpacity="0.9" />
-        </linearGradient>
-        <radialGradient id={`${g}-core`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={t.core} stopOpacity="1" />
-          <stop offset="45%" stopColor={t.lid} stopOpacity="0.6" />
-          <stop offset="100%" stopColor={t.lid} stopOpacity="0" />
-        </radialGradient>
-      </defs>
+      {/* ---- Body: two flat side faces ---- */}
+      <path d="M18 40 L60 64 L60 106 L18 82 Z" fill={FACE.left} />
+      <path d="M60 64 L102 40 L102 82 L60 106 Z" fill={FACE.right} />
 
-      {/* Body — bright glowing faces (left dimmer than right for depth) */}
-      <path d="M20 43 L60 66 L60 108 L20 85 Z" fill={`url(#${g}-fl)`} stroke={t.edge} strokeWidth="2" strokeLinejoin="round" opacity="0.9" />
-      <path d="M60 66 L100 43 L100 85 L60 108 Z" fill={`url(#${g}-fr)`} stroke={t.edge} strokeWidth="2" strokeLinejoin="round" />
+      {/* ---- Lid: top rhombus, split into two flat halves for a soft ridge ---- */}
+      <path d="M60 15 L102 39 L60 63 L18 39 Z" fill={FACE.top} />
+      <path d="M60 15 L18 39 L60 63 Z" fill={FACE.left} opacity="0.55" />
 
-      {/* Faceted glossy lid */}
-      <path d="M60 20 L100 43 L60 43 Z" fill={`url(#${g}-lid)`} stroke={t.edge} strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M60 20 L20 43 L60 43 Z" fill={`url(#${g}-lid)`} stroke={t.edge} strokeWidth="1.8" strokeLinejoin="round" opacity="0.82" />
-      <path d="M20 43 L60 66 L60 43 Z" fill={t.faceTop} stroke={t.edge} strokeWidth="1.4" strokeLinejoin="round" opacity="0.55" />
-      <path d="M100 43 L60 66 L60 43 Z" fill={t.faceTop} stroke={t.edge} strokeWidth="1.4" strokeLinejoin="round" opacity="0.72" />
+      {/* ---- Accent lid seam: the one tier signal on the object ---- */}
+      <path d="M60 15 L102 39 L60 63 L18 39 Z" fill="none" stroke={a} strokeWidth="2" strokeLinejoin="round" />
+      {/* lid ridge line down the middle of the top */}
+      <line x1="60" y1="15" x2="60" y2="63" stroke={a} strokeWidth="1.4" opacity="0.55" />
 
-      {/* Luminous core */}
-      <circle cx="60" cy="62" r="24" fill={`url(#${g}-core)`} />
+      {/* ---- Body edges: quiet graphite seams (not accent) for form ---- */}
+      <line x1="60" y1="63" x2="60" y2="106" stroke={FACE.seam} strokeWidth="1.6" />
+      <path d="M18 39 L18 82 M102 39 L102 82" stroke={FACE.seam} strokeWidth="1.2" opacity="0.7" fill="none" />
 
-      {/* Bright rim highlights on the top edges */}
-      <path d="M60 20 L100 43 M60 20 L20 43" stroke={t.core} strokeWidth="1.4" opacity="0.85" fill="none" strokeLinecap="round" />
-
-      {/* Front seam */}
-      <line x1="60" y1="66" x2="60" y2="108" stroke={t.edge} strokeWidth="1.2" opacity="0.65" />
-
-      {/* Glowing gem emblem on the front */}
-      <path d="M60 74 L69 85 L60 101 L51 85 Z" fill={t.core} stroke={t.edge} strokeWidth="1.2"
-        style={{ filter: `drop-shadow(0 0 6px ${t.edge})` }} />
-      <path d="M51 85 L69 85" stroke={t.faceBot} strokeWidth="1" opacity="0.5" />
+      {/* ---- Front emblem: small accent diamond, flat, no glow ---- */}
+      <path d="M82 66 L88 74 L82 88 L76 74 Z" fill={a} opacity={t.legendary ? 1 : 0.9} />
     </svg>
   );
 }

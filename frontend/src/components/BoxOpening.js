@@ -1,12 +1,13 @@
 // =============================================================================
-// BoxOpening — interactive, tap-to-crack loot box opening.
-//   1. CHARGE: the real crystal box (PhaseBoxArt). Each tap grows it + adds a
-//      crack; on the 3rd tap it bursts open.
-//   2. REVEAL: items come out ONE AT A TIME. Commons/rares pop in normally; an
-//      ultra (legendary/mythic) triggers a full black-screen flash + giant
-//      screen-covering pop that settles next to the others.
-//   3. DONE: all items shown in a row + Continue.
-// Flat dark stage (no shiny vignette).
+// BoxOpening (v3 — "solid object" redesign).
+//   1. CHARGE: the real graphite parcel (PhaseBoxArt). Each tap nudges + adds a
+//      clean seam crack; the 3rd tap opens it.
+//   2. REVEAL: items come out ONE AT A TIME on flat, elevated reward cards. A
+//      top-tier (ultra) pull comes in larger with a calm accent ring — no
+//      strobe flash, no rotating rays.
+//   3. DONE: all items in a row + Continue.
+// Calm dark stage, flat cards, real elevation — matches the rest of the v2 UI.
+// Interaction + timings preserved; only the look/feel changed.
 // =============================================================================
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,8 +17,11 @@ import { soundEngine } from '../utils/SoundEngine';
 import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
 import { ShopItemIcon } from './ShopIcons';
 
-const TIER_COLOR = { common: '#F4F5F2', rare: '#95DEE6', ultra: '#DBF67F' };
+// On-system reward accents: common = steel, rare = cyan, ultra = lime (the
+// "win" colour, same as completed habits). No neon, no glow.
+const TIER_COLOR = { common: '#9BA09C', rare: '#95DEE6', ultra: '#DBF67F' };
 const TIER_LABEL = { common: 'COMMON', rare: 'RARE', ultra: 'ULTRA-RARE' };
+const STAGE_BG = '#0E1012'; // page background — constant in both themes
 const CRACKS_NEEDED = 3;
 
 const haptic = (p) => { try { navigator.vibrate?.(p); } catch { /* unsupported */ } };
@@ -38,72 +42,61 @@ function RewardIcon({ item, color, size = 'w-8 h-8' }) {
   );
 }
 
-// ---------- crack overlay (grows with charge) ----------
+// ---------- crack overlay (clean accent seams, no glow) ----------
 function CrackOverlay({ level, color }) {
   const cracks = [
-    'M60 26 L57 52 L63 76 L60 102',
-    'M60 58 L36 70 L27 92',
-    'M60 54 L86 64 L96 86',
+    'M60 24 L57 50 L63 74 L60 100',
+    'M60 56 L36 68 L27 90',
+    'M60 52 L86 62 L96 84',
   ];
   return (
     <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full pointer-events-none">
       {cracks.slice(0, level).map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round"
-          style={{ filter: `drop-shadow(0 0 5px ${color})` }} />
+        <path key={i} d={d} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.85" />
       ))}
     </svg>
   );
 }
 
-// ---------- reward card (center stage + docked chip) ----------
+// ---------- reward card (flat + elevated; center stage + docked chip) ----------
 function RewardCard({ item, chip = false }) {
   const color = TIER_COLOR[item.tier] || TIER_COLOR.common;
-  const isUltra = item.tier === 'ultra';
+  const accented = item.tier === 'rare' || item.tier === 'ultra';
   return (
     <div
       className={`relative flex flex-col items-center ${chip ? 'px-3 py-3 w-[92px]' : 'px-5 py-6 w-[180px]'}`}
       style={{
-        background: '#0E1216',
-        border: `1.5px solid ${isUltra ? color : item.tier === 'rare' ? color : 'rgba(255,255,255,0.16)'}`,
+        background: 'var(--gm-card)',
+        border: `1.5px solid ${accented ? color : 'var(--gm-track)'}`,
         borderRadius: chip ? 14 : 20,
-        boxShadow: isUltra ? `0 0 30px ${color}66` : item.tier === 'rare' ? `0 0 18px ${color}44` : '0 0 12px rgba(255,255,255,0.05)',
+        boxShadow: 'var(--gm-shadow-card)',
       }}
     >
       <div className={`absolute top-1.5 right-1.5 rounded-md px-1.5 py-0.5 ${chip ? 'hidden' : ''}`}
-        style={{ background: 'rgba(0,0,0,0.5)', border: `1px solid ${color}55` }}>
-        <span className={`text-[8px] font-black uppercase tracking-[0.16em] ${isUltra ? 'ur-pulse-text' : ''}`} style={{ color }}>
+        style={{ background: 'var(--gm-badge)' }}>
+        <span className="text-[8px] font-black uppercase tracking-[0.16em]" style={{ color }}>
           {TIER_LABEL[item.tier]}
         </span>
       </div>
       <RewardIcon item={item} color={color} size={chip ? 'w-6 h-6' : 'w-10 h-10'} />
-      <p className={`font-['General_Sans',sans-serif] font-bold text-center leading-tight mt-2 ${chip ? 'text-[10px]' : 'text-sm'} ${isUltra ? 'ur-pulse-text' : ''}`}
-        style={{ color }}>
+      <p className={`font-['General_Sans',sans-serif] font-bold text-center leading-tight mt-2 ${chip ? 'text-[10px]' : 'text-sm'}`}
+        style={{ color: 'var(--gm-ink)' }}>
         {item.type === 'gems' && item.amount ? `+${item.amount} Gems` : item.name}
       </p>
     </div>
   );
 }
 
-// ---------- rays burst behind an ultra reveal ----------
-function RaysBurst({ color }) {
+// ---------- calm accent ring behind an ultra reveal (expand + fade) ----------
+function AccentRing({ color }) {
   return (
-    <>
-      <motion.div
-        className="absolute rounded-full pointer-events-none"
-        style={{ width: 40, height: 40, background: color, filter: 'blur(30px)' }}
-        initial={{ opacity: 0, scale: 0 }} animate={{ opacity: [0, 0.9, 0.6], scale: [0, 8, 6] }}
-        transition={{ duration: 1.4, ease: 'easeOut' }}
-      />
-      <motion.div
-        className="absolute inset-0 m-auto rounded-full pointer-events-none"
-        style={{
-          width: '140%', height: '140%', left: '-20%', top: '-20%',
-          background: `conic-gradient(from 0deg, transparent 0 10deg, ${color}22 10deg 16deg, transparent 16deg 30deg)`,
-        }}
-        initial={{ opacity: 0, rotate: 0 }} animate={{ opacity: [0, 0.7, 0.5], rotate: 90 }}
-        transition={{ duration: 1.8, ease: 'easeOut' }}
-      />
-    </>
+    <motion.div
+      className="absolute rounded-full pointer-events-none"
+      style={{ width: 150, height: 150, border: `2px solid ${color}` }}
+      initial={{ opacity: 0, scale: 0.4 }}
+      animate={{ opacity: [0, 0.55, 0], scale: [0.4, 1.7, 2.1] }}
+      transition={{ duration: 1.6, ease: 'easeOut' }}
+    />
   );
 }
 
@@ -111,7 +104,6 @@ function RaysBurst({ color }) {
 export default function BoxOpening({ boxId, rolledItems, onContinue }) {
   const [phase, setPhase] = useState('charge'); // charge | reveal | done
   const [charge, setCharge] = useState(0);
-  const [flash, setFlash] = useState(false);
   const [shown, setShown] = useState([]);
   const [current, setCurrent] = useState(null); // { item, big }
   const alive = useRef(true);
@@ -130,14 +122,10 @@ export default function BoxOpening({ boxId, rolledItems, onContinue }) {
     if (i >= rolledItems.length) { setPhase('done'); return; }
     const item = rolledItems[i];
     const big = item.tier === 'ultra';
-    if (big) {
-      setFlash(true); haptic([40, 40, 120]); soundEngine.urFlourish?.();
-      after(240, () => setFlash(false));
-    } else {
-      haptic([25]);
-    }
+    if (big) { haptic([40, 40, 120]); soundEngine.urFlourish?.(); }
+    else { haptic([25]); }
     setCurrent({ item, big });
-    after(big ? 2100 : 950, () => {
+    after(big ? 1900 : 950, () => {
       setShown((prev) => [...prev, item]);
       setCurrent(null);
       after(300, () => step(i + 1));
@@ -151,37 +139,24 @@ export default function BoxOpening({ boxId, rolledItems, onContinue }) {
     soundEngine.boxCrack?.();
     if (next >= CRACKS_NEEDED) {
       haptic([60, 30, 140]);
-      setFlash(true);
-      after(360, () => { setFlash(false); setPhase('reveal'); step(0); });
+      after(320, () => { setPhase('reveal'); step(0); });
     } else {
       haptic([30]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, charge, step]);
 
-  const boxScale = 0.82 + charge * 0.17; // 0.82, 0.99, 1.16, then burst
-  const promptText = charge === 0 ? 'Tap to open' : charge < CRACKS_NEEDED ? 'Keep tapping!' : '';
-  const dark = !!current?.big;
+  const boxScale = 0.84 + charge * 0.14; // 0.84, 0.98, 1.12, then open
+  const promptText = charge === 0 ? 'Tap to open' : charge < CRACKS_NEEDED ? 'Keep tapping' : '';
 
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
-      style={{ background: dark ? '#000000' : '#0B0D10', transition: 'background 0.4s ease' }}
+      style={{ background: STAGE_BG }}
       data-testid="box-opening-screen"
     >
-      {/* flash overlay */}
-      <AnimatePresence>
-        {flash && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
-            className="absolute inset-0 pointer-events-none z-50"
-            style={{ background: dark ? 'rgba(219,246,127,0.9)' : 'rgba(255,255,255,0.7)', mixBlendMode: 'screen' }}
-          />
-        )}
-      </AnimatePresence>
-
       {/* CHARGE */}
       {phase === 'charge' && (
         <div className="flex flex-col items-center">
@@ -189,22 +164,22 @@ export default function BoxOpening({ boxId, rolledItems, onContinue }) {
             onClick={onTap} role="button" tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onTap(); }}
             animate={{ scale: boxScale }}
-            transition={{ type: 'spring', stiffness: 320, damping: 12 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 14 }}
             className="relative cursor-pointer select-none"
-            style={{ width: 'min(70vw, 300px)', height: 'min(70vw, 300px)', filter: `drop-shadow(0 0 ${20 + charge * 12}px rgba(${t.rgb},0.6))` }}
+            style={{ width: 'min(70vw, 300px)', height: 'min(70vw, 300px)' }}
             data-testid="opening-box"
           >
-            <motion.div key={charge} animate={charge > 0 ? { x: [0, -7, 7, -4, 4, 0] } : {}} transition={{ duration: 0.32 }} className="w-full h-full">
+            <motion.div key={charge} animate={charge > 0 ? { x: [0, -6, 6, -3, 3, 0] } : {}} transition={{ duration: 0.32 }} className="w-full h-full">
               <PhaseBoxArt tier={boxId} className="w-full h-full" />
             </motion.div>
-            <CrackOverlay level={charge} color={t.core} />
+            <CrackOverlay level={charge} color={t.accent} />
           </motion.div>
           {promptText && (
             <motion.p
               key={promptText}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               className="mt-12 font-['JetBrains_Mono',monospace] text-[12px] uppercase tracking-[0.28em]"
-              style={{ color: charge > 0 ? t.edge : 'rgba(255,255,255,0.5)' }}
+              style={{ color: charge > 0 ? t.accent : 'rgba(244,245,242,0.5)' }}
               data-testid="opening-tap-prompt"
             >
               {promptText}
@@ -224,14 +199,14 @@ export default function BoxOpening({ boxId, rolledItems, onContinue }) {
                   key={`cur-${shown.length}`}
                   initial={{ scale: 0, opacity: 0, y: 20 }}
                   animate={current.big
-                    ? { scale: [0, 2.3, 1.2], opacity: 1, y: 0 }
-                    : { scale: [0, 1.15, 1], opacity: 1, y: 0 }}
+                    ? { scale: [0, 1.6, 1.1], opacity: 1, y: 0 }
+                    : { scale: [0, 1.12, 1], opacity: 1, y: 0 }}
                   transition={current.big
-                    ? { duration: 1.9, times: [0, 0.55, 1], ease: 'easeOut' }
+                    ? { duration: 1.7, times: [0, 0.5, 1], ease: 'easeOut' }
                     : { duration: 0.55, times: [0, 0.6, 1], ease: 'easeOut' }}
                   className="relative flex items-center justify-center"
                 >
-                  {current.big && <RaysBurst color={TIER_COLOR.ultra} />}
+                  {current.big && <AccentRing color={TIER_COLOR.ultra} />}
                   <RewardCard item={current.item} />
                 </motion.div>
               )}

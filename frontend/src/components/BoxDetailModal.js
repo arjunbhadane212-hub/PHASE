@@ -3,16 +3,15 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronDown, Gem, Star, Lock } from 'lucide-react';
 import { groupPoolByTier, TIER_META } from '../data/boxDrops';
-import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
+import PhaseBoxArt from './PhaseBoxArt';
 
 // =============================================================================
 // Large box illustration — the shared v2 crystal-box art, scaled up.
 // =============================================================================
 function LargeBoxArt({ boxId }) {
-  const t = tierFor(boxId);
   return (
     <div
-      className={`relative ${t.legendary ? 'animate-float' : ''}`}
+      className="relative"
       style={{ width: 'min(60vw, 240px)', height: 'min(60vw, 240px)' }}
       data-testid={`box-modal-art-${boxId}`}
     >
