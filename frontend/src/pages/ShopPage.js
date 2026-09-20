@@ -18,14 +18,20 @@ const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card
 // v2 gem currency (cyan surface / dark teal ink) + cyan gem icon for prices.
 const GEM_ICON = 'text-[#95DEE6]';
 
-// Map a shop_items.rarity to the 3 reveal/display tiers (legendary+mythic -> ultra).
-const rarityToTier = (r) => (r === 'common' ? 'common' : r === 'rare' ? 'rare' : 'ultra');
+// Map a shop_items.rarity to the reveal/display tiers. legendary and mythic are
+// kept DISTINCT so the opening can give mythic the full cinematic treatment.
+const rarityToTier = (r) =>
+  r === 'common' ? 'common'
+    : r === 'rare' ? 'rare'
+      : r === 'mythic' ? 'mythic'
+        : 'legendary';
 
 // Adapt open_loot_box's returned items to the shape BoxOpening consumes.
-// Duplicates render as a "+N gems" refund card (type:'gems'); real drops as items.
+// Duplicates keep their real tier (a dupe mythic is still a mythic moment) and
+// carry the gem refund; real drops carry the item identity.
 const adaptRolledItems = (items) => (items || []).map((it) => (
   it.duplicate
-    ? { tier: rarityToTier(it.rarity), type: 'gems', amount: it.refund, name: it.name, duplicate: true }
+    ? { tier: rarityToTier(it.rarity), type: 'item', name: it.name, item_key: it.item_key, category: it.category, duplicate: true, refund: it.refund }
     : { tier: rarityToTier(it.rarity), type: 'item', name: it.name, item_key: it.item_key, category: it.category }
 ));
 
