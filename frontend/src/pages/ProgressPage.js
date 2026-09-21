@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useMode } from '../contexts/ModeContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { BarChart3, PieChart as PieChartIcon, TrendingUp, AreaChartIcon, Columns3, Gem, Zap, CheckSquare, Loader2 } from 'lucide-react';
@@ -24,8 +25,21 @@ const METRIC = {
   tasks: { surface: '#DBF67F', ink: '#2A3B0B' }, // lime  (Home success/completed)
 };
 
+
+// Dates are the user's LOCAL calendar days — the same ones complete_habit is
+// given (p_client_date) and Home uses — never UTC, or a day boundary shifts by
+// the user's UTC offset.
+const pad2 = (n) => String(n).padStart(2, '0');
+const localDateStr = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const fmtDay = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+// Base per-completion rewards by difficulty (mirrors complete_habit).
+const REWARD = { easy: { xp: 10, gems: 5 }, medium: { xp: 25, gems: 10 }, hard: { xp: 50, gems: 20 } };
+
 export default function ProgressPage() {
   const { user } = useAuth();
+  const { isGameMode } = useMode();
+  const showXp = isGameMode; // Focus Mode has no XP
   const [range, setRange] = useState('weekly');
   const [chartType, setChartType] = useState('bar');
   const [data, setData] = useState(null);
@@ -36,31 +50,47 @@ export default function ProgressPage() {
     setLoading(true);
     try {
       if (range === 'daily') {
-        const today = new Date().toISOString().slice(0, 10);
+        const now = new Date();
+        const today = localDateStr(now);
         const [{ data: log }, { data: comps }] = await Promise.all([
           supabase.from('daily_logs').select('*').eq('user_id', user.id).eq('log_date', today).maybeSingle(),
-          supabase.from('habit_completions').select('habits(time_of_day)').eq('user_id', user.id).eq('completed_date', today),
+          // Only genuinely completed sessions — abandoned Focus sessions are
+          // stored as status='failed' and must not count as done.
+          supabase.from('habit_completions').select('habits(time_of_day, difficulty)')
+            .eq('user_id', user.id).eq('completed_date', today).eq('status', 'completed'),
         ]);
-        const slot = { morning: 0, afternoon: 0, night: 0 };
+        const slot = {
+          morning: { completed: 0, xp: 0, gems: 0 },
+          afternoon: { completed: 0, xp: 0, gems: 0 },
+          night: { completed: 0, xp: 0, gems: 0 },
+        };
         (comps || []).forEach(c => {
           const t = c.habits?.time_of_day;
-          if (t && slot[t] !== undefined) slot[t] += 1;
+          if (!t || !slot[t]) return;
+          const r = REWARD[c.habits?.difficulty] || { xp: 0, gems: 0 };
+          slot[t].completed += 1; slot[t].xp += r.xp; slot[t].gems += r.gems;
         });
+        const logXp = log?.xp_earned_today ?? 0;
+        const logGems = log?.gems_earned_today ?? 0;
+        const slotXp = slot.morning.xp + slot.afternoon.xp + slot.night.xp;
+        const slotGems = slot.morning.gems + slot.afternoon.gems + slot.night.gems;
         setData({
-          xp_earned_today: log?.xp_earned_today ?? 0,
-          gems_earned_today: log?.gems_earned_today ?? 0,
+          periodLabel: `Today · ${fmtDay(now)}`,
+          xp_earned_today: logXp,
+          gems_earned_today: logGems,
           completed_habits: Array.isArray(log?.habits_completed) ? log.habits_completed.length : (comps?.length ?? 0),
-          morning: { completed: slot.morning },
-          afternoon: { completed: slot.afternoon },
-          night: { completed: slot.night },
+          slotsApprox: slotXp !== logXp || slotGems !== logGems,
+          morning: slot.morning,
+          afternoon: slot.afternoon,
+          night: slot.night,
         });
       } else if (range === 'weekly') {
-        // Last 7 days, one bar per day (oldest -> newest, left -> right)
+        // Last 7 local days, one bar per day (oldest -> newest, left -> right)
         const days = 7;
-        const start = new Date();
-        start.setUTCDate(start.getUTCDate() - (days - 1));
-        const startStr = start.toISOString().slice(0, 10);
-        const todayStr = new Date().toISOString().slice(0, 10);
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1));
+        const startStr = localDateStr(start);
+        const todayStr = localDateStr(now);
 
         const { data: logs, error } = await supabase
           .from('daily_logs')
@@ -76,25 +106,22 @@ export default function ProgressPage() {
         const daily_data = [];
         let total_xp = 0, total_gems = 0, total_tasks = 0;
         for (let i = 0; i < days; i++) {
-          const d = new Date(start);
-          d.setUTCDate(start.getUTCDate() + i);
-          const ds = d.toISOString().slice(0, 10);
-          const l = byDate[ds];
+          const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+          const l = byDate[localDateStr(d)];
           const xp = l?.xp_earned_today ?? 0;
           const gems = l?.gems_earned_today ?? 0;
           const completed = Array.isArray(l?.habits_completed) ? l.habits_completed.length : 0;
           total_xp += xp; total_gems += gems; total_tasks += completed;
-          const name = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
-          daily_data.push({ day: name, xp, gems, completed });
+          daily_data.push({ day: d.toLocaleDateString('en-US', { weekday: 'short' }), xp, gems, completed });
         }
-        setData({ total_xp, total_gems, total_tasks, daily_data });
+        setData({ periodLabel: `Last 7 days · ${fmtDay(start)} – ${fmtDay(now)}`, total_xp, total_gems, total_tasks, daily_data });
       } else {
-        // Monthly: last 6 calendar months, one bar per month
+        // Monthly: last 6 calendar months (current month is partial), one bar per month
         const MONTHS = 6;
         const now = new Date();
-        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (MONTHS - 1), 1));
-        const startStr = start.toISOString().slice(0, 10);
-        const todayStr = now.toISOString().slice(0, 10);
+        const start = new Date(now.getFullYear(), now.getMonth() - (MONTHS - 1), 1);
+        const startStr = localDateStr(start);
+        const todayStr = localDateStr(now);
 
         const { data: logs, error } = await supabase
           .from('daily_logs')
@@ -117,14 +144,15 @@ export default function ProgressPage() {
         const daily_data = [];
         let total_xp = 0, total_gems = 0, total_tasks = 0;
         for (let i = 0; i < MONTHS; i++) {
-          const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + i, 1));
-          const key = d.toISOString().slice(0, 7);
+          const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+          const key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
           const b = byMonth[key] || { xp: 0, gems: 0, tasks: 0 };
           total_xp += b.xp; total_gems += b.gems; total_tasks += b.tasks;
-          const name = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
-          daily_data.push({ day: name, xp: b.xp, gems: b.gems, completed: b.tasks });
+          daily_data.push({ day: d.toLocaleDateString('en-US', { month: 'short' }), xp: b.xp, gems: b.gems, completed: b.tasks });
         }
-        setData({ total_xp, total_gems, total_tasks, daily_data });
+        const startLabel = start.toLocaleDateString('en-US', { month: 'short' });
+        const endLabel = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        setData({ periodLabel: `Last 6 months · ${startLabel} – ${endLabel}`, total_xp, total_gems, total_tasks, daily_data });
       }
     } catch (e) {
       console.error('Failed to fetch progress', e);
@@ -139,12 +167,10 @@ export default function ProgressPage() {
   const xpEarned = range === 'daily' ? (data?.xp_earned_today ?? 0) : (data?.total_xp ?? 0);
   const tasksDone = range === 'daily' ? (data?.completed_habits ?? 0) : (data?.total_tasks ?? 0);
 
+  // Slot chart uses each habit's real difficulty rewards (not a flat 25/10).
+  const slotRow = (name, s) => ({ name, xp: s?.xp ?? 0, gems: s?.gems ?? 0, tasks: s?.completed ?? 0 });
   const chartData = range === 'daily'
-    ? [
-        { name: 'Morning', xp: (data?.morning?.completed ?? 0) * 25, gems: (data?.morning?.completed ?? 0) * 10, tasks: data?.morning?.completed ?? 0 },
-        { name: 'Afternoon', xp: (data?.afternoon?.completed ?? 0) * 25, gems: (data?.afternoon?.completed ?? 0) * 10, tasks: data?.afternoon?.completed ?? 0 },
-        { name: 'Night', xp: (data?.night?.completed ?? 0) * 25, gems: (data?.night?.completed ?? 0) * 10, tasks: data?.night?.completed ?? 0 },
-      ]
+    ? [slotRow('Morning', data?.morning), slotRow('Afternoon', data?.afternoon), slotRow('Night', data?.night)]
     : (data?.daily_data ?? []).map(d => ({
         name: d.day,
         xp: d.xp,
@@ -176,9 +202,10 @@ export default function ProgressPage() {
         ) : (
           <>
             {/* Stat Cards — solid metric-identity surfaces (cyan / purple / lime) */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6" data-testid="stat-cards">
+            <p className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mb-3" data-testid="period-label">{data?.periodLabel}</p>
+            <div className={`grid ${showXp ? 'grid-cols-3' : 'grid-cols-2'} gap-3 sm:gap-4 mb-6`} data-testid="stat-cards">
               <StatCard icon={<Gem className="w-5 h-5" />} value={gemsEarned} label="Gems Earned" tone={METRIC.gems} />
-              <StatCard icon={<Zap className="w-5 h-5" />} value={xpEarned} label="XP Earned" tone={METRIC.xp} />
+              {showXp && <StatCard icon={<Zap className="w-5 h-5" />} value={xpEarned} label="XP Earned" tone={METRIC.xp} />}
               <StatCard icon={<CheckSquare className="w-5 h-5" />} value={tasksDone} label="Tasks Done" tone={METRIC.tasks} />
             </div>
 
@@ -202,10 +229,15 @@ export default function ProgressPage() {
                 <motion.div key={chartType}
                   initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.25, ease: 'easeInOut' }}>
-                  <ChartRenderer type={chartType} data={chartData} />
+                  <ChartRenderer type={chartType} data={chartData} showXp={showXp} />
                 </motion.div>
               </AnimatePresence>
             </div>
+            {range === 'daily' && data?.slotsApprox && (
+              <p className="mt-3 text-xs text-[color:var(--gm-muted)]" data-testid="slot-note">
+                Time-of-day bars use each habit's base rewards; boosts and level-up bonuses are only in the totals above.
+              </p>
+            )}
           </>
         )}
       </div>
@@ -263,7 +295,7 @@ function EmptyChart() {
   );
 }
 
-function ChartRenderer({ type, data }) {
+function ChartRenderer({ type, data, showXp = true }) {
   const height = 260;
   const c = themedChartColors();
   const xProps = xAxisProps(c);
@@ -273,13 +305,13 @@ function ChartRenderer({ type, data }) {
   // Data marks use the fixed metric identity (matches the stat tiles).
   const XP = METRIC.xp.surface, GEMS = METRIC.gems.surface, TASKS = METRIC.tasks.surface;
 
-  const hasData = Array.isArray(data) && data.some(d => (d.xp || 0) + (d.gems || 0) + (d.tasks || 0) > 0);
+  const hasData = Array.isArray(data) && data.some(d => (showXp ? (d.xp || 0) : 0) + (d.gems || 0) + (d.tasks || 0) > 0);
   if (!hasData) return <EmptyChart />;
 
   if (type === 'pie') {
     const pieData = [
       { name: 'Gems', value: data.reduce((s, d) => s + d.gems, 0), fill: GEMS },
-      { name: 'XP', value: data.reduce((s, d) => s + d.xp, 0), fill: XP },
+      ...(showXp ? [{ name: 'XP', value: data.reduce((s, d) => s + d.xp, 0), fill: XP }] : []),
       { name: 'Tasks', value: data.reduce((s, d) => s + d.tasks, 0), fill: TASKS },
     ].filter(d => d.value > 0);
     return (
@@ -302,7 +334,7 @@ function ChartRenderer({ type, data }) {
           <XAxis {...xProps} />
           <YAxis {...yProps} />
           <Tooltip {...tProps} />
-          <Line type="monotone" dataKey="xp" stroke={XP} strokeWidth={2} dot={{ fill: XP, r: 3 }} activeDot={{ r: 5 }} name="XP" />
+          {showXp && <Line type="monotone" dataKey="xp" stroke={XP} strokeWidth={2} dot={{ fill: XP, r: 3 }} activeDot={{ r: 5 }} name="XP" />}
           <Line type="monotone" dataKey="gems" stroke={GEMS} strokeWidth={2} dot={{ fill: GEMS, r: 3 }} activeDot={{ r: 5 }} name="Gems" />
           <Line type="monotone" dataKey="tasks" stroke={TASKS} strokeWidth={2} dot={{ fill: TASKS, r: 3 }} activeDot={{ r: 5 }} name="Tasks" />
         </LineChart>
@@ -332,7 +364,7 @@ function ChartRenderer({ type, data }) {
           <XAxis {...xProps} />
           <YAxis {...yProps} />
           <Tooltip {...tProps} />
-          <Area type="monotone" dataKey="xp" fill="url(#areaXp)" stroke={XP} strokeWidth={2} name="XP" />
+          {showXp && <Area type="monotone" dataKey="xp" fill="url(#areaXp)" stroke={XP} strokeWidth={2} name="XP" />}
           <Area type="monotone" dataKey="gems" fill="url(#areaGems)" stroke={GEMS} strokeWidth={2} name="Gems" />
           <Area type="monotone" dataKey="tasks" fill="url(#areaTasks)" stroke={TASKS} strokeWidth={2} name="Tasks" />
         </AreaChart>
@@ -347,7 +379,7 @@ function ChartRenderer({ type, data }) {
           <XAxis {...xProps} />
           <YAxis {...yProps} />
           <Tooltip {...tProps} />
-          <Bar dataKey="xp" fill={XP} radius={[8, 8, 0, 0]} name="XP" />
+          {showXp && <Bar dataKey="xp" fill={XP} radius={[8, 8, 0, 0]} name="XP" />}
           <Bar dataKey="gems" fill={GEMS} radius={[8, 8, 0, 0]} name="Gems" />
           <Bar dataKey="tasks" fill={TASKS} radius={[8, 8, 0, 0]} name="Tasks" />
         </BarChart>
@@ -362,7 +394,7 @@ function ChartRenderer({ type, data }) {
         <XAxis {...xProps} />
         <YAxis {...yProps} />
         <Tooltip {...tProps} />
-        <Bar dataKey="xp" fill={XP} radius={[8, 8, 0, 0]} name="XP" />
+        {showXp && <Bar dataKey="xp" fill={XP} radius={[8, 8, 0, 0]} name="XP" />}
         <Bar dataKey="gems" fill={GEMS} radius={[8, 8, 0, 0]} name="Gems" />
         <Bar dataKey="tasks" fill={TASKS} radius={[8, 8, 0, 0]} name="Tasks" />
       </BarChart>
