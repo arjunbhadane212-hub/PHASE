@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
 import { Gem, Flame, Shield, Clock, Check, Loader2 } from 'lucide-react';
@@ -11,26 +12,38 @@ import { AURA_ORDER, getAura, hexA, GRACE_TIERS } from '../data/focusAuras';
 // #183A3F) as the primary/active accent, Archivo/JetBrains/General Sans type.
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
 const GEM_ICON = 'text-[#95DEE6]';
+const SECTION_LABEL = "font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
+
+function Section({ title, hint, children }) {
+  return (
+    <section className="mt-7 first:mt-0">
+      <div className="flex items-baseline justify-between gap-3 mb-2.5">
+        <h2 className={SECTION_LABEL}>{title}</h2>
+        {hint}
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
 
 export default function FocusShopPage() {
   const { user, refreshUser } = useAuth();
   const { gems } = useGame();
   const [revive, setRevive] = useState(null);
   const [owned, setOwned] = useState(0);
-  const [graceItems, setGraceItems] = useState([]); // shop_items rows for focus_boost
-  const [graceOwned, setGraceOwned] = useState({}); // key -> quantity
-  const [auraItems, setAuraItems] = useState([]); // shop_items rows for focus_aura
-  const [auraOwned, setAuraOwned] = useState({}); // key -> quantity
+  const [graceItems, setGraceItems] = useState([]);
+  const [graceOwned, setGraceOwned] = useState({});
+  const [auraItems, setAuraItems] = useState([]);
+  const [auraOwned, setAuraOwned] = useState({});
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
   const [graceBusy, setGraceBusy] = useState(false);
-  const [auraBusy, setAuraBusy] = useState(null); // key currently mid-purchase/equip
+  const [auraBusy, setAuraBusy] = useState(null);
 
-  // Focus Mode shop was Revive-only (Step 6 override). It now also carries two
-  // Focus-native gem sinks that don't touch XP: Grace Extender (a tab-switch
-  // grace-period upgrade FocusSession.js reads) and Timer Aura (an equippable
-  // color skin for the full-screen session). Streak Shield stays the 500g
-  // home-screen button (buy_focus_shield), not sold here.
+  // Focus Mode shop: Streak Revive (Step 6 override), plus Focus-native gem
+  // sinks that never touch XP — Grace Extender and Timer Screens. Screens are
+  // bought here and equipped in Settings. Streak Shield stays the 500g
+  // home-screen button (buy_focus_shield).
   const fetchShop = useCallback(async () => {
     try {
       const { data: allItems } = await supabase
@@ -77,8 +90,8 @@ export default function FocusShopPage() {
     } finally { setBuying(false); }
   };
 
-  // Grace Extender: two permanent tiers, highest owned applies (FocusSession.js
-  // reads whichever is owned). The button always offers the next un-owned tier.
+  // Grace Extender: two permanent tiers, highest owned applies. The button
+  // always offers the next un-owned tier.
   const graceOwnedKeys = useMemo(() => new Set(Object.keys(graceOwned).filter((k) => graceOwned[k] > 0)), [graceOwned]);
   const currentGraceTier = [...GRACE_TIERS].reverse().find((t) => graceOwnedKeys.has(t.key));
   const nextGraceTier = GRACE_TIERS.find((t) => !graceOwnedKeys.has(t.key));
@@ -97,27 +110,19 @@ export default function FocusShopPage() {
     } finally { setGraceBusy(false); }
   };
 
-  // Timer Aura: tapping an unowned swatch buys + equips in one step; tapping an
-  // owned-but-unequipped swatch just equips. This is the "real small space to
-  // equip it" — inline in the shop, not a separate screen.
+  // Timer Screens are purchase-only here; equipping lives in Settings.
   const equippedAuraKey = user?.equipped_focus_aura || 'focus_aura_cyan_pulse';
 
-  const handleAuraTap = async (item) => {
+  const handleBuyAura = async (item) => {
     if (auraBusy) return;
-    if (item.key === equippedAuraKey) return;
     setAuraBusy(item.key);
     try {
-      const alreadyOwned = (auraOwned[item.key] ?? 0) > 0;
-      if (!alreadyOwned) {
-        const { error: buyErr } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: item.id });
-        if (buyErr) throw buyErr;
-      }
-      const { error: eqErr } = await supabase.rpc('equip_item', { p_shop_item_id: item.id });
-      if (eqErr) throw eqErr;
-      toast.success(`${item.name} equipped`);
+      const { error } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: item.id });
+      if (error) throw error;
+      toast.success(`${item.name} unlocked — equip it in Settings`);
       await Promise.all([refreshUser(), fetchShop()]);
     } catch (e) {
-      toast.error(e?.message || 'Could not equip');
+      toast.error(e?.message || 'Purchase failed');
     } finally { setAuraBusy(null); }
   };
 
@@ -143,142 +148,143 @@ export default function FocusShopPage() {
         </div>
       </div>
 
-      {/* Streak Revive */}
-      {revive && (
-        <div className={`p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-streak_revive">
-          <div className="w-12 h-12 rounded-xl bg-[#95DEE6] flex items-center justify-center flex-shrink-0">
-            <Flame className="w-6 h-6 text-[#183A3F]" />
+      {/* Protection */}
+      <Section title="Protection">
+        {revive && (
+          <div className={`p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-streak_revive">
+            <div className="w-12 h-12 rounded-xl bg-[#95DEE6] flex items-center justify-center flex-shrink-0">
+              <Flame className="w-6 h-6 text-[#183A3F]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">{revive.name}</p>
+              <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">Restores a broken streak</p>
+              <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">{owned}/{max} owned</p>
+            </div>
+            <Button
+              onClick={handleBuy}
+              disabled={buying || isFull || !canAfford}
+              className={`text-sm px-4 h-9 rounded-full flex-shrink-0 font-bold ${
+                isFull || !canAfford ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
+              }`}
+              data-testid="focus-buy-streak_revive"
+            >
+              {buying ? <Loader2 className="w-4 h-4 animate-spin" /> :
+               isFull ? 'Max' :
+               !canAfford ? 'Not enough' :
+               <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> {price}</span>}
+            </Button>
+          </div>
+        )}
+
+        {/* Streak Shield pointer — not sold here (500g home-screen button) */}
+        <div className={`p-4 ${CARD} flex items-center gap-3`} data-testid="focus-shield-pointer">
+          <div className="w-10 h-10 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
+            <Shield className="w-5 h-5 text-[#95DEE6]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">{revive.name}</p>
-            <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">Restores a broken streak</p>
-            <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">{owned}/{max} owned</p>
+            <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Streak Shield</p>
+            <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">Available on your home screen.</p>
           </div>
-          <Button
-            onClick={handleBuy}
-            disabled={buying || isFull || !canAfford}
-            className={`text-sm px-4 h-9 rounded-full flex-shrink-0 font-bold ${
-              isFull || !canAfford ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
-            }`}
-            data-testid="focus-buy-streak_revive"
-          >
-            {buying ? <Loader2 className="w-4 h-4 animate-spin" /> :
-             isFull ? 'Max' :
-             !canAfford ? 'Not enough' :
-             <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> {price}</span>}
-          </Button>
         </div>
-      )}
+      </Section>
 
-      {/* Grace Extender — extends the tab-switch grace window before a session
-          auto-fails, read live by FocusSession.js. Permanent, tiered upgrade. */}
-      <div className={`mt-3 p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-grace-extender">
-        <div className="w-12 h-12 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
-          <Clock className="w-6 h-6 text-[#95DEE6]" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Grace Extender</p>
-          <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">
-            {currentGraceTier ? `${currentGraceTier.name} · ${currentGraceTier.graceMs / 1000}s grace active` : 'Longer buffer before a tab-switch fails your session'}
-          </p>
-          {nextGraceTier && (
-            <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">
-              Next: {nextGraceTier.name} · {nextGraceTier.graceMs / 1000}s
+      {/* Focus Upgrades */}
+      <Section title="Focus Upgrades">
+        <div className={`p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-grace-extender">
+          <div className="w-12 h-12 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
+            <Clock className="w-6 h-6 text-[#95DEE6]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Grace Extender</p>
+            <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">
+              {currentGraceTier ? `${currentGraceTier.name} · ${currentGraceTier.graceMs / 1000}s grace active` : 'Longer buffer before a tab-switch fails your session'}
             </p>
+            {nextGraceTier && (
+              <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">
+                Next: {nextGraceTier.name} · {nextGraceTier.graceMs / 1000}s
+              </p>
+            )}
+          </div>
+          {nextGraceItem ? (
+            <Button
+              onClick={handleBuyGrace}
+              disabled={graceBusy || (gems ?? 0) < nextGraceItem.price_gems}
+              className={`text-sm px-4 h-9 rounded-full flex-shrink-0 font-bold ${
+                (gems ?? 0) < nextGraceItem.price_gems ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
+              }`}
+              data-testid="focus-buy-grace-extender"
+            >
+              {graceBusy ? <Loader2 className="w-4 h-4 animate-spin" /> :
+               (gems ?? 0) < nextGraceItem.price_gems ? 'Not enough' :
+               <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> {nextGraceItem.price_gems}</span>}
+            </Button>
+          ) : (
+            <span className="text-xs font-['JetBrains_Mono'] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] flex-shrink-0">Maxed</span>
           )}
         </div>
-        {nextGraceItem ? (
-          <Button
-            onClick={handleBuyGrace}
-            disabled={graceBusy || (gems ?? 0) < nextGraceItem.price_gems}
-            className={`text-sm px-4 h-9 rounded-full flex-shrink-0 font-bold ${
-              (gems ?? 0) < nextGraceItem.price_gems ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
-            }`}
-            data-testid="focus-buy-grace-extender"
-          >
-            {graceBusy ? <Loader2 className="w-4 h-4 animate-spin" /> :
-             (gems ?? 0) < nextGraceItem.price_gems ? 'Not enough' :
-             <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> {nextGraceItem.price_gems}</span>}
-          </Button>
-        ) : (
-          <span className="text-xs font-['JetBrains_Mono'] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] flex-shrink-0">Maxed</span>
-        )}
-      </div>
+      </Section>
 
-      {/* Timer Aura — a compact, equippable swatch strip. The buy/equip action
-          lives right on each swatch: no separate page, no separate section. */}
-      <div className={`mt-3 p-4 ${CARD}`} data-testid="focus-aura-section">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Timer Aura</p>
-          <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">
-            {getAura(equippedAuraKey).name}
-          </p>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
+      {/* Timer Screens — buy here, equip in Settings */}
+      <Section
+        title="Timer Screens"
+        hint={<Link to="/dashboard/settings" className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#95DEE6] hover:underline" data-testid="focus-screens-settings-link">Equip in Settings</Link>}
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" data-testid="focus-aura-section">
           {AURA_ORDER.map((key) => {
             const aura = getAura(key);
             const item = auraItems.find((r) => r.key === key);
+            const isOwned = (auraOwned[key] ?? 0) > 0;
             const isEquipped = key === equippedAuraKey;
+            const isDefault = key === 'focus_aura_cyan_pulse';
+            const itemPrice = item?.price_gems ?? 0;
             const busy = auraBusy === key;
-            const priceLabel = item?.price_gems ? item.price_gems : 0;
+            const affordable = (gems ?? 0) >= itemPrice;
             return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => item && handleAuraTap(item)}
-                disabled={!item || busy || isEquipped}
-                className="flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors disabled:cursor-default"
-                style={{
-                  background: isEquipped ? 'var(--gm-track)' : 'transparent',
-                }}
-                data-testid={`focus-aura-swatch-${key}`}
-              >
+              <div key={key} className={`p-3 ${CARD} flex flex-col items-center text-center`} data-testid={`focus-aura-card-${key}`}>
                 <span
-                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                  className="w-14 h-14 rounded-full flex items-center justify-center"
                   style={{
                     background: aura.bg,
-                    // Glow-style auras always show their soft signature halo;
-                    // the equipped ring itself is always aura.ink (guaranteed
-                    // to contrast against aura.bg, unlike accent which can be
-                    // close in tone to bg on some auras).
                     boxShadow: [
-                      aura.style === 'glow' ? `0 0 10px 2px ${hexA(aura.accent, 0.45)}` : null,
-                      isEquipped ? `0 0 0 2px ${aura.ink}` : null,
-                    ].filter(Boolean).join(', ') || 'none',
+                      aura.style === 'glow' ? `0 0 14px 2px ${hexA(aura.accent, 0.45)}` : null,
+                      `inset 0 0 0 1px ${hexA(aura.ink, 0.18)}`,
+                    ].filter(Boolean).join(', '),
                   }}
                 >
-                  {isEquipped && <Check className="w-4 h-4" style={{ color: aura.ink }} strokeWidth={3} />}
+                  {isEquipped && <Check className="w-5 h-5" style={{ color: aura.ink }} strokeWidth={3} />}
                 </span>
-                <span className="text-[9px] font-['JetBrains_Mono'] uppercase tracking-[0.02em] text-[color:var(--gm-muted)] text-center leading-tight">
-                  {aura.name}
-                </span>
-                <span className="text-[10px] font-bold text-[color:var(--gm-ink)]">
-                  {busy ? <Loader2 className="w-3 h-3 animate-spin" /> :
-                   isEquipped ? 'Equipped' :
-                   (auraOwned[key] ?? 0) > 0 ? 'Equip' :
-                   priceLabel === 0 ? 'Free' :
-                   <span className="flex items-center gap-1"><Gem className="w-3 h-3 text-[#95DEE6]" />{priceLabel}</span>}
-                </span>
-              </button>
+                <p className="mt-2.5 text-[13px] font-['General_Sans'] font-bold text-[color:var(--gm-ink)] leading-tight">{aura.name}</p>
+                <p className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-0.5">
+                  {aura.style === 'glow' ? 'Dark · glow' : 'Solid'}
+                </p>
+                <div className="mt-3 h-8 flex items-center">
+                  {isEquipped ? (
+                    <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.08em] text-[#95DEE6]">Equipped</span>
+                  ) : isOwned || (isDefault && itemPrice === 0) ? (
+                    <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">{isDefault ? 'Default' : 'Owned'}</span>
+                  ) : (
+                    <Button
+                      onClick={() => item && handleBuyAura(item)}
+                      disabled={!item || busy || !affordable}
+                      className={`text-xs px-3 h-8 rounded-full font-bold ${
+                        !affordable ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
+                      }`}
+                      data-testid={`focus-buy-aura-${key}`}
+                    >
+                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
+                       <span className="flex items-center gap-1"><Gem className="w-3 h-3" /> {itemPrice}</span>}
+                    </Button>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
-      </div>
-
-      {/* Streak Shield pointer — not sold here (500g home-screen button) */}
-      <div className={`mt-3 p-4 ${CARD} flex items-center gap-3`} data-testid="focus-shield-pointer">
-        <div className="w-10 h-10 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
-          <Shield className="w-5 h-5 text-[#95DEE6]" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Streak Shield</p>
-          <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">Available on your home screen.</p>
-        </div>
-      </div>
+      </Section>
 
       {/* How to Earn */}
       <div className={`mt-8 p-4 ${CARD}`}>
-        <h3 className="font-['JetBrains_Mono'] text-[11px] font-bold text-[color:var(--gm-muted)] uppercase tracking-[0.08em] mb-3">How to Earn Gems</h3>
+        <h3 className={`${SECTION_LABEL} mb-3`}>How to Earn Gems</h3>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-[color:var(--gm-muted)]">Complete any habit</span>

@@ -13,6 +13,7 @@ import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2
 import { toast } from 'sonner';
 import { TitleBadge } from '../components/profile/FlexBadge';
 import { rankInfo } from '../data/levels';
+import { AURA_ORDER, getAura, hexA } from '../data/focusAuras';
 
 // v2 design system — shared with Progress / Level / Home.
 // cyan #95DEE6 = active/selected, lime #DBF67F = progress, purple #A59BCC =
@@ -158,6 +159,9 @@ export default function SettingsPage() {
 
         {/* Profile Customization - Game Mode Only */}
         {isGameMode && <ProfileCustomizationSection />}
+
+        {/* Timer Screen - Focus Mode Only */}
+        {!isGameMode && <TimerScreenSection />}
 
         {/* App Experience */}
         <section className="mb-8">
@@ -911,6 +915,98 @@ function ColorSettingsSection() {
           {colors.main_colors.map(c => (
             <ColorSwatch key={c.hex} hex={c.hex} name={c.name} selected={c.selected} owned={c.owned} onSelect={() => c.owned && handleSelect(c, 'main')} updating={updating === `main-${c.hex}`} />
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Focus Mode: pick which purchased Timer Screen the full-screen session uses.
+// Buying happens in the Focus shop; equipping lives here. Cyan Pulse is the
+// free default (a 0-gem row), so selecting it claims it first if needed.
+function TimerScreenSection() {
+  const { user, refreshUser } = useAuth();
+  const [items, setItems] = useState(null);
+  const [ownedIds, setOwnedIds] = useState(new Set());
+  const [busy, setBusy] = useState(null);
+  const equippedKey = user?.equipped_focus_aura || 'focus_aura_cyan_pulse';
+
+  const load = useCallback(async () => {
+    try {
+      const { data: rows } = await supabase.from('shop_items')
+        .select('id,key,name,price_gems').eq('category', 'focus_aura');
+      const ids = (rows || []).map((r) => r.id);
+      const { data: inv } = ids.length
+        ? await supabase.from('user_inventory').select('shop_item_id,quantity').in('shop_item_id', ids)
+        : { data: [] };
+      setOwnedIds(new Set((inv || []).filter((r) => r.quantity > 0).map((r) => r.shop_item_id)));
+      setItems(rows || []);
+    } catch { /* section stays hidden */ }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const equip = async (item) => {
+    setBusy(item.key);
+    try {
+      if (!ownedIds.has(item.id)) {
+        if ((item.price_gems ?? 0) > 0) return;
+        const { error: claimErr } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: item.id });
+        if (claimErr) throw claimErr;
+      }
+      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: item.id });
+      if (error) throw error;
+      await Promise.all([refreshUser(), load()]);
+      toast.success(`${item.name} equipped`);
+    } catch (e) {
+      toast.error(e?.message || 'Could not equip');
+    } finally { setBusy(null); }
+  };
+
+  if (!items) return null;
+
+  return (
+    <section className="mb-6 sm:mb-8" data-testid="timer-screen-settings">
+      <div className="flex items-baseline justify-between gap-3 mb-3">
+        <h2 className={SECTION_LABEL}>Timer Screen</h2>
+        <Link to="/dashboard/focus-shop" className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#95DEE6] hover:underline">Get more in Shop</Link>
+      </div>
+      <div className={`${CARD} p-4`}>
+        <p className="text-sm text-[color:var(--gm-muted)] mb-3">The look of your full-screen focus session.</p>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {AURA_ORDER.map((key) => {
+            const aura = getAura(key);
+            const item = items.find((r) => r.key === key);
+            if (!item) return null;
+            const isEquipped = key === equippedKey;
+            const canUse = ownedIds.has(item.id) || (item.price_gems ?? 0) === 0;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => canUse && !isEquipped && equip(item)}
+                disabled={!canUse || isEquipped || busy === key}
+                title={canUse ? aura.name : `${aura.name} (Unlock in Shop)`}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${isEquipped ? 'bg-[color:var(--gm-track)]' : ''} ${canUse ? '' : 'opacity-45 cursor-not-allowed'} disabled:cursor-default`}
+                data-testid={`timer-screen-${key}`}
+              >
+                <span
+                  className="w-10 h-10 rounded-full flex items-center justify-center relative"
+                  style={{
+                    background: aura.bg,
+                    boxShadow: [
+                      aura.style === 'glow' ? `0 0 10px 2px ${hexA(aura.accent, 0.45)}` : null,
+                      isEquipped ? `0 0 0 2px ${aura.ink}` : `inset 0 0 0 1px ${hexA(aura.ink, 0.18)}`,
+                    ].filter(Boolean).join(', '),
+                  }}
+                >
+                  {busy === key ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: aura.ink }} />
+                    : isEquipped ? <Check className="w-4 h-4" style={{ color: aura.ink }} strokeWidth={3} />
+                    : !canUse ? <Lock className="w-3.5 h-3.5" style={{ color: aura.ink, opacity: 0.7 }} /> : null}
+                </span>
+                <span className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.04em] text-[color:var(--gm-muted)] text-center leading-tight">{aura.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>

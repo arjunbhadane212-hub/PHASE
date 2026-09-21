@@ -364,7 +364,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         {renderRemaining()}
         <div
           className="mt-8"
-          style={{ width: '100%', maxWidth: 'min(80vmin, 640px)', height: '26px', borderRadius: '999px', background: 'rgba(255,255,255,0.4)', overflow: 'hidden' }}
+          style={{ width: '100%', maxWidth: 'min(80vmin, 640px)', height: '26px', borderRadius: '999px', background: aura.track, overflow: 'hidden' }}
         >
           <div style={{ width: `${progress * 100}%`, height: '100%', borderRadius: '999px', background: aura.ink, transition: 'width 1s linear' }} />
         </div>
@@ -412,7 +412,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             <line
               key={i}
               x1="140" y1="14" x2="140" y2="36"
-              stroke={i < filled ? aura.ink : 'rgba(255,255,255,0.4)'}
+              stroke={i < filled ? aura.ink : aura.track}
               strokeWidth="6"
               strokeLinecap="round"
               transform={`rotate(${i * 7.5} 140 140)`}
@@ -437,7 +437,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         style={{
           width: discSize,
           height: discSize,
-          background: `conic-gradient(${aura.ink} 0turn ${progress}turn, rgba(255,255,255,0.4) ${progress}turn 1turn)`,
+          background: `conic-gradient(${aura.ink} 0turn ${progress}turn, ${aura.track} ${progress}turn 1turn)`,
           boxShadow: '0 20px 50px -18px rgba(15,18,16,0.4)',
           transition: 'background 1s linear',
         }}
@@ -463,7 +463,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           viewBox="0 0 280 280"
           style={{ transform: 'rotate(-90deg)', filter: 'drop-shadow(0 10px 30px rgba(15,18,16,0.18))' }}
         >
-          <circle cx="140" cy="140" r="120" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="15" />
+          <circle cx="140" cy="140" r="120" fill="none" stroke={aura.track} strokeWidth="15" />
           <circle
             cx="140" cy="140" r="120" fill="none"
             stroke={aura.ink}
