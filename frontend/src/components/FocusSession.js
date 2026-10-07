@@ -104,6 +104,12 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   // component never tells the server how long it ran.
   const sessionIdRef = useRef(null);
   const creditedRef = useRef(false);
+  // `sessionReady` exists so the crediting effect below re-runs if the row
+  // arrives AFTER the clock has already hit zero -- on a short session over a
+  // slow connection the ref alone would still be null at that moment and the
+  // session would silently never be credited. The ref is what the abandon
+  // handlers read, since those fire from callbacks, not from render.
+  const [sessionReady, setSessionReady] = useState(false);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -111,7 +117,9 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         const { data } = await supabase.rpc('start_focus_session', {
           p_habit_id: habitId, p_planned_minutes: duration,
         });
-        if (!cancelled) sessionIdRef.current = data?.session_id ?? null;
+        if (cancelled) return;
+        sessionIdRef.current = data?.session_id ?? null;
+        if (sessionIdRef.current) setSessionReady(true);
       } catch { /* a missing row only costs hours credit, never the session */ }
     })();
     return () => { cancelled = true; };
@@ -126,7 +134,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   // Back -- they may never tap it, and the work is already done. The ref guards
   // against the effect re-running; the RPC is idempotent regardless.
   useEffect(() => {
-    if (!completed || creditedRef.current || !sessionIdRef.current) return;
+    if (!completed || !sessionReady || creditedRef.current || !sessionIdRef.current) return;
     creditedRef.current = true;
     (async () => {
       try {
@@ -136,7 +144,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         showTitleUnlocks(data?.newly_unlocked);
       } catch { /* ignore -- the session still ended for the user */ }
     })();
-  }, [completed]);
+  }, [completed, sessionReady]);
 
   // Single tick loop. setInterval is throttled when backgrounded but our state
   // is derived from Date.now() so resuming always shows the correct value.
