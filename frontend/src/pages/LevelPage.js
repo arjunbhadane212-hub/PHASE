@@ -12,50 +12,32 @@ const LEVEL_ICONS = {
   11: Rocket, 12: Sparkles, 13: Orbit, 14: Atom, 15: Sun,
 };
 
-// Completed / current semantics shared with the rest of the v2 system.
-const LIME = '#DBF67F', LIME_INK = '#2A3B0B';
-
-// Convert #RRGGBB → "r,g,b" so we can build rgba() glows at arbitrary alpha.
-const rgb = (hex) => {
+const rgbArr = (hex) => {
   const h = hex.replace('#', '');
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)].join(',');
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+};
+const rgb = (hex) => rgbArr(hex).join(',');
+// Ink that stays legible on a solid rank-color fill (dark ink on light tiles).
+const inkOn = (hex) => {
+  const [r, g, b] = rgbArr(hex).map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.52 ? '#14171A' : '#FFFFFF';
 };
 
-// Rank emblem: outline icon on a rank-tinted disc, with optional orbiting aura
-// and sparkle motes for the "this is a big deal" hero / prestige treatment.
-function Emblem({ level, color, size = 'hero', fx = false }) {
+// Flat rank emblem — no glow. `solid` = filled rank tile (ink icon); otherwise a
+// tonal tile (rank color at low alpha + hairline). This mirrors the title-system
+// restraint ladder (solid surface is the premium gesture, withheld, never a glow).
+function Emblem({ level, color, size = 'hero', solid = false }) {
   const Icon = LEVEL_ICONS[level] || Star;
   const c = rgb(color);
   const hero = size === 'hero';
-  const dim = hero ? 'w-24 h-24' : 'w-11 h-11';
-  const iconDim = hero ? 'w-11 h-11' : 'w-5 h-5';
+  const box = hero ? 'w-20 h-20 rounded-[20px]' : 'w-11 h-11 rounded-xl';
+  const ic = hero ? 'w-9 h-9' : 'w-5 h-5';
   return (
-    <div className={`relative ${dim} flex-shrink-0 grid place-items-center`}>
-      {fx && (
-        <>
-          {/* slow conic halo — not a linear gradient, so it respects the ban */}
-          <span className="lv-spin absolute inset-[-6px] rounded-full"
-            style={{ background: `conic-gradient(from 0deg, rgba(${c},0) 0deg, rgba(${c},0.55) 120deg, rgba(${c},0) 240deg)`, filter: 'blur(5px)', opacity: 0.9 }} />
-          {/* orbiting mote */}
-          <span className="lv-orbit absolute inset-0">
-            <span className="absolute left-1/2 -top-1 w-1.5 h-1.5 rounded-full"
-              style={{ background: color, boxShadow: `0 0 8px 2px rgba(${c},0.9)` }} />
-          </span>
-        </>
-      )}
-      {/* radial core glow */}
-      <span className="absolute inset-0 rounded-full"
-        style={{ background: `radial-gradient(circle at 50% 50%, rgba(${c},0.45), rgba(${c},0) 70%)` }} />
-      {/* disc */}
-      <span className="relative grid place-items-center rounded-full"
-        style={{
-          width: '82%', height: '82%',
-          background: `radial-gradient(circle at 50% 35%, rgba(${c},0.30), rgba(${c},0.10))`,
-          border: `1.5px solid rgba(${c},0.55)`,
-          boxShadow: `inset 0 1px 10px rgba(${c},0.35), 0 6px 20px -6px rgba(${c},0.6)`,
-        }}>
-        <Icon className={iconDim} strokeWidth={2} style={{ color, filter: `drop-shadow(0 0 6px rgba(${c},0.8))` }} />
-      </span>
+    <div className={`${box} flex-shrink-0 grid place-items-center`}
+      style={solid
+        ? { background: color }
+        : { background: `rgba(${c},0.14)`, border: `1px solid rgba(${c},0.30)` }}>
+      <Icon className={ic} strokeWidth={2} style={{ color: solid ? inkOn(color) : color }} />
     </div>
   );
 }
@@ -76,66 +58,36 @@ export default function LevelPage() {
   const nextThreshold = isMaxLevel ? info.max_xp : nextInfo.min_xp;
   const xpProgress = isMaxLevel ? 100 : Math.min(Math.max(((currentXP - info.min_xp) / (nextThreshold - info.min_xp)) * 100, 0), 100);
   const xpRemaining = Math.max(0, nextThreshold - currentXP);
-
-  const unlockedCount = currentLevel; // ranks reached, out of MAX_LEVEL
+  const unlockedCount = currentLevel;
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 animate-slide-up" data-testid="level-page">
       <style>{`
-        @keyframes lv-spin { to { transform: rotate(360deg); } }
-        @keyframes lv-orbit { to { transform: rotate(360deg); } }
-        @keyframes lv-aura { 0%,100%{ transform:scale(1); opacity:.6 } 50%{ transform:scale(1.14); opacity:1 } }
         @keyframes lv-sweep { 0%{ transform:translateX(-120%) } 100%{ transform:translateX(320%) } }
-        @keyframes lv-float { 0%,100%{ transform:translateY(0); opacity:.5 } 50%{ transform:translateY(-10px); opacity:1 } }
-        @keyframes lv-rise { from{ opacity:0; transform:translateY(14px) } to{ opacity:1; transform:translateY(0) } }
-        @keyframes lv-ring { 0%{ box-shadow:0 0 0 0 rgba(${accentRgb},0.55) } 70%,100%{ box-shadow:0 0 0 12px rgba(${accentRgb},0) } }
-        @keyframes lv-shine { 0%{ background-position:-180% 0 } 100%{ background-position:280% 0 } }
-        .lv-spin { animation: lv-spin 9s linear infinite; }
-        .lv-orbit { animation: lv-orbit 5.5s linear infinite; }
-        .lv-aura { animation: lv-aura 3.4s ease-in-out infinite; }
+        @keyframes lv-rise { from{ opacity:0; transform:translateY(10px) } to{ opacity:1; transform:translateY(0) } }
         .lv-sweep { animation: lv-sweep 2.6s ease-in-out infinite; }
-        .lv-float { animation: lv-float 4s ease-in-out infinite; }
-        .lv-ring { animation: lv-ring 2.2s ease-out infinite; }
-        .lv-rise { animation: lv-rise .5s cubic-bezier(.22,1,.36,1) both; }
-        .lv-shimmer-text {
-          background: linear-gradient(90deg, currentColor 0%, #fff 20%, currentColor 40%, currentColor 100%);
-          background-size: 220% 100%; -webkit-background-clip:text; background-clip:text;
-          -webkit-text-fill-color: transparent; animation: lv-shine 3.2s linear infinite;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .lv-spin,.lv-orbit,.lv-aura,.lv-sweep,.lv-float,.lv-ring,.lv-shimmer-text { animation: none !important; }
-        }
+        .lv-rise { animation: lv-rise .45s cubic-bezier(.22,1,.36,1) both; }
+        @media (prefers-reduced-motion: reduce){ .lv-sweep,.lv-rise{ animation:none !important } }
       `}</style>
 
-      {/* ── HERO: current rank showcase ─────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl p-6 mb-4"
-        style={{
-          background: 'var(--gm-card)',
-          border: `1px solid rgba(${accentRgb},0.35)`,
-          boxShadow: `0 20px 50px -24px rgba(${accentRgb},0.65)`,
-        }}
+      {/* ── HERO: current rank ───────────────────────────────────────────── */}
+      <div className="rounded-3xl p-6 mb-4"
+        style={{ background: 'var(--gm-card)', border: '1px solid var(--gm-track)', boxShadow: 'var(--gm-shadow-card)' }}
         data-testid="current-level-card">
-        {/* ambient rank glow + floating motes */}
-        <span className="lv-aura absolute -top-16 -right-10 w-56 h-56 rounded-full pointer-events-none"
-          style={{ background: `radial-gradient(circle, rgba(${accentRgb},0.38), rgba(${accentRgb},0) 70%)` }} />
-        <span className="lv-float absolute top-6 right-16 w-1.5 h-1.5 rounded-full pointer-events-none" style={{ background: accent, animationDelay: '.6s' }} />
-        <span className="lv-float absolute top-16 right-8 w-1 h-1 rounded-full pointer-events-none" style={{ background: accent, animationDelay: '1.4s' }} />
-
-        <div className="relative flex items-center gap-5">
-          <Emblem level={currentLevel} color={accent} size="hero" fx />
+        <div className="flex items-center gap-5">
+          <Emblem level={currentLevel} color={accent} size="hero" solid />
           <div className="min-w-0">
-            <p className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--gm-muted)] mb-1 flex items-center gap-1.5">
-              {isPrestigeNow && <ChevronsUp className="w-3 h-3" style={{ color: accent }} />}
+            <p className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--gm-muted)] mb-1.5 flex items-center gap-1.5">
+              {isPrestigeNow && <ChevronsUp className="w-3 h-3" strokeWidth={2.5} style={{ color: accent }} />}
               {isPrestigeNow ? 'Prestige Rank' : 'Current Rank'}
             </p>
             <div className="flex items-baseline gap-2">
-              <span className="font-['JetBrains_Mono'] text-[13px] font-bold tracking-[0.1em]" style={{ color: accent }}>LVL</span>
+              <span className="font-['JetBrains_Mono'] text-[12px] font-bold tracking-[0.1em] text-[color:var(--gm-muted)]">LVL</span>
               <h2 className="text-5xl font-['Archivo'] font-black text-[color:var(--gm-ink)] leading-none tracking-[-0.03em]" data-testid="current-level-display">
                 {currentLevel}
               </h2>
             </div>
-            <p className={`font-['Archivo'] font-black text-xl mt-1.5 leading-none ${isPrestigeNow ? 'lv-shimmer-text' : ''}`}
-              style={{ color: accent }}>
+            <p className="font-['Archivo'] font-black text-xl mt-1.5 leading-none" style={{ color: accent }}>
               {info.name}
             </p>
             <p className="font-['General_Sans'] text-[13px] text-[color:var(--gm-muted)] mt-2 leading-snug max-w-xs">
@@ -144,17 +96,17 @@ export default function LevelPage() {
           </div>
         </div>
 
-        {/* XP meter */}
-        <div className="relative mt-6" data-testid="level-xp-progress">
+        {/* XP meter (approved) */}
+        <div className="mt-6" data-testid="level-xp-progress">
           <div className="flex justify-between items-end font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.06em] mb-2">
             <span className="text-[color:var(--gm-ink)]">{currentXP.toLocaleString()} XP</span>
             <span className="text-[color:var(--gm-muted)]">{isMaxLevel ? 'MAX' : `${nextThreshold.toLocaleString()} XP`}</span>
           </div>
           <div className="relative h-3.5 rounded-full overflow-hidden" style={{ background: 'var(--gm-track)' }}>
             <div className="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
-              style={{ width: `${xpProgress}%`, background: accent, boxShadow: `0 0 14px rgba(${accentRgb},0.75)` }}>
+              style={{ width: `${xpProgress}%`, background: accent, boxShadow: `0 0 14px rgba(${accentRgb},0.65)` }}>
               <span className="lv-sweep absolute top-0 bottom-0 w-1/3"
-                style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 100%)' }} />
+                style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%)' }} />
             </div>
           </div>
           <p className="font-['General_Sans'] text-sm text-[color:var(--gm-muted)] mt-2.5">
@@ -190,70 +142,62 @@ export default function LevelPage() {
         <h2 className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--gm-muted)]">The Climb</h2>
       </div>
 
-      <div className="relative">
+      <div>
         {RANKS.map((level, idx) => {
           const isCurrent = level.level === currentLevel;
           const isCompleted = level.level < currentLevel;
           const isLocked = level.level > currentLevel;
           const isPrestige = level.level >= PRESTIGE_LEVEL;
-          // Suspense: prestige names stay hidden until you're one step away.
           const revealed = !isPrestige || level.level <= currentLevel + 1;
           const c = rgb(level.color);
           const Icon = LEVEL_ICONS[level.level] || Star;
-          const prevCompletedOrCurrent = level.level <= currentLevel; // connector fill above this node
+          const railAbove = level.level <= currentLevel;
           const firstPrestige = level.level === PRESTIGE_LEVEL;
 
           return (
             <div key={level.level}>
-              {/* Divider announcing the endgame tiers */}
               {firstPrestige && (
                 <div className="flex items-center gap-3 my-5">
-                  <span className="h-px flex-1" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, var(--gm-track) 100%)' }} />
-                  <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--gm-muted)] flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3" /> Beyond Apex
+                  <span className="h-px flex-1" style={{ background: 'var(--gm-track)' }} />
+                  <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--gm-muted)]">
+                    Beyond Apex
                   </span>
-                  <span className="h-px flex-1" style={{ background: 'linear-gradient(90deg, var(--gm-track) 0%, rgba(255,255,255,0) 100%)' }} />
+                  <span className="h-px flex-1" style={{ background: 'var(--gm-track)' }} />
                 </div>
               )}
 
-              <div className="lv-rise flex items-stretch gap-3.5 mb-3" style={{ animationDelay: `${Math.min(idx, 10) * 45}ms` }}
+              <div className="lv-rise flex items-stretch gap-3.5 mb-3" style={{ animationDelay: `${Math.min(idx, 12) * 35}ms` }}
                 data-testid={`level-roadmap-${level.level}`}>
-                {/* Node + connecting rail */}
+                {/* Node + rail */}
                 <div className="relative flex flex-col items-center w-10 flex-shrink-0">
                   {idx !== 0 && (
                     <span className="absolute -top-3 h-3 w-[2px]"
-                      style={{ background: prevCompletedOrCurrent ? level.color : 'var(--gm-track)' }} />
+                      style={{ background: railAbove ? level.color : 'var(--gm-track)' }} />
                   )}
-                  <div className={`relative w-10 h-10 rounded-xl grid place-items-center ${isCurrent ? 'lv-ring' : ''}`}
+                  <div className="relative w-10 h-10 rounded-xl grid place-items-center"
                     style={
-                      isCompleted ? { background: level.color, boxShadow: `0 0 16px -2px rgba(${c},0.7)` }
-                      : isCurrent ? { background: `rgba(${c},0.18)`, border: `1.5px solid ${level.color}` }
+                      isCompleted ? { background: level.color }
+                      : isCurrent ? { background: `rgba(${c},0.14)`, border: `1.5px solid ${level.color}` }
                       : { background: 'var(--gm-badge)', border: '1px solid var(--gm-track)' }
                     }>
-                    {isCompleted ? <Check className="w-5 h-5" strokeWidth={2.5} style={{ color: level.level >= 8 ? '#fff' : LIME_INK }} />
+                    {isCompleted ? <Check className="w-5 h-5" strokeWidth={2.5} style={{ color: inkOn(level.color) }} />
                       : isCurrent ? <Icon className="w-5 h-5" strokeWidth={2} style={{ color: level.color }} />
                       : <Lock className="w-4 h-4 text-[color:var(--gm-muted)]" strokeWidth={2} />}
                   </div>
                   {idx !== RANKS.length - 1 && (
-                    <span className="flex-1 w-[2px] mt-0"
+                    <span className="flex-1 w-[2px]"
                       style={{ background: isCompleted ? level.color : 'var(--gm-track)' }} />
                   )}
                 </div>
 
                 {/* Rank card */}
-                <div className="flex-1 rounded-2xl p-4 relative overflow-hidden"
+                <div className="flex-1 rounded-2xl p-4 relative"
                   style={{
                     background: 'var(--gm-card)',
-                    border: isCurrent ? `1px solid rgba(${c},0.5)` : '1px solid transparent',
-                    boxShadow: isCurrent ? `0 12px 30px -16px rgba(${c},0.8)` : 'none',
-                    opacity: isLocked && !revealed ? 0.82 : 1,
+                    border: isCurrent ? `1px solid rgba(${c},0.45)` : '1px solid transparent',
+                    opacity: isLocked && !revealed ? 0.86 : 1,
                   }}>
-                  {/* prestige cards get a faint rank-colored wash behind content */}
-                  {isPrestige && (
-                    <span className="absolute -right-6 -top-6 w-28 h-28 rounded-full pointer-events-none"
-                      style={{ background: `radial-gradient(circle, rgba(${c},${isLocked ? 0.1 : 0.22}), rgba(${c},0) 70%)` }} />
-                  )}
-                  <div className="relative flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-['JetBrains_Mono'] text-[10px] font-bold tracking-[0.08em]"
@@ -265,13 +209,13 @@ export default function LevelPage() {
                         </h3>
                         {isCurrent && (
                           <span className="font-['JetBrains_Mono'] text-[9px] font-bold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full"
-                            style={{ background: level.color, color: level.level >= 8 ? '#fff' : '#09181C' }}>
+                            style={{ background: level.color, color: inkOn(level.color) }}>
                             You
                           </span>
                         )}
                         {isPrestige && !isLocked && (
                           <span className="font-['JetBrains_Mono'] text-[9px] font-bold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full"
-                            style={{ background: `rgba(${c},0.18)`, color: level.color }}>
+                            style={{ background: `rgba(${c},0.14)`, color: level.color }}>
                             Prestige
                           </span>
                         )}
@@ -283,11 +227,10 @@ export default function LevelPage() {
                         {level.min_xp.toLocaleString()} — {level.max_xp === 999999 ? 'MAX' : level.max_xp.toLocaleString()} XP
                       </p>
                     </div>
-                    {/* trailing emblem */}
                     {revealed ? (
-                      <Emblem level={level.level} color={level.color} size="sm" fx={isCurrent || (isPrestige && !isLocked)} />
+                      <Emblem level={level.level} color={level.color} size="sm" solid={isCurrent} />
                     ) : (
-                      <div className="w-11 h-11 flex-shrink-0 grid place-items-center rounded-full"
+                      <div className="w-11 h-11 flex-shrink-0 grid place-items-center rounded-xl"
                         style={{ background: 'var(--gm-badge)', border: '1px dashed var(--gm-track)' }}>
                         <Lock className="w-4 h-4 text-[color:var(--gm-muted)]" strokeWidth={2} />
                       </div>
