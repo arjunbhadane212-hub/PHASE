@@ -25,6 +25,18 @@ function lighten(hex, amt) {
   const m = (c) => Math.round(c + (255 - c) * amt).toString(16).padStart(2, '0');
   return `#${m(r)}${m(g)}${m(b)}`;
 }
+function darken(hex, amt) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  const m = (c) => Math.round(c * (1 - amt)).toString(16).padStart(2, '0');
+  return `#${m(r)}${m(g)}${m(b)}`;
+}
+// Five-stop shade ramp for faceted gems (light top-left → dark bottom-right).
+function shadeRamp(a, b) {
+  return { xl: lighten(a, 0.78), l: lighten(a, 0.42), m: a, md: darken(a, 0.12), d: b, xd: darken(b, 0.28) };
+}
+// Turn [[x,y],...] into an SVG points string.
+const pts = (arr) => arr.map((p) => p.join(',')).join(' ');
 
 // Per-family emblem body. `ids` holds the per-instance gradient url() strings so
 // multiple emblems on one screen never collide. Every family is drawn on a
@@ -54,24 +66,95 @@ function emblemBody(fam, t, ids) {
         </>
       );
     }
-    case 'gem':
+    case 'gem': {
+      const s = shadeRamp(a, b);
+      const edge = darken(b, 0.35);
+      // Sparkle rays shared by every cut.
+      const rays = (
+        <g opacity="0.5" stroke={lighten(a, 0.55)} strokeWidth="1.6" strokeLinecap="round">
+          <line x1="50" y1="9" x2="50" y2="15" /><line x1="91" y1="50" x2="85" y2="50" />
+          <line x1="9" y1="50" x2="15" y2="50" /><line x1="50" y1="91" x2="50" y2="85" />
+        </g>
+      );
+
+      if (t.n === 4) {
+        // PLATINUM — emerald step-cut: concentric cut-corner octagons, top-lit.
+        const O = [[34, 18], [66, 18], [82, 34], [82, 66], [66, 82], [34, 82], [18, 66], [18, 34]];
+        const sc = (k) => O.map(([x, y]) => [+(50 + (x - 50) * k).toFixed(1), +(50 + (y - 50) * k).toFixed(1)]);
+        const M = sc(0.72), T = sc(0.42);
+        const outer = [s.m, s.md, s.d, s.xd, s.d, s.md, s.m, s.l];
+        const inner = [s.l, s.m, s.md, s.d, s.md, s.m, s.l, s.xl];
+        return (
+          <>
+            {rays}
+            <polygon points={pts(O)} fill="none" stroke={edge} strokeWidth="1.8" strokeLinejoin="round" />
+            {O.map((_, i) => {
+              const j = (i + 1) % 8;
+              return <polygon key={`o${i}`} points={pts([O[i], O[j], M[j], M[i]])} fill={outer[i]} />;
+            })}
+            {O.map((_, i) => {
+              const j = (i + 1) % 8;
+              return <polygon key={`m${i}`} points={pts([M[i], M[j], T[j], T[i]])} fill={inner[i]} />;
+            })}
+            <polygon points={pts(T)} fill={s.xl} />
+            <polygon points={pts(M)} fill="none" stroke={lighten(a, 0.5)} strokeWidth="0.6" opacity="0.5" />
+            <polygon points={pts(T)} fill="none" stroke={lighten(a, 0.7)} strokeWidth="0.8" opacity="0.7" />
+            <path d={`M${T[7][0]} ${T[7][1]} L${T[1][0]} ${T[1][1]}`} stroke="#fff" strokeWidth="1.4" opacity="0.55" strokeLinecap="round" />
+            <circle cx={T[0][0]} cy={T[0][1]} r="1.5" fill="#fff" />
+          </>
+        );
+      }
+
+      if (t.n === 5) {
+        // NOVA — round brilliant cut, point down, full facet map.
+        const A = [39, 26], B = [61, 26], TBR = [66, 37], TBL = [34, 37], tbc = [50, 37];
+        const Lp = [16, 46], PL = [27, 33], PR = [73, 33], Rp = [84, 46];
+        const G1 = [33, 46], G2 = [50, 46], G3 = [67, 46], K = [50, 90];
+        return (
+          <>
+            {rays}
+            <polygon points={pts([Lp, PL, A, B, PR, Rp, K])} fill="none" stroke={edge} strokeWidth="1.8" strokeLinejoin="round" />
+            <polygon points={pts([PL, A, TBL])} fill={s.l} />
+            <polygon points={pts([Lp, PL, TBL, G1])} fill={s.l} />
+            <polygon points={pts([A, B, TBR, TBL])} fill={s.xl} />
+            <polygon points={pts([B, PR, TBR])} fill={s.md} />
+            <polygon points={pts([PR, Rp, G3, TBR])} fill={s.d} />
+            <polygon points={pts([TBL, tbc, G2, G1])} fill={s.m} />
+            <polygon points={pts([tbc, TBR, G3, G2])} fill={s.md} />
+            <polygon points={pts([Lp, G1, K])} fill={s.md} />
+            <polygon points={pts([G1, G2, K])} fill={s.m} />
+            <polygon points={pts([G2, G3, K])} fill={s.d} />
+            <polygon points={pts([G3, Rp, K])} fill={s.xd} />
+            <path d={`M${Lp[0]} ${Lp[1]} H${Rp[0]}`} stroke="#fff" strokeWidth="1" opacity="0.4" />
+            <path d={`M${G1[0]} ${G1[1]} L${K[0]} ${K[1]} M${G2[0]} ${G2[1]} L${K[0]} ${K[1]} M${G3[0]} ${G3[1]} L${K[0]} ${K[1]}`} stroke={edge} strokeWidth="0.7" opacity="0.45" />
+            <path d="M48 56 L52 56 L50 80 Z" fill="#fff" opacity="0.5" />
+            <path d={`M${A[0]} ${A[1]} L${B[0]} ${B[1]}`} stroke="#fff" strokeWidth="1.4" opacity="0.6" strokeLinecap="round" />
+            <circle cx="42" cy="31" r="1.5" fill="#fff" />
+          </>
+        );
+      }
+
+      // ECLIPSE (t.n === 6) — marquise / navette cut, pointed, moody.
+      const T = [50, 15], Bt = [50, 89], Ld = [22, 50], Rd = [78, 50], k = 0.46;
+      const T2 = [50, +(50 + (15 - 50) * k).toFixed(1)], B2 = [50, +(50 + (89 - 50) * k).toFixed(1)];
+      const L2 = [+(50 + (22 - 50) * k).toFixed(1), 50], R2 = [+(50 + (78 - 50) * k).toFixed(1), 50];
       return (
         <>
-          <circle cx="50" cy="52" r="33" fill="none" stroke={b} strokeWidth="1.2" opacity="0.35" />
-          <g opacity="0.55" stroke={lite} strokeWidth="2" strokeLinecap="round">
-            <line x1="50" y1="12" x2="50" y2="19" /><line x1="50" y1="85" x2="50" y2="92" />
-            <line x1="12" y1="52" x2="19" y2="52" /><line x1="81" y1="52" x2="88" y2="52" />
-            <line x1="24" y1="26" x2="29" y2="31" /><line x1="76" y1="26" x2="71" y2="31" />
-            <line x1="24" y1="78" x2="29" y2="73" /><line x1="76" y1="78" x2="71" y2="73" />
-          </g>
-          <path d="M34 34 H66 L80 50 L50 86 L20 50 Z" fill={body} stroke={b} strokeWidth="1.6" strokeLinejoin="round" />
-          <path d="M34 34 H66 L72 50 H28 Z" fill={lite} opacity="0.55" />
-          <path d="M20 50 H80 M28 50 L50 86 M72 50 L50 86 M34 34 L28 50 M66 34 L72 50" stroke={b} strokeWidth="1.1" opacity="0.5" fill="none" />
-          <path d="M28 50 H72 L50 70 Z" fill="#ffffff" opacity="0.18" />
-          <path d="M40 38 L47 38 L44 47 Z" fill="#fff" opacity="0.85" />
-          <circle cx="43" cy="42" r="1.4" fill="#fff" />
+          <ellipse cx="50" cy="50" rx="36" ry="17" fill="none" stroke={b} strokeWidth="1.1" opacity="0.3" transform="rotate(-18 50 50)" />
+          {rays}
+          <polygon points={pts([T, Rd, Bt, Ld])} fill="none" stroke={edge} strokeWidth="1.8" strokeLinejoin="round" />
+          <polygon points={pts([T, T2, L2, Ld])} fill={s.l} />
+          <polygon points={pts([T, T2, R2, Rd])} fill={s.md} />
+          <polygon points={pts([Ld, L2, B2, Bt])} fill={s.d} />
+          <polygon points={pts([Rd, R2, B2, Bt])} fill={s.xd} />
+          <polygon points={pts([T2, R2, B2, L2])} fill={s.xl} />
+          <polygon points={pts([T2, R2, B2, L2])} fill="none" stroke={lighten(a, 0.6)} strokeWidth="0.8" opacity="0.6" />
+          <path d={`M${T2[0]} ${T2[1]} L${B2[0]} ${B2[1]}`} stroke="#fff" strokeWidth="1" opacity="0.35" />
+          <path d={`M50 20 L${L2[0]} ${L2[1]}`} stroke="#fff" strokeWidth="1.3" opacity="0.5" strokeLinecap="round" />
+          <circle cx="43" cy="38" r="1.5" fill="#fff" />
         </>
       );
+    }
     case 'flame': {
       const wings = t.n >= 9; // Apex ascends on flame-wings
       return (
