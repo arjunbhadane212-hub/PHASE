@@ -754,33 +754,29 @@ input:focus, textarea:focus, select:focus {
   text-shadow: 0 0 6px #fff, 0 0 16px var(--bg), 0 0 30px var(--bg2);
 }
 /* ===================================================================
-   TITLE CHIPS (Oct 2026) — replaces the five-silhouette plate system.
+   TITLE CHIPS — the prestige ladder (Oct 2026, revised)
 
-   What changed and why: the old plates gave every title in a source the
-   same shape, then used glow, halo, sheen and incandescence to say
-   "rare". Fifty titles looked like five objects, and the signal for
-   value was brightness — which is the loud, aggressive read we were
-   asked to get rid of.
+   Identity is the glyph + accent (data/titleGlyphs.js). This file owns type,
+   structure and the two pieces of motion. Geometry is inline from
+   components/profile/TitlePlate.js so one TIER table drives every surface.
 
-   Now identity and value are separated:
-     GLYPH + COLOUR  which title this is  (56 pairs, data/titleGlyphs.js)
-     RARITY          how much presentation the chip is allowed
+   The ladder escalates in MATERIAL and in SIZE, because the point of grinding
+   a mythic is that it should look like you ground for it:
 
-   The rarity ladder is a RESTRAINT ladder, not a brightness dial:
-     common     outlined only, muted ink        — a plain tag
-     rare       accent at 14%, hairline accent
-     epic       accent at 24%, stronger hairline
-     legendary  SOLID pastel surface, dark ink  — the premium jump
-     mythic     solid + a slow, low-contrast sheen
+     common     30px  outlined tag, muted ink
+     rare       33px  accent tint + hairline accent border
+     epic       38px  brushed plate, notched emblem holder, accent top edge
+     legendary  44px  solid pastel, diamond emblem, one slow sheen, soft halo
+     mythic     56px  dark crest plate, laurel flanks, steady natural halo
 
-   The solid pastel surface is the app's most premium gesture (it is the
-   same treatment as the shop's primary CTA pills), so it is withheld
-   until legendary. That is what makes a common look genuinely basic and
-   a mythic look genuinely earned — with no glow anywhere in the system.
+   GLOW RULE (hard): glow must read as a NATURAL glow — a steady, same-colour
+   halo, the way a real glowing object looks. Never a moving rainbow gradient,
+   never twinkling sparks, never fast animation. The mythic name's bloom is a
+   static text-shadow in the title's own accent; the only motion anywhere is one
+   5s sheen pass on legendary and a 6s low-contrast opacity breathe on mythic.
 
-   Geometry (height, padding, radius, glyph size) is inline from
-   components/profile/TitlePlate.js so one SIZES table drives every
-   surface; this file only owns type, the sheen, and motion.
+   Gradients stay vertical (epic) or radial (mythic) — diagonal gradients are
+   banned app-wide.
    =================================================================== */
 
 .tchip {
@@ -789,60 +785,98 @@ input:focus, textarea:focus, select:focus {
   justify-content: flex-start;
   vertical-align: middle;
   position: relative;
-  overflow: hidden;
+  isolation: isolate;
   max-width: 100%;
   flex: none;
+  white-space: nowrap;
   transition: transform 140ms ease;
 }
 
+/* Only legendary clips, and only because its sheen sweep has to be contained.
+   Clipping the others would cut the mythic name's halo into a hard-edged
+   rectangle -- which is exactly the artificial glow this system must not have. */
+.tchip--legendary { overflow: hidden; }
+
 .tchip svg { flex: none; }
 
-/* Archivo 800 uppercase: strong enough to flex, not the mono "data" voice
-   used for eyebrows and not the retired display face the old plates used. */
+/* Archivo 800 uppercase: strong enough to flex, not the mono "data" voice used
+   for eyebrows and not the retired display face the old plates used. */
 .tchip__name {
+  position: relative;
+  min-width: 0;
   font-family: 'Archivo', system-ui, sans-serif;
   font-weight: 800;
-  letter-spacing: 0.045em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   line-height: 1;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* The rarity word is a data label, so it keeps the mono voice — and it is
-   never allowed to outweigh the title's own name. */
+/* Mythic is the exception: its name carries a text-shadow halo, and an
+   overflow clip would slice that halo off square around the glyphs. It gets
+   room to glow instead, and long names are kept in bounds by scaling the font
+   down in TitlePlate.js rather than by truncating. */
+.tchip--mythic .tchip__name { overflow: visible; text-overflow: clip; }
+
+/* The rarity word is a data label and never outweighs the title's own name. */
 .tchip__tier {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 600;
-  font-size: 0.72em;
+  font-size: 0.62em;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   line-height: 1;
   flex: none;
 }
 
-/* Mythic sheen — the only motion in the whole title system. Deliberately slow
-   and low contrast: it should register as "this one is alive" on a second
-   glance, not pull the eye away from the rest of the profile. */
-.tchip--mythic::after {
+/* Emblem holder — epic's notched tile, legendary's rotated diamond. The glyph
+   is counter-rotated so it reads upright inside the diamond. */
+.tchip__em {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.tchip__em--diamond { transform: rotate(45deg); }
+.tchip__em--diamond .tchip__em-inner { transform: rotate(-45deg); display: grid; place-items: center; }
+
+/* Legendary — ONE slow sheen pass. Parked off-frame for 76% of the cycle so it
+   reads as an occasional catch of light, not a shimmer loop. */
+.tchip--legendary::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0) 38%,
-    rgba(255, 255, 255, 0.34) 50%,
-    rgba(255, 255, 255, 0) 62%,
-    transparent 100%);
-  transform: translateX(-100%);
-  animation: tchip-sheen 4.6s ease-in-out infinite;
   pointer-events: none;
+  mix-blend-mode: overlay;
+  background: linear-gradient(90deg, transparent 40%, rgba(255,255,255,0.7) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: tchip-sheen 5s ease-in-out infinite;
 }
 
 @keyframes tchip-sheen {
-  0%, 62% { transform: translateX(-100%); }
-  100%    { transform: translateX(100%); }
+  0%, 76% { transform: translateX(-120%); }
+  100%    { transform: translateX(220%); }
+}
+
+/* Mythic — the inner ember light. A 6s breathe between 0.8 and 1 opacity: slow
+   and low-contrast enough to read as a living object rather than a blink. */
+.tchip--mythic .tchip__frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: tchip-ember 6s ease-in-out infinite;
+}
+
+@keyframes tchip-ember {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 1; }
+}
+
+.tchip--mythic .tchip__crest {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  opacity: 0.9;
 }
 
 /* Interactive chips (shop cards, inventory pills) get a touch of lift; static
@@ -850,8 +884,10 @@ input:focus, textarea:focus, select:focus {
 .tchip--tap:active { transform: scale(0.97); }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Motion off, meaning intact: the mythic chip keeps its solid surface and
-     simply parks the sheen off-frame rather than losing its tier identity. */
-  .tchip--mythic::after { animation: none; transform: translateX(-200%); }
+  /* Motion off, prestige intact: legendary parks its sheen off-frame and mythic
+     holds its ember at full strength. Neither loses its tier identity, because
+     the identity is the material, not the movement. */
+  .tchip--legendary::before { animation: none; transform: translateX(-200%); }
+  .tchip--mythic .tchip__frame { animation: none; opacity: 1; }
   .tchip { transition: none; }
 }
