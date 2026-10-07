@@ -29,11 +29,16 @@ const rarityToTier = (r) =>
 // Adapt open_loot_box's returned items to the shape BoxOpening consumes.
 // Duplicates keep their real tier (a dupe mythic is still a mythic moment) and
 // carry the gem refund; real drops carry the item identity.
-const adaptRolledItems = (items) => (items || []).map((it) => (
-  it.duplicate
-    ? { tier: rarityToTier(it.rarity), type: 'item', name: it.name, item_key: it.item_key, category: it.category, duplicate: true, refund: it.refund }
-    : { tier: rarityToTier(it.rarity), type: 'item', name: it.name, item_key: it.item_key, category: it.category }
-));
+const adaptRolledItems = (items) => (items || []).map((it) => ({
+  tier: rarityToTier(it.rarity),
+  type: 'item',
+  name: it.name,
+  item_key: it.item_key,
+  category: it.category,
+  hex: it.hex || null,
+  gradient: it.gradient || null,
+  ...(it.duplicate ? { duplicate: true, refund: it.refund } : {}),
+}));
 
 const BOX_LABELS = { starter: 'STARTER', delta: 'DELTA', phase: 'PHASE' };
 
@@ -163,7 +168,7 @@ export default function ShopPage() {
             percent: (Number(d.weight) / sumW) * 100,
           };
         });
-        const tiers = ['common', 'rare', 'ultra'].filter((t) => pool.some((p) => p.tier === t));
+        const tiers = ['common', 'rare', 'legendary', 'mythic'].filter((t) => pool.some((p) => p.tier === t));
         byKey[b.key] = {
           id: b.key,
           name: b.name,
@@ -255,6 +260,8 @@ export default function ShopPage() {
       >
         <MysteryBoxesHeader
           onOpenBox={(id) => setOpenedBoxId(id)}
+          boxes={boxData.byKey}
+          gems={gems ?? 0}
         />
       </div>
 

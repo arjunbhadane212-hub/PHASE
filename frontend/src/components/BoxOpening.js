@@ -31,15 +31,24 @@ const CRACKS_NEEDED = 3;
 const haptic = (p) => { try { navigator.vibrate?.(p); } catch { /* unsupported */ } };
 const rand = (a, b) => a + Math.random() * (b - a);
 
-// ---------- category icon: WHAT the item is (2px outline, tier-coloured) ----
-function CatIcon({ item, color, size = 'w-8 h-8' }) {
+// ---------- item art: show the REAL reward where we can (swatch / gradient),
+// otherwise a category outline icon. px = pixel size. ----------
+function ItemArt({ item, color, px = 40 }) {
   const k = item.item_key || '';
   const cat = item.category || '';
   if (k === 'streak_shield' || k === 'streak_revive' || k.startsWith('boost_xp_')) {
-    return <span style={{ color }}><ShopItemIcon itemKey={k} className={size} /></span>;
+    return <span style={{ color, display: 'inline-flex' }}><ShopItemIcon itemKey={k} className={px >= 36 ? 'w-10 h-10' : 'w-6 h-6'} /></span>;
+  }
+  // real colour swatch
+  if ((cat === 'color_main' || cat === 'color_banner' || cat === 'color') && item.hex) {
+    return <span style={{ width: px, height: px, borderRadius: '50%', background: item.hex, boxShadow: `0 0 0 2px var(--gm-card), 0 0 0 3.5px ${item.hex}` }} />;
+  }
+  // real banner gradient chip
+  if (cat === 'banner' && item.gradient) {
+    return <span style={{ width: px * 1.5, height: px, borderRadius: 8, background: item.gradient, border: `1px solid ${color}` }} />;
   }
   const S = (children) => (
-    <svg viewBox="0 0 24 24" className={size} fill="none" stroke={color} strokeWidth="1.7"
+    <svg viewBox="0 0 24 24" width={px} height={px} fill="none" stroke={color} strokeWidth="1.7"
       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
   );
   switch (cat) {
@@ -52,6 +61,7 @@ function CatIcon({ item, color, size = 'w-8 h-8' }) {
     case 'effect':
       return S(<><circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="7.5" opacity="0.6" /></>);
     case 'color_main':
+    case 'color_banner':
     case 'color':
       return S(<><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" /></>);
     default:
@@ -116,7 +126,7 @@ function RewardVisual({ item, chip = false }) {
         </span>
       )}
 
-      <CatIcon item={item} color={color} size={chip ? 'w-6 h-6' : 'w-10 h-10'} />
+      <ItemArt item={item} color={color} px={chip ? 24 : 40} />
 
       <p className={`font-['General_Sans',sans-serif] font-bold text-center leading-tight mt-2 ${chip ? 'text-[10px]' : 'text-sm'}`}
         style={{ color: 'var(--gm-ink)' }}>
@@ -147,27 +157,36 @@ function Cinematic({ item }) {
       style={{ background: '#000000' }}
       data-testid="cinematic-reveal"
     >
-      {/* soft light bloom (single, clean) */}
+      {/* tight radial halo behind the plate (not a blurry blob) */}
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ width: 340, height: 340, background: color, filter: 'blur(100px)' }}
-        initial={{ opacity: 0, scale: 0.2 }}
-        animate={{ opacity: [0, 0.5, 0.34], scale: [0.2, 1.1, 1] }}
-        transition={{ duration: 1.1, delay: 0.7, ease: 'easeOut' }}
+        style={{ width: 260, height: 260, background: `radial-gradient(circle, ${color}33 0%, transparent 70%)` }}
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: [0, 1, 0.85], scale: [0.5, 1, 1] }}
+        transition={{ duration: 0.9, delay: 0.7, ease: 'easeOut' }}
       />
-      {/* vertical light beam column */}
+      {/* crisp expanding rings — designed, not noisy */}
+      {[0, 1].map((r) => (
+        <motion.div key={r} className="absolute rounded-full pointer-events-none"
+          style={{ width: 160, height: 160, border: `2px solid ${color}` }}
+          initial={{ opacity: 0, scale: 0.3 }}
+          animate={{ opacity: [0, 0.6, 0], scale: [0.3, 2.1 + r * 0.6, 2.5 + r * 0.6] }}
+          transition={{ duration: 1.5, delay: 0.72 + r * 0.22, ease: 'easeOut' }}
+        />
+      ))}
+      {/* single quick vertical light sweep */}
       <motion.div className="absolute pointer-events-none"
-        style={{ width: 3, height: '120%', background: `linear-gradient(to bottom, transparent, ${color}, transparent)` }}
+        style={{ width: 2, height: '130%', background: `linear-gradient(to bottom, transparent, ${color}, transparent)` }}
         initial={{ opacity: 0, scaleY: 0 }}
-        animate={{ opacity: [0, 0.8, 0], scaleY: [0, 1, 1] }}
-        transition={{ duration: 0.9, delay: 0.55, ease: 'easeOut' }}
+        animate={{ opacity: [0, 0.9, 0], scaleY: [0, 1, 1] }}
+        transition={{ duration: 0.7, delay: 0.5, ease: 'easeOut' }}
       />
       {/* mythic confetti */}
-      {isMythic && Array.from({ length: 22 }).map((_, i) => (
-        <motion.div key={i} className="absolute left-1/2 top-[40%] pointer-events-none"
+      {isMythic && Array.from({ length: 20 }).map((_, i) => (
+        <motion.div key={i} className="absolute left-1/2 top-[42%] pointer-events-none"
           style={{ width: rand(5, 9), height: rand(5, 9), background: color, borderRadius: 2 }}
           initial={{ x: 0, y: 0, rotate: 0, opacity: 0 }}
           animate={{ x: rand(-150, 150), y: rand(-30, 240), rotate: rand(-200, 200), opacity: [0, 1, 1, 0] }}
-          transition={{ duration: rand(1.4, 2.3), delay: 0.95 + rand(0, 0.25), ease: 'easeOut' }}
+          transition={{ duration: rand(1.4, 2.3), delay: 1.0 + rand(0, 0.25), ease: 'easeOut' }}
         />
       ))}
 

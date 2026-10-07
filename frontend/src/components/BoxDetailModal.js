@@ -2,8 +2,39 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronDown, Gem, Star, Lock } from 'lucide-react';
-import { groupPoolByTier, TIER_META } from '../data/boxDrops';
+import { groupPoolByTier, TIER_META, tierOdds } from '../data/boxDrops';
 import PhaseBoxArt from './PhaseBoxArt';
+
+const GUARANTEE = {
+  starter: null,
+  delta: 'At least 1 Rare or better, every open.',
+  phase: 'At least 1 Legendary or better, every open.',
+};
+
+// Stacked rarity-odds bar
+function OddsBar({ box }) {
+  const odds = tierOdds(box);
+  if (!odds.length) return null;
+  return (
+    <div className="w-full">
+      <div className="flex w-full overflow-hidden rounded-full" style={{ height: 8 }}>
+        {odds.slice().sort((a, b) => a.order - b.order).map((o) => (
+          <div key={o.tier} style={{ width: `${o.pct}%`, background: o.color }} />
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 justify-center">
+        {odds.map((o) => (
+          <span key={o.tier} className="flex items-center gap-1.5">
+            <span style={{ width: 7, height: 7, borderRadius: 7, background: o.color }} />
+            <span className="font-['JetBrains_Mono'] text-[10px] font-bold tabular-nums text-[color:var(--gm-muted)]">
+              {o.label} {o.pct.toFixed(0)}%
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // =============================================================================
 // Large box illustration — the shared v2 crystal-box art, scaled up.
@@ -56,7 +87,7 @@ function DropRatesSection({ box }) {
         return (
           <div key={tier} data-testid={`drop-tier-${tier}`}>
             <div className="flex items-baseline justify-between mb-2 pb-1.5 border-b border-[color:var(--gm-track)]">
-              <span className="text-[11px] font-['JetBrains_Mono'] font-black uppercase tracking-[0.22em] text-[color:var(--gm-ink)]">
+              <span className="text-[11px] font-['JetBrains_Mono'] font-black uppercase tracking-[0.22em]" style={{ color: TIER_META[tier]?.color || 'var(--gm-ink)' }}>
                 {TIER_META[tier].label}
               </span>
               <span className="text-[11px] font-['JetBrains_Mono'] font-bold tabular-nums text-[color:var(--gm-muted)]">
@@ -215,6 +246,16 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
                   {box.cost}
                 </span>
               </div>
+
+              {/* Odds at a glance */}
+              <div className="w-full mt-5">
+                <OddsBar box={box} />
+              </div>
+              {GUARANTEE[box.id] && (
+                <p className="mt-3 text-[11px] font-['JetBrains_Mono'] font-bold uppercase tracking-[0.08em] text-center" style={{ color: box.id === 'phase' ? '#DBF67F' : '#95DEE6' }}>
+                  ✓ {GUARANTEE[box.id]}
+                </p>
+              )}
             </div>
 
             {/* Primary CTA */}
