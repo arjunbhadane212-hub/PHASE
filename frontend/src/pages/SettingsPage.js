@@ -9,9 +9,9 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Separator } from '../components/ui/separator';
-import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Palette, Check, ExternalLink, Sun, Moon } from 'lucide-react';
+import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Check, ExternalLink, Sun, Moon } from 'lucide-react';
+import Inventory from '../components/Inventory';
 import { toast } from 'sonner';
-import { TitleBadge } from '../components/profile/FlexBadge';
 import { rankInfo } from '../data/levels';
 import { AURA_ORDER, getAura, hexA } from '../data/focusAuras';
 import { SOUND_ORDER, getSound } from '../data/focusSounds';
@@ -154,9 +154,6 @@ export default function SettingsPage() {
             </Link>
           </section>
         )}
-
-        {/* Profile Colors - Game Mode Only */}
-        {isGameMode && <ColorSettingsSection />}
 
         {/* Profile Customization - Game Mode Only */}
         {isGameMode && <ProfileCustomizationSection />}
@@ -543,160 +540,19 @@ function NotificationSettings({ user, isGameMode }) {
   );
 }
 
-
 function ProfileCustomizationSection() {
-  const { refreshUser, user } = useAuth();
-  const [owned, setOwned] = useState(null); // null = loading
-  const [equipping, setEquipping] = useState(null);
-
-  // Read owned equippables (title / anim / banner) from Supabase: shop_items +
-  // user_inventory, joined client-side (same pattern as ShopPage). Each item
-  // carries its real shop_items.id so equip_item can be called by id.
-  const fetchData = useCallback(async () => {
-    try {
-      const [{ data: items }, { data: inv }] = await Promise.all([
-        supabase.from('shop_items').select('id,key,name,category,rarity,rarity_style,source_system,rarity_tier'),
-        supabase.from('user_inventory').select('shop_item_id'),
-      ]);
-      const ownedIds = new Set((inv || []).map((r) => r.shop_item_id));
-      const mine = (items || []).filter((i) => ownedIds.has(i.id));
-      setOwned({
-        titles: mine.filter((i) => i.category === 'title'),
-        anims: mine.filter((i) => i.category === 'anim'),
-        banners: mine.filter((i) => i.category === 'banner'),
-      });
-    } catch { setOwned({ titles: [], anims: [], banners: [] }); }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  // Canonical only: equip/unequip go through the RPCs (no direct users.equipped_*
-  // writes). equip_item requires ownership; unequip_item clears the slot.
-  const CAT = { title: 'title', animation: 'anim', banner: 'banner' };
-  const handleEquip = async (type, item) => {
-    setEquipping(`${type}-${item.key}`);
-    try {
-      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: item.id });
-      if (error) throw error;
-      await Promise.all([refreshUser(), fetchData()]);
-      toast.success(`${type} equipped!`);
-    } catch (e) {
-      toast.error(e?.message || 'Failed to equip');
-    } finally { setEquipping(null); }
-  };
-  const handleUnequip = async (type) => {
-    setEquipping(`${type}-null`);
-    try {
-      const { error } = await supabase.rpc('unequip_item', { p_category: CAT[type] });
-      if (error) throw error;
-      await Promise.all([refreshUser(), fetchData()]);
-      toast.success(`${type} removed!`);
-    } catch (e) {
-      toast.error(e?.message || 'Failed');
-    } finally { setEquipping(null); }
-  };
-
-  if (!owned) return null;
-
-  const earnedTitles = owned.titles;
-  const equippedTitle = user?.equipped_title;
-  // Icons dormant: no 'icon' category in shop_items yet (future feature — see
-  // NOTES_FOR_SACHIN.md). Always [] so the Icons block never renders / never calls.
-  const ownedIcons = [];
-  const ownedAnims = owned.anims;
-  const ownedBanners = owned.banners;
-
-  // Equipped chip = cyan "active" ring; unequipped = neutral badge.
-  const chipCls = (active) =>
-    `text-xs px-3 py-1 rounded-full transition-colors ${
-      active ? 'bg-[color:var(--gm-badge)] ring-1 ring-[#95DEE6] text-[color:var(--gm-ink)]'
-             : 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
-    }`;
-
+  // One inventory, shared with the profile panel. This used to be a second,
+  // divergent implementation that rendered Titles/Animations/Banners but NOT
+  // Effects -- so a purchased Profile Effect landed in user_inventory and this
+  // screen had nowhere to show it. The shared component owns every equippable
+  // category, so that class of bug cannot come back.
   return (
-    <section className="mb-6" data-testid="profile-customization">
-      <h2 className={`${SECTION_LABEL} mb-3`}>Profile Customization</h2>
-
-      {/* Titles */}
-      {earnedTitles.length > 0 && (
-        <div className={`${CARD} p-4 mb-3`}>
-          <p className="text-sm text-[color:var(--gm-muted)] mb-2">Titles</p>
-          <div className="flex flex-wrap gap-2">
-            {equippedTitle && (
-              <button onClick={() => handleUnequip('title')} className="text-xs px-3 py-1 rounded-full text-[#B91C1C] hover:bg-[#B91C1C]/10">Remove</button>
-            )}
-            {earnedTitles.map(t => (
-              <button key={t.key} onClick={() => handleEquip('title', t)} disabled={equipping === `title-${t.key}`}
-                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-xl transition-colors ${equippedTitle === t.key ? 'bg-[color:var(--gm-badge)] ring-1 ring-[#95DEE6]' : 'bg-[color:var(--gm-badge)] hover:brightness-95'}`}
-                data-testid={`equip-title-${t.key}`}>
-                <TitleBadge name={t.name} sourceSystem={t.source_system} style={t.rarity_style}
-                  rarityTier={t.rarity_tier} rarity={t.rarity} size="sm" />
-                {equippedTitle === t.key && <Check className="w-3 h-3 text-[color:var(--gm-ink)]" />}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Icons — DORMANT (future feature). No 'icon' category in shop_items and
-          equip_item rejects it, so ownedIcons is always [] and this never renders
-          or calls anything. Kept for when icons are added. See NOTES_FOR_SACHIN.md. */}
-      {ownedIcons.length > 0 && (
-        <div className={`${CARD} p-4 mb-3`}>
-          <p className="text-sm text-[color:var(--gm-muted)] mb-2">Icons</p>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleEquip('icon', null)} className={chipCls(false)}>Default</button>
-            {ownedIcons.map(i => (
-              <button key={i.key} onClick={() => handleEquip('icon', i.key)} disabled={equipping === `icon-${i.key}`}
-                className={chipCls(user?.equipped_icon === i.key)}>
-                {i.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Animations */}
-      {ownedAnims.length > 0 && (
-        <div className={`${CARD} p-4 mb-3`}>
-          <p className="text-sm text-[color:var(--gm-muted)] mb-2">Animations</p>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleUnequip('animation')} className={chipCls(false)}>None</button>
-            {ownedAnims.map(a => (
-              <button key={a.key} onClick={() => handleEquip('animation', a)} disabled={equipping === `animation-${a.key}`}
-                className={chipCls(user?.equipped_animation === a.key)}>
-                {a.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Banners */}
-      {ownedBanners.length > 0 && (
-        <div className={`${CARD} p-4 mb-3`}>
-          <p className="text-sm text-[color:var(--gm-muted)] mb-2">Banners</p>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleUnequip('banner')} className={chipCls(false)}>Default</button>
-            {ownedBanners.map(b => (
-              <button key={b.key} onClick={() => handleEquip('banner', b)} disabled={equipping === `banner-${b.key}`}
-                className={chipCls(user?.equipped_banner === b.key)}>
-                {b.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {earnedTitles.length === 0 && ownedIcons.length === 0 && ownedAnims.length === 0 && ownedBanners.length === 0 && (
-        <div className={`${CARD} p-4 text-center text-sm text-[color:var(--gm-muted)]`}>
-          No items to equip yet. Earn titles through streaks or buy items from the Shop!
-        </div>
-      )}
+    <section className="mb-8">
+      <h2 className={`${SECTION_LABEL} mb-3`}>Inventory</h2>
+      <Inventory />
     </section>
   );
 }
-
 
 function LightModeToggle() {
   const [lightMode, setLightMode] = useState(() => localStorage.getItem('lightMode') === 'true');
@@ -733,7 +589,6 @@ function LightModeToggle() {
     </div>
   );
 }
-
 
 function ProgressSection({ isGameMode }) {
   const { user } = useAuth();
@@ -833,95 +688,6 @@ function ProgressSection({ isGameMode }) {
   );
 }
 
-
-function ColorSettingsSection() {
-  const { user, refreshUser } = useAuth();
-  const [colors, setColors] = useState(null);
-  const [updating, setUpdating] = useState(null);
-
-  // Read the color catalog + ownership from Supabase (shop_items color_main/
-  // color_banner + user_inventory). Each color carries its shop_items.id; the
-  // `selected` flag mirrors the users.selected_*_color column equip_item writes.
-  const fetchColors = useCallback(async () => {
-    try {
-      const [{ data: items }, { data: inv }] = await Promise.all([
-        supabase.from('shop_items').select('id,name,category,hex_value')
-          .in('category', ['color_main', 'color_banner']),
-        supabase.from('user_inventory').select('shop_item_id'),
-      ]);
-      const ownedIds = new Set((inv || []).map((r) => r.shop_item_id));
-      const toColor = (i, selectedHex) => ({
-        id: i.id, hex: i.hex_value, name: i.name,
-        owned: ownedIds.has(i.id), selected: selectedHex === i.hex_value,
-      });
-      const rows = items || [];
-      setColors({
-        main_colors: rows.filter((i) => i.category === 'color_main').map((i) => toColor(i, user?.selected_main_color)),
-        banner_colors: rows.filter((i) => i.category === 'color_banner').map((i) => toColor(i, user?.selected_banner_color)),
-        selected_main: user?.selected_main_color,
-        selected_banner: user?.selected_banner_color,
-      });
-    } catch { /* ignore -> section stays hidden */ }
-  }, [user?.selected_main_color, user?.selected_banner_color]);
-
-  useEffect(() => { fetchColors(); }, [fetchColors]);
-
-  // Canonical only: owned swatch -> equip_item(id); Default (#1F2937) ->
-  // unequip_item(category). No direct users.selected_*_color writes.
-  const handleSelect = async (color, type) => {
-    setUpdating(`${type}-${color.hex}`);
-    try {
-      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: color.id });
-      if (error) throw error;
-      await Promise.all([refreshUser(), fetchColors()]);
-      toast.success('Color updated!');
-    } catch (e) {
-      toast.error(e?.message || 'Failed to update');
-    } finally { setUpdating(null); }
-  };
-  const handleReset = async (type) => {
-    setUpdating(`${type}-#1F2937`);
-    try {
-      const { error } = await supabase.rpc('unequip_item', { p_category: type === 'banner' ? 'color_banner' : 'color_main' });
-      if (error) throw error;
-      await Promise.all([refreshUser(), fetchColors()]);
-      toast.success('Color updated!');
-    } catch (e) {
-      toast.error(e?.message || 'Failed to update');
-    } finally { setUpdating(null); }
-  };
-
-  if (!colors) return null;
-
-  return (
-    <section className="mb-6" data-testid="color-settings">
-      <h2 className={`${SECTION_LABEL} mb-3`}>Profile Colors</h2>
-
-      {/* Banner Color */}
-      <div className="mb-4">
-        <p className="text-sm text-[color:var(--gm-muted)] mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Banner Color</p>
-        <div className="flex flex-wrap gap-2">
-          <ColorSwatch hex="#1F2937" name="Default" selected={colors.selected_banner === '#1F2937'} owned={true} onSelect={() => handleReset('banner')} updating={updating === 'banner-#1F2937'} />
-          {colors.banner_colors.map(c => (
-            <ColorSwatch key={c.hex} hex={c.hex} name={c.name} selected={c.selected} owned={c.owned} onSelect={() => c.owned && handleSelect(c, 'banner')} updating={updating === `banner-${c.hex}`} />
-          ))}
-        </div>
-      </div>
-
-      {/* Main Color */}
-      <div>
-        <p className="text-sm text-[color:var(--gm-muted)] mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Main Color</p>
-        <div className="flex flex-wrap gap-2">
-          <ColorSwatch hex="#1F2937" name="Default" selected={colors.selected_main === '#1F2937'} owned={true} onSelect={() => handleReset('main')} updating={updating === 'main-#1F2937'} />
-          {colors.main_colors.map(c => (
-            <ColorSwatch key={c.hex} hex={c.hex} name={c.name} selected={c.selected} owned={c.owned} onSelect={() => c.owned && handleSelect(c, 'main')} updating={updating === `main-${c.hex}`} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // Focus Mode: pick which purchased Timer Screen the full-screen session uses.
 // Buying happens in the Focus shop; equipping lives here. Cyan Pulse is the
 // free default (a 0-gem row), so selecting it claims it first if needed.
@@ -936,7 +702,9 @@ function TimerScreenSection() {
   const load = useCallback(async () => {
     try {
       const { data: rows } = await supabase.from('shop_items')
-        .select('id,key,name,price_gems,category').in('category', ['focus_aura', 'focus_sound']);
+        .select('id,key,name,price_gems,category')
+        .eq('is_active', true)
+        .in('category', ['focus_aura', 'focus_sound']);
       const ids = (rows || []).map((r) => r.id);
       const { data: inv } = ids.length
         ? await supabase.from('user_inventory').select('shop_item_id,quantity').in('shop_item_id', ids)
@@ -1062,20 +830,3 @@ function TimerScreenSection() {
   );
 }
 
-function ColorSwatch({ hex, name, selected, owned, onSelect, updating }) {
-  return (
-    <button
-      onClick={onSelect}
-      disabled={!owned || updating}
-      title={owned ? name : `${name} (Unlock in Shop)`}
-      className={`w-8 h-8 rounded-full border-2 transition-all relative ${
-        selected ? 'border-[#95DEE6] scale-110' : owned ? 'border-[color:var(--gm-track)] hover:scale-105' : 'border-[color:var(--gm-track)] opacity-40 cursor-not-allowed'
-      }`}
-      style={{ backgroundColor: hex }}
-      data-testid={`color-swatch-${hex}`}
-    >
-      {selected && <Check className="w-4 h-4 text-white absolute inset-0 m-auto" />}
-      {!owned && <Lock className="w-3 h-3 text-white/60 absolute inset-0 m-auto" />}
-    </button>
-  );
-}

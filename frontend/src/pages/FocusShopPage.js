@@ -65,6 +65,7 @@ export default function FocusShopPage() {
       const { data: rows } = await supabase
         .from('shop_items')
         .select('id,key,name,price_gems,max_owned,category')
+        .eq('is_active', true)
         .in('category', ['boost', 'focus_boost', 'focus_aura', 'focus_sound']);
       const list = rows || [];
       setItems(list);

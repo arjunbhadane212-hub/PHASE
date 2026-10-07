@@ -99,59 +99,18 @@ export function standingBadge(standing, leagueTierNum) {
 }
 
 // ── Titles ────────────────────────────────────────────────────────────────
-// A title has two independent axes.
+// Title VISUALS no longer live here. A title's identity (its own glyph + its
+// own accent colour) is in data/titleGlyphs.js, and its presentation ladder is
+// in components/profile/TitlePlate.js.
 //
-//   SOURCE  → the plate FORM. Where the title came from: a Starter/Delta/Phase
-//             box, a streak milestone, or accumulated focus hours. Each source
-//             has its own silhouette (see components/profile/TitlePlate.js) and
-//             must be tellable apart with the colour stripped out.
-//   RARITY  → the plate INTENSITY only. Glow radius, sheen, halo, and which
-//             stage of the streak/hours glyph family burns.
+// What was here -- TITLE_SOURCES, TITLE_STYLES, RARITY_GLOW, resolveTitleSource,
+// styleFromRarity -- modelled a title as "source picks a silhouette, rarity
+// picks a glow intensity". That is the system that made 56 titles look like 5
+// objects and signalled value with brightness. It is gone; nothing maps a title
+// to a glow number any more.
 //
-// For box titles the source comes from shop_items.rarity_style, set from the
-// box a title can drop from. Shared titles (Overkill/Vermin/Relentless) resolve
-// to their highest box, so a Phase pull never renders in Delta chrome.
-export const TITLE_SOURCES = ['starter', 'delta', 'phase', 'streak', 'hours'];
-
-export const TITLE_STYLES = {
-  starter: { a: '#9AA4B2', b: '#C7CDD6', glow: 0.2,  label: 'Starter', sheen: false, halo: false },
-  delta:   { a: '#3B82F6', b: '#7FB4F5', glow: 0.55, label: 'Delta',   sheen: false, halo: false },
-  phase:   { a: '#FBBF24', b: '#60A5FA', glow: 1.0,  label: 'Phase',   sheen: true,  halo: true  },
-  streak:  { a: '#F59E0B', b: '#FCD34D', glow: 0.6,  label: 'Streak',  sheen: false, halo: false },
-  hours:   { a: '#4E8FDB', b: '#8FC3FF', glow: 0.5,  label: 'Hours',   sheen: false, halo: false },
-};
-
-export function titleStyle(style) {
-  return TITLE_STYLES[style] || TITLE_STYLES.starter;
-}
-
-// Rarity → INTENSITY ONLY. This is the second axis: it never changes a plate's
-// shape, only how hard it burns. Lives here (not in a component) because the
-// title-unlock toast and the profile plates must read the exact same numbers —
-// a title has to look identical the moment it is won and every time after.
-export const RARITY_GLOW = {
-  common:    { glow: 0.18, sheen: false, halo: false, incandescent: false, a: '#8A93A6', b: '#B8C0D0' },
-  rare:      { glow: 0.42, sheen: false, halo: false, incandescent: false, a: '#4E8FDB', b: '#8FC3FF' },
-  epic:      { glow: 0.62, sheen: true,  halo: false, incandescent: false, a: '#7C8CF0', b: '#B4C0FF' },
-  legendary: { glow: 0.82, sheen: true,  halo: true,  incandescent: false, a: '#F0A84E', b: '#FFCE85' },
-  mythic:    { glow: 1.0,  sheen: true,  halo: true,  incandescent: true,  a: '#F2C45A', b: '#FFFFFF' },
-};
-
-// Resolves the live DB columns down to the ONE value the plate needs: its form.
-//
-//   source_system  'box' | 'streak' | 'hours'   — which system granted it
-//   rarity_style   'starter' | 'delta' | 'phase' — which BOX, box titles only
-//
-// A box title's form is its box tier, so 'box' defers to rarity_style. Streak
-// and hours titles carry no rarity_style at all (get_public_profile coalesces
-// the missing value to 'starter'), which is precisely why source_system has to
-// be checked FIRST — trusting `style` alone renders every flame plate as a flat
-// starter tag.
-export function resolveTitleSource(sourceSystem, rarityStyle, rarity) {
-  if (sourceSystem === 'streak' || sourceSystem === 'hours') return sourceSystem;
-  if (TITLE_SOURCES.includes(rarityStyle)) return rarityStyle;
-  return styleFromRarity(rarity);
-}
+// All that survives here is the rarity vocabulary itself, which the chip, the
+// shop and the inventory all normalise through.
 
 // Normalises whatever a row carries into one of the five rarity tiers. Legacy
 // rows spell it 'ultra'; the tier list is common → mythic.
@@ -163,12 +122,6 @@ export function normalizeRarity(rarity) {
   return RARITY_TIERS.includes(r) ? r : null;
 }
 
-// Legacy rarity strings (pre-migration rows) → the new tier styles.
-export function styleFromRarity(rarity) {
-  if (rarity === 'mythic' || rarity === 'ultra') return 'phase';
-  if (rarity === 'legendary' || rarity === 'epic' || rarity === 'rare') return 'delta';
-  return 'starter';
-}
 
 // ── Global standing ───────────────────────────────────────────────────────
 // Top 1% / 5% / 10% earn light. Everyone else gets an honest, quiet number.

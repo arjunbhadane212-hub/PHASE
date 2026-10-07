@@ -1,37 +1,37 @@
-// The badge chrome every flex on the public profile is built from.
+// The badge chrome on the public profile.
 //
-// One primitive, driven by the intensity model in data/profileIdentity.js.
-// Nothing here hardcodes "this badge is special" — the data decides, so a
-// demotion or a broken streak genuinely cools the pixel output on next render.
+// Oct 2026: these used to be lit pills -- each one took a colour from its own
+// system (rank ladder, streak tier, league tier) and rendered it as a saturated
+// fill plus a glow, sheen or halo scaled by how well you were doing. On one
+// screen that meant five competing colour systems, several of them still the
+// pre-v2 blue and purple, all of them glowing.
+//
+// The profile is black now. These badges are neutral v2 surfaces -- card fill,
+// ink text, no glow -- and the ONLY colour on the profile comes from the title
+// chips. That is deliberate: it makes an equipped title the thing your eye
+// lands on, which is the whole point of a title being worth flexing.
+//
+// Intensity still exists, it is just not chromatic: rank, streak and standing
+// still read their live values, they simply express them through the label and
+// the emblem rather than through brightness.
 
 import { Trophy, Globe2, Crown, ChevronsUp, ChevronsDown, Minus } from 'lucide-react';
 import TierEmblem from '../TierEmblem';
 import { FlameGlyph } from './Sigil';
 import TitlePlate from './TitlePlate';
-import { streakTier, levelBadge, standingBadge, globalBadge, titleStyle, normalizeRarity, resolveTitleSource, RARITY_GLOW } from '../../data/profileIdentity';
+import { streakTier, levelBadge, standingBadge, globalBadge, normalizeRarity } from '../../data/profileIdentity';
 
-export default function FlexBadge({ spec, icon, label, value, sub, size = 'md', className = '', style, title, ...rest }) {
-  const cls = [
-    'flexbadge',
-    spec?.sheen && 'flexbadge--sheen',
-    spec?.halo && 'flexbadge--halo',
-    spec?.incandescent && 'flexbadge--incandescent',
-    size === 'sm' && 'text-[11px] px-2.5 py-1',
-    size === 'lg' && 'text-[13px] px-3.5 py-2',
-    className,
-  ].filter(Boolean).join(' ');
+const PILL = 'inline-flex items-center gap-1.5 rounded-full bg-[color:var(--gm-badge)] text-[color:var(--gm-ink)] flex-none';
+const SIZE = { sm: 'h-[26px] px-2.5 text-[11px]', md: 'h-[31px] px-3 text-[12px]', lg: 'h-[36px] px-3.5 text-[13px]' };
 
+export default function FlexBadge({ icon, label, value, size = 'md', className = '', title, ...rest }) {
   return (
-    <span
-      className={cls}
-      title={title}
-      style={{ '--bg': spec?.a || '#3B82F6', '--bg2': spec?.b || '#60A5FA', '--glow': spec?.glow ?? 0.5, ...style }}
-      {...rest}
-    >
+    <span className={`${PILL} ${SIZE[size] || SIZE.md} ${className}`} title={title} {...rest}>
       {icon}
-      <span className="flexbadge__label">{label}</span>
-      {value != null && <span className="flexbadge__value">{value}</span>}
-      {sub && <span className="text-[10px] font-bold text-white/45 tracking-wide">{sub}</span>}
+      <span className="font-['General_Sans'] font-bold leading-none">{label}</span>
+      {value != null && (
+        <span className="font-['JetBrains_Mono'] font-bold leading-none tabular-nums text-[color:var(--gm-muted)]">{value}</span>
+      )}
     </span>
   );
 }
@@ -41,11 +41,11 @@ export function RankBadge({ level, progressPct, size = 'md' }) {
   const b = levelBadge(level, { progressPct });
   return (
     <FlexBadge
-      spec={b} size={size}
+      size={size}
       title={b.isMax ? 'Apex — the top of the ladder' : `Level ${b.level} · ${b.progressPct ?? 0}% to the next rank`}
       icon={b.isMax
-        ? <Crown className="flexbadge__icon w-3.5 h-3.5" strokeWidth={2} />
-        : <Trophy className="flexbadge__icon w-3.5 h-3.5" strokeWidth={2} />}
+        ? <Crown className="w-3.5 h-3.5 flex-none" strokeWidth={2} />
+        : <Trophy className="w-3.5 h-3.5 flex-none" strokeWidth={2} />}
       label={b.name}
       value={`LV ${b.level}`}
       data-testid="badge-rank"
@@ -58,13 +58,9 @@ export function StreakBadge({ days, size = 'md' }) {
   const s = streakTier(days);
   return (
     <FlexBadge
-      spec={s} size={size}
+      size={size}
       title={s.alive ? `${s.days}-day streak · ${s.label} tier` : 'No active streak'}
-      icon={<FlameGlyph
-        stage={s.flame}
-        size={14}
-        className={`flexbadge__icon ${s.alive && s.glow >= 0.8 ? 'streak-flame-alive' : ''}`}
-      />}
+      icon={<FlameGlyph stage={s.flame} size={14} className="flex-none" />}
       label={s.alive ? `${s.days}` : '0'}
       value={s.days === 1 ? 'DAY' : 'DAYS'}
       data-testid="badge-streak"
@@ -75,41 +71,40 @@ export function StreakBadge({ days, size = 'md' }) {
 /* ── Live league standing ────────────────────────────────────────────────── */
 export function StandingBadge({ standing, leagueTier, size = 'md' }) {
   const b = standingBadge(standing, leagueTier);
-  if (!b.placed) {
-    return (
-      <FlexBadge
-        spec={b} size={size} title="Not placed in a league this period"
-        icon={<TierEmblem tier={b.tier.n} size={18} glow={false} />}
-        label={b.tierName} value="UNPLACED"
-        data-testid="badge-standing"
-      />
-    );
-  }
   return (
     <FlexBadge
-      spec={b} size={size}
-      title={`#${b.position} of ${b.groupSize} in ${b.tierName} · ${b.zoneLabel.toLowerCase()} zone · live`}
+      size={size}
+      title={b.placed
+        ? `#${b.position} of ${b.groupSize} in ${b.tierName} · ${b.zoneLabel.toLowerCase()} zone · live`
+        : 'Not placed in a league this period'}
       icon={<TierEmblem tier={b.tier.n} size={18} glow={false} />}
       label={b.tierName}
-      value={`#${b.position}`}
+      value={b.placed ? `#${b.position}` : 'UNPLACED'}
       data-testid="badge-standing"
     />
   );
 }
 
-/* Zone chip — rendered next to the standing badge so promotion/demotion reads
-   at a glance without recolouring the tier identity itself. */
+/* Zone chip — promotion/demotion is the one place a non-title accent survives,
+   because up and down genuinely need to be told apart at a glance. Lime for
+   promotion, red for demotion, neutral for holding: the v2 meanings. */
+const ZONE = {
+  promotion: { fg: '#DBF67F', Icon: ChevronsUp },
+  demotion:  { fg: '#B91C1C', Icon: ChevronsDown },
+  holding:   { fg: 'var(--gm-muted)', Icon: Minus },
+};
+
 export function ZoneChip({ standing }) {
   if (!standing?.zone) return null;
-  const b = standingBadge(standing, standing.tier);
-  const Icon = standing.zone === 'promotion' ? ChevronsUp : standing.zone === 'demotion' ? ChevronsDown : Minus;
+  const z = ZONE[standing.zone] || ZONE.holding;
+  const { Icon } = z;
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-extrabold tracking-wider"
-      style={{ background: `${b.accent}1f`, color: b.accent, border: `1px solid ${b.accent}44` }}
+      className="inline-flex items-center gap-1 px-2 h-[26px] rounded-full bg-[color:var(--gm-badge)] font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.12em] flex-none"
+      style={{ color: z.fg }}
       data-testid="chip-zone"
     >
-      <Icon className="w-3 h-3" strokeWidth={2.5} /> {b.zoneLabel}
+      <Icon className="w-3 h-3" strokeWidth={2.5} /> {standing.zone}
     </span>
   );
 }
@@ -120,9 +115,9 @@ export function GlobalRankBadge({ rank, total, size = 'md' }) {
   if (!b) return null;
   return (
     <FlexBadge
-      spec={b} size={size}
+      size={size}
       title={`#${b.rank} of ${b.total.toLocaleString()} by lifetime XP · live`}
-      icon={<Globe2 className="flexbadge__icon w-3.5 h-3.5" strokeWidth={2} />}
+      icon={<Globe2 className="w-3.5 h-3.5 flex-none" strokeWidth={2} />}
       label={`#${b.rank.toLocaleString()}`}
       value={b.tagline || 'GLOBAL'}
       data-testid="badge-global"
@@ -131,34 +126,20 @@ export function GlobalRankBadge({ rank, total, size = 'md' }) {
 }
 
 /* ── Title ───────────────────────────────────────────────────────────────────
-   Two independent axes, deliberately kept apart:
+   A title is identified by its KEY, because the key is what selects both its
+   glyph and its accent colour from data/titleGlyphs.js. That is the whole
+   lookup — there is no source→silhouette or rarity→glow resolution any more,
+   and no plate "spec" to assemble.
 
-     sourceStyle → the plate FORM  (starter | delta | phase | streak | hours)
-     rarityTier  → the plate GLOW  (common | rare | epic | legendary | mythic)
-
-   Same rarity + different source must differ in shape. Same source + different
-   rarity must differ in intensity.
-
-   Both axes are LIVE columns on shop_items, surfaced by get_public_profile:
-   `sourceSystem` (box/streak/hours) + `style` (rarity_style, box titles only)
-   resolve the form; `rarityTier` is the intensity. `rarity` is the legacy
-   pre-migration string and is only a last-resort fallback. */
-export function TitleBadge({ name, sourceSystem, sourceStyle, rarityTier, style, rarity, size = 'md', showTier = false }) {
-  if (!name) return null;
-  const source = sourceStyle || resolveTitleSource(sourceSystem, style, rarity);
-  const tier = normalizeRarity(rarityTier) || normalizeRarity(rarity) || defaultTierFor(source);
-  const spec = { ...titleStyle(source), ...(RARITY_GLOW[tier] || {}) };
-
+   `tier` is the only other input and it controls presentation restraint only
+   (see TitlePlate.js). Callers pass the live shop_items.rarity_tier; `rarity`
+   is the legacy pre-migration string kept as a fallback for a stale row. */
+export function TitleBadge({ titleKey, name, rarityTier, rarity, size = 'md', showTier = false }) {
+  if (!name || !titleKey) return null;
+  const tier = normalizeRarity(rarityTier) || normalizeRarity(rarity) || 'common';
   return (
-    <span className="inline-flex align-middle" data-testid="badge-title" title={`${name} · ${titleStyle(source).label} · ${tier}`}>
-      <TitlePlate name={name} source={source} tier={tier} spec={spec} size={size} showTier={showTier} />
+    <span className="inline-flex align-middle max-w-full" data-testid="badge-title">
+      <TitlePlate titleKey={titleKey} name={name} tier={tier} size={size} showTier={showTier} />
     </span>
   );
-}
-
-/* Last-resort intensity for a row that predates rarity_tier. Mirrors the
-   backfill in the title_rarity_tier_and_source_system migration, so a stale
-   cached row and a fresh one render the same. */
-function defaultTierFor(source) {
-  return source === 'phase' ? 'mythic' : source === 'delta' ? 'rare' : 'common';
 }

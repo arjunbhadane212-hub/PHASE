@@ -284,35 +284,82 @@ Update 4:             Seasonal drops
 
 ---
 
-## Title System (BUILT — Aug 2026)
+## Title System (REBUILT — Oct 2026)
 
-There is exactly **one** title system, and it lives in Supabase. Two independent
-axes drive every title badge — never collapse them into one:
+There is exactly **one** title system and it lives in Supabase. **56 titles**,
+each with its **own glyph and its own accent colour** (`data/titleGlyphs.js`).
 
-- **`shop_items.source_system`** (`box` / `streak` / `hours`) → the plate **FORM**.
-  For box titles the form is refined by `rarity_style` (`starter`/`delta`/`phase`).
-- **`shop_items.rarity_tier`** (`common` → `mythic`) → the plate **GLOW ONLY**.
+**Two axes, never collapse them:**
+- `shop_items.source_system` (`shop` / `streak` / `hours` / `box`) → how you GET it.
+- `shop_items.rarity_tier` (`common` → `mythic`) → how much PRESENTATION the chip gets.
 
-Rarity is assigned by a different rule per source, deliberately:
-box titles are *probability-rare* (`delta`→Rare, `phase`→Mythic, flat); streak
-and hours titles are *effort-rare*, by breakpoint position. The distributions
-are pyramids — streak **5/3/3/2/1**, hours **3/2/1/2/1**. **Do not rebalance
-either into an even split.**
+**The rarity ladder is a restraint ladder, not a brightness dial** (this is the
+fix for "flashy / too aggressive"):
+```
+common     outlined only, muted ink      — a plain tag
+rare       accent at 14%, hairline
+epic       accent at 24%, stronger hairline
+legendary  SOLID pastel surface, dark ink — the premium jump
+mythic     solid + one slow, low-contrast sheen
+```
+The solid pastel surface is the app's most premium gesture (same treatment as
+the shop's primary CTA pills), so it is **withheld until legendary**. There is
+**no glow anywhere** in the title system. Type is Archivo 800 uppercase.
 
-Awarding is live and automatic: `sync_progress_titles(uuid)` runs inside
-`complete_habit` and returns `newly_unlocked`, which fires a title-unlock toast
-rendering the real plate. **Titles are permanent** — a broken streak never
-revokes one; it only stops new higher titles from unlocking.
+**Acquisition:** 24 shop titles are buyable (`box_only=false` + `price_gems`:
+common 400 / rare 900 / epic 1800 / legendary 3200 / mythic 6000). The 32 earned
+and box titles stay `box_only=true` so `purchase_shop_item` keeps rejecting them
+— **you cannot buy past the streak ladder.** The shop's Titles tab still shows
+all 56, with earned/box ones locked and labelled with their unlock condition.
 
-Not Pro-gated, on the public profile or on equipping (Sachin's Aug 2026 call).
-This overrides the "Title and banner equipping" line under Locked Behind Pro.
+**Titles are permanent.** A broken streak never revokes one.
 
-⚠️ **Open item — hours titles cannot be earned yet.** No source of truth for
-"hours spent on Phase" exists: no `focus_sessions` table, no start/end
-timestamps, and `habits.session_duration` is *planned* length, not time served.
-The 9 hours titles are seeded and render, but never unlock. Do not paper over
-this with a proxy metric (habit counts are not durations). Full detail +
-the one-step switch-on: `supabase/migrations/README_progress_titles.md`.
+⚠️ **Hours titles still cannot be earned** — there is no source of truth for
+"hours spent" (no `focus_sessions` table, no start/end timestamps;
+`habits.session_duration` is *planned* length, not time served). The 9 hours
+titles are seeded, render, and show as locked. Do not invent a proxy metric.
+Switch-on steps: `supabase/migrations/README_progress_titles.md`.
+
+---
+
+## Inventory (UNIFIED — Oct 2026)
+
+`components/Inventory.js` is **the** inventory. It owns every equippable
+category (Titles, Animations, Banners, Profile Effects) and is rendered by BOTH
+SettingsPage and the MyProfilePage panel.
+
+Before this there were two divergent copies, and Settings had **no Effects
+section at all** — so buying a Profile Effect wrote a real `user_inventory` row
+that one of the two screens simply never rendered. That was the "I bought it and
+it never showed up" bug: the purchase always worked, there was just no shelf.
+**Never add a category to one surface only** — add a row to `SECTIONS` and it
+appears on both.
+
+---
+
+## Profile Colours — RETIRED (Oct 2026)
+
+The profile is **black**. `color_main` (13) and `color_banner` (5) are
+`is_active = false`; every user's `selected_main_color` / `selected_banner_color`
+is reset to the `#1F2937` sentinel. Rows are kept, not deleted, so ownership
+history survives if colours ever return.
+
+Also removed: the rank-coloured ambient blooms, the streak amber glow, the
+avatar colour fill, and the dead `--user-accent`/`--user-banner` CSS injection
+(which defaulted to the retired brand blue and was consumed by nothing).
+
+**The only colour on the profile now comes from title chips.** That is
+deliberate — it makes an equipped title the thing your eye lands on.
+
+⚠️ **`shop_items` reads must filter `.eq('is_active', true)`** or retired
+categories reappear in the shop.
+
+> **NOTE — the "Color System" section above is pre-v2 and partly stale.** The app
+> migrated to the v2 palette (cyan `#95DEE6`/ink `#183A3F`, lime `#DBF67F`/ink
+> `#2A3B0B`, purple accent `#A59BCC`, destructive `#B91C1C`). **Blue is gone —
+> do not reintroduce `#3B82F6`/`#60A5FA`/`#4D8EF0`.** The rank ladder in
+> `data/levels.js` is still the old blue/purple palette and is no longer used on
+> the profile; it has not been migrated elsewhere yet.
 
 ---
 

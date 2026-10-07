@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
-import { Gem, Lock, Clock, Check, Zap, Palette, Crown, Sparkles, Frame, Star, Swords } from 'lucide-react';
+import { Gem, Lock, Clock, Check, Zap, Crown, Sparkles, Frame, Star, Swords } from 'lucide-react';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
 import MysteryBoxesHeader from '../components/MysteryBoxesHeader';
+import TitlesGrid from '../components/TitlesGrid';
 import BoxDetailModal from '../components/BoxDetailModal';
 import BoxOpening from '../components/BoxOpening';
 import { supabase } from '../lib/supabaseClient';
@@ -61,9 +62,11 @@ export default function ShopPage() {
   const [openedBoxId, setOpenedBoxId] = useState(null);
   const [openingState, setOpeningState] = useState(null); // { boxId, items } once API resolves
   const [shopItems, setShopItems] = useState([]);
-  const [colors, setColors] = useState({ main_colors: [], banner_colors: [] });
+  const [titles, setTitles] = useState([]);
   const [profileItems, setProfileItems] = useState({ icons: [], animations: [], banners: [], decorations: [], battles: [] });
   const [boxData, setBoxData] = useState({ byKey: {}, keyToId: {} });
+  const [equippedTitle, setEquippedTitle] = useState(null);
+  const [equipping, setEquipping] = useState(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
 
@@ -74,7 +77,9 @@ export default function ShopPage() {
   // get ported in their own approval-gated commits (Steps 2b/2c/2d).
   const fetchShop = useCallback(async () => {
     try {
-      const { data: items, error } = await supabase.from('shop_items').select('*');
+      // is_active gates the catalogue: retired categories (profile colours)
+      // stay in the table for ownership history but never reach the shop.
+      const { data: items, error } = await supabase.from('shop_items').select('*').eq('is_active', true);
       if (error) throw error;
 
       const [{ data: inv }, { data: eq }, { data: lboxes }, { data: droptab }] = await Promise.all([
@@ -107,21 +112,25 @@ export default function ShopPage() {
         multiplier: r.metadata?.multiplier ?? null,
       })));
 
-      // Colors -> ColorsGrid (hex swatch is real data).
-      const mapColor = (r) => ({
+      // Titles -> TitlesGrid. The grid shows the FULL catalogue, so `buyable`
+      // has to be derived rather than assumed: only shop-sourced rows are
+      // priced and non-box_only. Everything else is an earned/box title and
+      // renders locked with its unlock condition.
+      setTitles(byCat('title').map((r) => ({
         id: r.id,
         key: r.key,
-        hex: r.hex_value,
         name: r.name,
+        rarity_tier: r.rarity_tier || 'common',
+        source_system: r.source_system,
+        box_tier: r.box_tier,
+        metadata: r.metadata || {},
         price: r.price_gems,
-        rarity: r.rarity,
         owned: (ownedQty[r.id] || 0) > 0,
-        selected: equippedIds.has(r.id),
-      });
-      setColors({
-        main_colors: byCat('color_main').map(mapColor),
-        banner_colors: byCat('color_banner').map(mapColor),
-      });
+        buyable: !r.box_only && r.price_gems != null,
+      })));
+      setEquippedTitle(
+        (items || []).find((r) => equippedIds.has(r.id) && r.category === 'title')?.key || null
+      );
 
       // Anims/Banners/Effects -> ProfileItemsGrid / DecorationsGrid.
       // Anim css from data/shopAnimations.js (Step 2c); effect css from
@@ -196,8 +205,7 @@ export default function ShopPage() {
       const { data, error } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: shopItemId });
       if (error) throw error;
       soundEngine.purchase();
-      const verb = (data.category === 'color_main' || data.category === 'color_banner') ? 'Unlocked' : 'Purchased';
-      toast.success(`${verb} ${data.name}!`);
+      toast.success(`Purchased ${data.name}!`);
       await Promise.all([fetchShop(), fetchGameStatus(), refreshUser()]);
     } catch (e) {
       toast.error(e?.message || 'Purchase failed');
@@ -224,9 +232,26 @@ export default function ShopPage() {
     }
   };
 
+  // Equip straight from the shop. Buying a title and then having to go hunt
+  // for it in a different screen to actually wear it is the exact "I bought it
+  // and nothing happened" gap this tab closes.
+  const handleEquipTitle = async (t) => {
+    setEquipping(`title-${t.key}`);
+    try {
+      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: t.id });
+      if (error) throw error;
+      setEquippedTitle(t.key);
+      toast.success(`Equipped ${t.name}`);
+      await Promise.all([fetchShop(), refreshUser()]);
+    } catch (e) {
+      toast.error(e?.message || 'Could not equip');
+    } finally {
+      setEquipping(null);
+    }
+  };
+
   const TABS = [
     { id: 'powerups', icon: Zap, label: 'Boosts' },
-    { id: 'colors', icon: Palette, label: 'Colors' },
     { id: 'anims', icon: Sparkles, label: 'Anims' },
     { id: 'banners', icon: Frame, label: 'Banners' },
     { id: 'decos', icon: Star, label: 'Effects' },
@@ -314,8 +339,6 @@ export default function ShopPage() {
           <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" /></div>
         ) : tab === 'powerups' ? (
           <PowerUpsGrid items={shopItems} gems={gems} buying={buying} onBuy={handleBuy} onActivate={handleActivateBoost} activeMultiplier={activeBoostMultiplier} />
-        ) : tab === 'colors' ? (
-          <ColorsGrid colors={colors} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : tab === 'anims' ? (
           <ProfileItemsGrid items={profileItems.animations} type="animation" gems={gems} buying={buying} onBuy={handleBuy} />
         ) : tab === 'banners' ? (
@@ -323,9 +346,8 @@ export default function ShopPage() {
         ) : tab === 'decos' ? (
           <DecorationsGrid items={profileItems.decorations || []} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : (
-          <div className="flex items-center justify-center py-16" data-testid="titles-placeholder">
-            <p className="text-sm text-[color:var(--gm-muted)]">Titles coming soon</p>
-          </div>
+          <TitlesGrid titles={titles} gems={gems} buying={buying} onBuy={handleBuy}
+            equippedKey={equippedTitle} onEquip={handleEquipTitle} equipping={equipping} />
         )}
       </div>
 
@@ -396,37 +418,6 @@ function PowerUpsGrid({ items, gems, buying, onBuy, onActivate, activeMultiplier
   );
 }
 
-function ColorsGrid({ colors, gems, buying, onBuy }) {
-  const allColors = [...colors.main_colors.map(c => ({ ...c, colorType: 'main' })), ...colors.banner_colors.map(c => ({ ...c, colorType: 'banner' }))];
-  const order = { mythic: -1, legendary: 0, rare: 1, common: 2 };
-  const sorted = [...allColors].sort((a, b) => (order[a.rarity] ?? 2) - (order[b.rarity] ?? 2));
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3" data-testid="colors-grid">
-      {sorted.map((color) => {
-        const isBuying = buying === color.id;
-        const canAfford = (gems ?? 0) >= color.price;
-        return (
-          <button key={`${color.colorType}-${color.hex}`} onClick={() => !color.owned && canAfford && !isBuying && onBuy(color.id)} disabled={color.owned || !canAfford || isBuying}
-            className={`relative p-3 sm:p-5 ${CARD} transition-all text-center`}
-            data-testid={`color-${color.hex}`}>
-            {color.rarity !== 'common' && <div className={`absolute top-2 right-2 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full ${RARITY_BADGE_STYLE[color.rarity] || ''}`}>{color.rarity.toUpperCase()}</div>}
-            <div className="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 relative flex items-center justify-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-[color:var(--gm-track)] group-hover:scale-105 transition-transform" style={{ backgroundColor: color.hex, boxShadow: `0 0 20px ${color.hex}30` }}>
-                {color.selected && <Check className="w-5 h-5 text-white absolute inset-0 m-auto" />}
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] mb-0.5 truncate">{color.name}</p>
-            <p className="text-[9px] sm:text-[10px] text-[color:var(--gm-muted)] mb-1.5 capitalize">{color.colorType}</p>
-            {color.owned
-              ? <span className={`inline-block text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${color.selected ? 'bg-[#95DEE6] text-[#183A3F]' : 'bg-[#DBF67F] text-[#2A3B0B]'}`}>{color.selected ? 'Equipped' : 'Owned'}</span>
-              : isBuying ? <div className="w-4 h-4 mx-auto border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" />
-              : <span className="flex items-center justify-center gap-1 text-xs sm:text-sm font-bold text-[color:var(--gm-ink)]"><Gem className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${GEM_ICON}`} /> {color.price}</span>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
   const order = { mythic: -1, legendary: 0, epic: 0.5, rare: 1, common: 2 };

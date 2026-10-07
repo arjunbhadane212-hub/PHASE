@@ -20,20 +20,10 @@ export function ModeProvider({ children }) {
     document.documentElement.classList.add(`mode-${mode}`);
   }, [mode]);
 
-  // Inject equipped user colors as CSS custom properties for Game Mode
-  useEffect(() => {
-    if (user && mode === 'game') {
-      const accent = user.selected_main_color && user.selected_main_color !== '#1F2937'
-        ? user.selected_main_color
-        : '#3B82F6';
-      const banner = user.selected_banner_color || '#1F2937';
-      document.documentElement.style.setProperty('--user-accent', accent);
-      document.documentElement.style.setProperty('--user-banner', banner);
-    } else {
-      document.documentElement.style.setProperty('--user-accent', '#3B82F6');
-      document.documentElement.style.setProperty('--user-banner', '#1F2937');
-    }
-  }, [user, mode]);
+  // The equipped-colour CSS injection that used to live here is gone (Oct
+  // 2026). It set --user-accent/--user-banner, which nothing consumed, and
+  // defaulted --user-accent to the retired brand blue. Profile colours are
+  // retired and the profile is neutral, so there is nothing to inject.
 
   const switchMode = async () => {
     if (!user?.id) return mode;

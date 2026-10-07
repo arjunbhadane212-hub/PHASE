@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import Inventory from '../components/Inventory';
 import { useMode } from '../contexts/ModeContext';
 import { Link } from 'react-router-dom';
-import { Target, Calendar, Shield, ExternalLink, Check, ChevronDown, ChevronUp, Gem, X } from 'lucide-react';
+import { Target, Calendar, Shield, ExternalLink, Gem, X } from 'lucide-react';
 import { PhaseBanner } from '../components/banners/PhaseBanners';
 import { FlameGlyph } from '../components/profile/Sigil';
 import { TitleBadge } from '../components/profile/FlexBadge';
 import { streakTier } from '../data/profileIdentity';
 import { supabase } from '../lib/supabaseClient';
-import { effectCssFor } from '../data/shopEffects';
 import { toast } from 'sonner';
 
 // Shop banners (shop_items.key = 'banner_*') and the hardcoded banner SVG set
@@ -25,88 +25,46 @@ const BANNER_KEY_TO_ART = {
 export default function ProfilePanel({ open, onClose }) {
   const { user, refreshUser } = useAuth();
   const { isGameMode } = useMode();
-  const [owned, setOwned] = useState({ titles: [], anims: [], banners: [], effects: [] });
-  const [equipping, setEquipping] = useState(null);
-  const [expandedSection, setExpandedSection] = useState(null);
+  // The panel keeps only what the HEADER needs: the equipped title's row, so
+  // the chip above the stats renders at full fidelity. Owning, listing and
+  // equipping everything else belongs to <Inventory />.
+  const [equippedTitleObj, setEquippedTitleObj] = useState(null);
 
   // Read owned equippables from Supabase: shop_items + user_inventory joined
   // client-side (same pattern as SettingsPage 4b). Each item carries its real
   // shop_items.id so equip_item can be called by id. Gated on panel `open`.
   const fetchProfile = useCallback(async () => {
-    if (!open || !user?.id) return;
+    if (!open || !user?.equipped_title) { setEquippedTitleObj(null); return; }
     try {
-      const [{ data: items }, { data: inv }] = await Promise.all([
-        supabase.from('shop_items').select('id,key,name,category,rarity,rarity_style,gradient_value,source_system,rarity_tier'),
-        supabase.from('user_inventory').select('shop_item_id'),
-      ]);
-      const ownedIds = new Set((inv || []).map((r) => r.shop_item_id));
-      const mine = (items || []).filter((i) => ownedIds.has(i.id));
-      setOwned({
-        titles: mine.filter((i) => i.category === 'title'),
-        anims: mine.filter((i) => i.category === 'anim'),
-        banners: mine.filter((i) => i.category === 'banner'),
-        effects: mine.filter((i) => i.category === 'effect'),
-      });
-    } catch { /* ignore -> sections show their empty state */ }
-  }, [open, user?.id]);
+      const { data } = await supabase.from('shop_items')
+        .select('key,name,rarity,rarity_tier')
+        .eq('key', user.equipped_title).eq('is_active', true).maybeSingle();
+      setEquippedTitleObj(data || null);
+    } catch { setEquippedTitleObj(null); }
+  }, [open, user?.equipped_title]);
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
   // Canonical only: equip/unequip go through the RPCs (no direct users.equipped_*
-  // writes). equip_item requires ownership; unequip_item clears the slot and
-  // resets the mirrored users column. `category` is the RPC category value
-  // (title | anim | banner | effect).
-  const handleEquip = async (category, item) => {
-    setEquipping(`${category}-${item.key}`);
-    try {
-      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: item.id });
-      if (error) throw error;
-      await Promise.all([refreshUser(), fetchProfile()]);
-      toast.success('Equipped!');
-    } catch (e) {
-      toast.error(e?.message || 'Failed');
-    } finally { setEquipping(null); }
-  };
-  const handleUnequip = async (category) => {
-    setEquipping(`${category}-null`);
-    try {
-      const { error } = await supabase.rpc('unequip_item', { p_category: category });
-      if (error) throw error;
-      await Promise.all([refreshUser(), fetchProfile()]);
-      toast.success('Removed');
-    } catch (e) {
-      toast.error(e?.message || 'Failed');
-    } finally { setEquipping(null); }
-  };
 
   const equippedTitle = user?.equipped_title;
-  const earnedTitles = owned.titles;
-  const ownedAnims = owned.anims;
-  const ownedBanners = owned.banners;
-  const allOwnedEffects = owned.effects;
 
-  const mainColor = user?.selected_main_color;
-  // When the user has an equipped main color, the lower section becomes that
-  // saturated cosmetic surface (white ink reads on it, as before). Otherwise it
-  // falls back to the theme-aware v2 card surface with gm ink/muted. Panel-scoped
-  // CSS vars below let every child pick the right ink/tile/line for either case.
-  const hasColor = mainColor && mainColor !== '#1F2937';
-  const avatarBg = hasColor ? mainColor : '#95DEE6';
-  const lowerBg = hasColor ? mainColor : 'var(--gm-card)';
+  // The equipped-main-colour branch is gone (Oct 2026): profile colours are
+  // retired and the panel is the neutral theme surface, always. The --panel-*
+  // names are kept so every child below still resolves without edits -- they
+  // now just alias the gm tokens.
+  const avatarBg = 'var(--gm-badge)';
+  const lowerBg = 'var(--gm-card)';
   const panelVars = {
-    '--panel-ink': hasColor ? '#ffffff' : 'var(--gm-ink)',
-    '--panel-muted': hasColor ? 'rgba(255,255,255,0.55)' : 'var(--gm-muted)',
-    '--panel-tile': hasColor ? 'rgba(0,0,0,0.22)' : 'var(--gm-badge)',
-    '--panel-line': hasColor ? 'rgba(255,255,255,0.10)' : 'var(--gm-track)',
+    '--panel-ink': 'var(--gm-ink)',
+    '--panel-muted': 'var(--gm-muted)',
+    '--panel-tile': 'var(--gm-badge)',
+    '--panel-line': 'var(--gm-track)',
   };
 
   // Animations carry no css preview in shop_items (the old backend synthesized
   // css_class); the avatar animation class degrades to none. See NOTES_FOR_SACHIN.md.
   const animClass = '';
-  const equippedTitleObj = equippedTitle ? earnedTitles.find(t => t.key === equippedTitle) : null;
-  const titleRarity = equippedTitleObj?.rarity || null;
-
-  const toggle = (s) => setExpandedSection(prev => prev === s ? null : s);
 
   if (!open) return null;
 
@@ -161,11 +119,10 @@ export default function ProfilePanel({ open, onClose }) {
           {equippedTitle && (
             <div className="mb-3">
               <TitleBadge
+                titleKey={equippedTitle}
                 name={equippedTitleObj?.name || equippedTitle}
-                sourceSystem={equippedTitleObj?.source_system}
-                style={equippedTitleObj?.rarity_style}
                 rarityTier={equippedTitleObj?.rarity_tier}
-                rarity={titleRarity}
+                rarity={equippedTitleObj?.rarity}
                 size="sm"
               />
             </div>
@@ -189,114 +146,12 @@ export default function ProfilePanel({ open, onClose }) {
 
           <div className="h-px bg-[color:var(--panel-line)] mb-5" />
 
-          {/* Customize */}
+          {/* Customize — the shared inventory. This panel used to carry its own
+              copy of the equip UI, which drifted from the one in Settings (that
+              one had no Effects section at all). Both now render the same
+              component, so every owned category shows up on both surfaces. */}
           <p className="font-['JetBrains_Mono'] text-[10px] text-[color:var(--panel-muted)] uppercase tracking-[0.08em] font-bold mb-4">Customize Profile</p>
-
-          {/* Titles */}
-          <Section title="Titles" count={earnedTitles.length} expanded={expandedSection === 'titles'} onToggle={() => toggle('titles')}>
-            {earnedTitles.length === 0 ? <Empty text="Earn titles through streaks & buy from the Shop." /> : (
-              <div className="flex flex-wrap gap-1.5">
-                {equippedTitle && <Pill label="Remove" onClick={() => handleUnequip('title')} loading={equipping === 'title-null'} variant="remove" />}
-                {earnedTitles.map(t => (
-                  <Pill key={t.key} active={equippedTitle === t.key} onClick={() => handleEquip('title', t)}
-                    loading={equipping === `title-${t.key}`}
-                    label={<TitleBadge name={t.name} sourceSystem={t.source_system} style={t.rarity_style}
-                      rarityTier={t.rarity_tier} rarity={t.rarity} size="sm" />} />
-                ))}
-              </div>
-            )}
-          </Section>
-
-          {/* Animations */}
-          <Section title="Animations" count={ownedAnims.length} expanded={expandedSection === 'anims'} onToggle={() => toggle('anims')}>
-            {ownedAnims.length === 0 ? <Empty text="Buy avatar animations from the Shop." /> : (
-              <div className="flex flex-wrap gap-1.5">
-                <Pill label="None" active={!user?.equipped_animation} onClick={() => handleUnequip('anim')} loading={equipping === 'anim-null'} />
-                {ownedAnims.map(a => <Pill key={a.key} label={a.name} active={user?.equipped_animation === a.key} onClick={() => handleEquip('anim', a)} loading={equipping === `anim-${a.key}`} />)}
-              </div>
-            )}
-          </Section>
-
-          {/* Banners — owned only, real ownership via user_inventory. Preview shows
-              real SVG where a banner key maps to art, else a neutral placeholder. */}
-          <Section title="Banners" count={ownedBanners.length} expanded={expandedSection === 'banners'} onToggle={() => toggle('banners')}>
-            {ownedBanners.length === 0 ? <Empty text="Buy banners from the Shop." /> : (
-              <div className="space-y-2">
-                {ownedBanners.map((b) => {
-                  const isEquipped = user?.equipped_banner === b.key;
-                  const artKey = BANNER_KEY_TO_ART[b.key];
-                  return (
-                    <div key={b.key}
-                      className={`w-full rounded-xl overflow-hidden border transition-all ${isEquipped ? 'border-[#95DEE6] ring-1 ring-[#95DEE6]/40' : 'border-[color:var(--panel-line)]'}`}
-                      data-testid={`banner-preview-${b.key}`}
-                      style={{ backgroundColor: 'var(--panel-tile)' }}
-                    >
-                      <div className="flex items-stretch">
-                        {/* Preview thumbnail: 60px height */}
-                        <div className="relative flex-1" style={{ height: 60 }}>
-                          {artKey ? (
-                            <div className="absolute inset-0"><PhaseBanner bannerKey={artKey} /></div>
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center bg-[color:var(--panel-tile)]">
-                              <span className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--panel-muted)]">{b.name}</span>
-                            </div>
-                          )}
-                        </div>
-                        {/* Label + action */}
-                        <div className="flex items-center gap-2 px-3" style={{ minWidth: 128 }}>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-['General_Sans'] font-bold text-[color:var(--panel-ink)] truncate">{b.name}</p>
-                            <p className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--panel-muted)]">{b.rarity}</p>
-                          </div>
-                          <button
-                            onClick={() => (isEquipped ? handleUnequip('banner') : handleEquip('banner', b))}
-                            disabled={equipping === `banner-${b.key}` || equipping === 'banner-null'}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${isEquipped ? 'bg-[#DBF67F] text-[#2A3B0B]' : 'bg-[#95DEE6] text-[#183A3F] hover:brightness-105'} disabled:opacity-50`}
-                            data-testid={`banner-equip-${b.key}`}
-                          >
-                            {isEquipped ? 'Equipped' : 'Equip'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Section>
-
-          {/* Profile Effects — single 'effect' category (mirrors equipped_decoration).
-              Preview uses metadata.css or gradient_value where present, else plain. */}
-          <Section title="Profile Effects" count={allOwnedEffects.length} expanded={expandedSection === 'effects'} onToggle={() => toggle('effects')}>
-            {allOwnedEffects.length === 0 ? <Empty text="Buy profile effects from the Shop." /> : (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-1.5">
-                  <Pill label="None" active={!user?.equipped_decoration} onClick={() => handleUnequip('effect')} loading={equipping === 'effect-null'} />
-                  {allOwnedEffects.map(d => <Pill key={d.key} label={d.name} active={user?.equipped_decoration === d.key} onClick={() => handleEquip('effect', d)} loading={equipping === `effect-${d.key}`} />)}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {allOwnedEffects.map(d => {
-                    const css = effectCssFor(d.key);
-                    const grad = d.gradient_value;
-                    return (
-                      <button key={d.key} onClick={() => handleEquip('effect', d)}
-                        className={`h-16 rounded-xl overflow-hidden border transition-all ${user?.equipped_decoration === d.key ? 'border-[#95DEE6] ring-1 ring-[#95DEE6]/40' : 'border-[color:var(--panel-line)]'}`}>
-                        {css ? (
-                          <div className={`w-full h-full ${css}`} />
-                        ) : grad ? (
-                          <div className="w-full h-full" style={{ background: grad }} />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-[color:var(--panel-tile)]">
-                            <span className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--panel-muted)]">{d.name}</span>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </Section>
+          <Inventory onNavigate={onClose} />
 
           {/* Shop link */}
           {isGameMode && (
@@ -320,29 +175,3 @@ function StatBox({ icon, value, label }) {
   );
 }
 
-function Section({ title, count, expanded, onToggle, children }) {
-  return (
-    <div className="mb-2.5 rounded-2xl overflow-hidden" style={{ background: 'var(--panel-tile)', border: '1px solid var(--panel-line)' }}>
-      <button onClick={onToggle} className="w-full flex items-center justify-between px-4 py-3 text-left">
-        <span className="text-xs font-['General_Sans'] font-bold text-[color:var(--panel-ink)]">{title} <span className="text-[color:var(--panel-muted)] font-normal">({count})</span></span>
-        {expanded ? <ChevronUp className="w-4 h-4 text-[color:var(--panel-muted)]" /> : <ChevronDown className="w-4 h-4 text-[color:var(--panel-muted)]" />}
-      </button>
-      {expanded && <div className="px-4 pb-4">{children}</div>}
-    </div>
-  );
-}
-
-function Empty({ text }) {
-  return <p className="text-[10px] text-[color:var(--panel-muted)]">{text}</p>;
-}
-
-function Pill({ label, active, onClick, loading, className = '', variant }) {
-  const style = variant === 'remove' ? 'border-[#B91C1C]/40 text-[#B91C1C] hover:bg-[#B91C1C]/10' : active ? 'border-transparent bg-[#95DEE6] text-[#183A3F]' : 'border-[color:var(--panel-line)] text-[color:var(--panel-muted)] hover:opacity-80';
-  return (
-    <button onClick={onClick} disabled={loading} className={`text-[10px] font-['General_Sans'] font-semibold px-3 py-1.5 rounded-xl border transition-all ${style} ${className}`}>
-      {loading ? <span className="w-2.5 h-2.5 border border-current border-t-transparent rounded-full animate-spin inline-block" /> : <>
-        {label}{active && !variant && <Check className="w-2.5 h-2.5 inline ml-0.5" />}
-      </>}
-    </button>
-  );
-}
