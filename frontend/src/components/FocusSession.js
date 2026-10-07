@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Volume2, VolumeX } from 'lucide-react';
 import { fireRoast } from './RoastNotification';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { getAura, hexA, DEFAULT_GRACE_MS } from '../data/focusAuras';
+import { createSoundEngine, getSound } from '../data/focusSounds';
 
 // One line is chosen at random when a session mounts and held for the whole
 // session (see the useState(() => ...) below — random-once, not per-tick).
@@ -58,6 +59,22 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
     return () => { cancelled = true; };
   }, []);
 
+  // Session Sound (shop_items category 'focus_sound'): ambient audio for the
+  // active session only. Fades in on mount, fades out when the session
+  // completes, is abandoned (unmount) or the sound is muted.
+  const soundKey = user?.equipped_focus_sound || null;
+  const hasSound = !!getSound(soundKey);
+  const [soundMuted, setSoundMuted] = useState(false);
+  const soundRef = useRef(null);
+  useEffect(() => {
+    if (!hasSound) return undefined;
+    const engine = createSoundEngine(soundKey);
+    soundRef.current = engine;
+    engine?.start();
+    return () => { engine?.stop(); soundRef.current = null; };
+  }, [soundKey, hasSound]);
+  useEffect(() => { soundRef.current?.setMuted(soundMuted); }, [soundMuted]);
+
   const totalSeconds = duration * 60;
   const startTimeRef = useRef(Date.now());
   // Wall-clock derived state — never tick-based, immune to tab/app
@@ -82,6 +99,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
   const elapsed = Math.min(totalSeconds, Math.floor((now - startTimeRef.current) / 1000));
   const secondsLeft = Math.max(0, totalSeconds - elapsed);
   const completed = elapsed >= totalSeconds;
+  useEffect(() => { if (completed) soundRef.current?.stop(); }, [completed]);
 
   // Single tick loop. setInterval is throttled when backgrounded but our state
   // is derived from Date.now() so resuming always shows the correct value.
@@ -511,6 +529,20 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             background: `radial-gradient(circle, ${hexA(aura.accent, 0.28)} 0%, ${hexA(aura.accent, 0)} 70%)`,
           }}
         />
+      )}
+
+
+      {hasSound && (
+        <button
+          type="button"
+          onClick={() => setSoundMuted((m) => !m)}
+          className="absolute top-5 right-5 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-opacity"
+          style={{ color: aura.ink, background: hexA(aura.ink, 0.1), opacity: 0.8 }}
+          aria-label={soundMuted ? 'Unmute session sound' : 'Mute session sound'}
+          data-testid="session-sound-toggle"
+        >
+          {soundMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        </button>
       )}
 
       {/* One of 5 full-screen timer styles, chosen at random per session

@@ -1,129 +1,151 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
-import { Gem, Flame, Shield, Clock, Check, Loader2 } from 'lucide-react';
+import { Gem, Flame, Shield, Clock, Check, Loader2, Play, Square, Volume2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
 import { AURA_ORDER, getAura, hexA, GRACE_TIERS } from '../data/focusAuras';
+import { SOUND_ORDER, getSound, createSoundEngine } from '../data/focusSounds';
 
 // v2 system: borderless cards on --gm-card with card shadow, cyan (#95DEE6/ink
 // #183A3F) as the primary/active accent, Archivo/JetBrains/General Sans type.
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
 const GEM_ICON = 'text-[#95DEE6]';
-const SECTION_LABEL = "font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
+const MONO = "font-['JetBrains_Mono'] uppercase tracking-[0.08em]";
+const SECTION_LABEL = `${MONO} text-[11px] font-bold text-[color:var(--gm-muted)]`;
+const PREVIEW_MS = 4500;
 
-function Section({ title, hint, children }) {
+const TABS = [
+  { id: 'essentials', label: 'Essentials' },
+  { id: 'upgrades', label: 'Upgrades' },
+  { id: 'screens', label: 'Screens' },
+  { id: 'sounds', label: 'Sounds' },
+];
+
+function BuyButton({ price, gems, busy, onClick, testId, disabledLabel }) {
+  const affordable = (gems ?? 0) >= price;
   return (
-    <section className="mt-7 first:mt-0">
-      <div className="flex items-baseline justify-between gap-3 mb-2.5">
-        <h2 className={SECTION_LABEL}>{title}</h2>
-        {hint}
-      </div>
-      <div className="space-y-3">{children}</div>
-    </section>
+    <Button
+      onClick={onClick}
+      disabled={busy || !affordable}
+      className={`text-sm px-4 h-9 rounded-full flex-shrink-0 font-bold ${
+        !affordable ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
+      }`}
+      data-testid={testId}
+    >
+      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> :
+       !affordable ? (disabledLabel || 'Not enough') :
+       <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> {price}</span>}
+    </Button>
   );
 }
 
 export default function FocusShopPage() {
   const { user, refreshUser } = useAuth();
   const { gems } = useGame();
-  const [revive, setRevive] = useState(null);
-  const [owned, setOwned] = useState(0);
-  const [graceItems, setGraceItems] = useState([]);
-  const [graceOwned, setGraceOwned] = useState({});
-  const [auraItems, setAuraItems] = useState([]);
-  const [auraOwned, setAuraOwned] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [buying, setBuying] = useState(false);
-  const [graceBusy, setGraceBusy] = useState(false);
-  const [auraBusy, setAuraBusy] = useState(null);
+  const [params, setParams] = useSearchParams();
+  const tab = TABS.some((t) => t.id === params.get('tab')) ? params.get('tab') : 'essentials';
+  const setTab = (id) => setParams({ tab: id }, { replace: true });
 
-  // Focus Mode shop: Streak Revive (Step 6 override), plus Focus-native gem
-  // sinks that never touch XP — Grace Extender and Timer Screens. Screens are
-  // bought here and equipped in Settings. Streak Shield stays the 500g
-  // home-screen button (buy_focus_shield).
+  const [items, setItems] = useState([]);
+  const [qty, setQty] = useState({}); // shop_item id -> quantity
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(null); // item key mid-purchase
+  const [previewKey, setPreviewKey] = useState(null);
+  const previewRef = useRef({ engine: null, timer: null });
+
+  // Focus Mode shop: Streak Revive (Step 6 override) plus Focus-native gem
+  // sinks that never touch XP — Grace Extender, Timer Screens, Session Sounds.
+  // Screens and sounds are bought here and equipped in Settings. Streak Shield
+  // stays the 500g home-screen button (buy_focus_shield).
   const fetchShop = useCallback(async () => {
     try {
-      const { data: allItems } = await supabase
+      const { data: rows } = await supabase
         .from('shop_items')
         .select('id,key,name,price_gems,max_owned,category')
-        .in('category', ['boost', 'focus_boost', 'focus_aura']);
-
-      const items = allItems || [];
-      const item = items.find((r) => r.key === 'streak_revive') || null;
-      setRevive(item);
-
-      const grace = items.filter((r) => r.category === 'focus_boost');
-      const aura = items.filter((r) => r.category === 'focus_aura');
-      setGraceItems(grace);
-      setAuraItems(aura);
-
-      const ids = items.map((r) => r.id);
+        .in('category', ['boost', 'focus_boost', 'focus_aura', 'focus_sound']);
+      const list = rows || [];
+      setItems(list);
+      const ids = list.map((r) => r.id);
       if (ids.length) {
         const { data: inv } = await supabase
           .from('user_inventory').select('shop_item_id, quantity').in('shop_item_id', ids);
-        const byId = {};
-        (inv || []).forEach((r) => { byId[r.shop_item_id] = r.quantity; });
-        if (item) setOwned(byId[item.id] ?? 0);
-        const gOwned = {}; grace.forEach((r) => { gOwned[r.key] = byId[r.id] ?? 0; });
-        setGraceOwned(gOwned);
-        const aOwned = {}; aura.forEach((r) => { aOwned[r.key] = byId[r.id] ?? 0; });
-        setAuraOwned(aOwned);
+        const q = {};
+        (inv || []).forEach((r) => { q[r.shop_item_id] = r.quantity; });
+        setQty(q);
       }
     } catch { /* ignore */ } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchShop(); }, [fetchShop]);
 
-  const handleBuy = async () => {
-    if (!revive) return;
-    setBuying(true);
-    try {
-      const { error } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: revive.id });
-      if (error) throw error;
-      toast.success('Streak Revive purchased!');
-      await Promise.all([refreshUser(), fetchShop()]);
-    } catch (e) {
-      toast.error(e?.message || 'Purchase failed');
-    } finally { setBuying(false); }
+  const stopPreview = useCallback(() => {
+    const p = previewRef.current;
+    clearTimeout(p.timer);
+    p.engine?.stop();
+    previewRef.current = { engine: null, timer: null };
+    setPreviewKey(null);
+  }, []);
+  useEffect(() => stopPreview, [stopPreview]);
+  useEffect(() => { if (tab !== 'sounds') stopPreview(); }, [tab, stopPreview]);
+
+  const togglePreview = (key) => {
+    if (previewKey === key) { stopPreview(); return; }
+    stopPreview();
+    const engine = createSoundEngine(key);
+    if (!engine) { toast.error('Audio is not available in this browser'); return; }
+    engine.start();
+    const timer = setTimeout(stopPreview, PREVIEW_MS);
+    previewRef.current = { engine, timer };
+    setPreviewKey(key);
   };
 
-  // Grace Extender: two permanent tiers, highest owned applies. The button
-  // always offers the next un-owned tier.
-  const graceOwnedKeys = useMemo(() => new Set(Object.keys(graceOwned).filter((k) => graceOwned[k] > 0)), [graceOwned]);
-  const currentGraceTier = [...GRACE_TIERS].reverse().find((t) => graceOwnedKeys.has(t.key));
-  const nextGraceTier = GRACE_TIERS.find((t) => !graceOwnedKeys.has(t.key));
-  const nextGraceItem = nextGraceTier ? graceItems.find((r) => r.key === nextGraceTier.key) : null;
+  const owned = (item) => (item ? (qty[item.id] ?? 0) : 0);
+  const byKey = (k) => items.find((r) => r.key === k);
 
-  const handleBuyGrace = async () => {
-    if (!nextGraceItem) return;
-    setGraceBusy(true);
-    try {
-      const { error } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: nextGraceItem.id });
-      if (error) throw error;
-      toast.success(`${nextGraceItem.name} unlocked!`);
-      await Promise.all([refreshUser(), fetchShop()]);
-    } catch (e) {
-      toast.error(e?.message || 'Purchase failed');
-    } finally { setGraceBusy(false); }
-  };
-
-  // Timer Screens are purchase-only here; equipping lives in Settings.
-  const equippedAuraKey = user?.equipped_focus_aura || 'focus_aura_cyan_pulse';
-
-  const handleBuyAura = async (item) => {
-    if (auraBusy) return;
-    setAuraBusy(item.key);
+  const buy = async (item, message) => {
+    if (busy) return;
+    setBusy(item.key);
     try {
       const { error } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: item.id });
       if (error) throw error;
-      toast.success(`${item.name} unlocked — equip it in Settings`);
+      toast.success(message);
       await Promise.all([refreshUser(), fetchShop()]);
     } catch (e) {
       toast.error(e?.message || 'Purchase failed');
-    } finally { setAuraBusy(null); }
+    } finally { setBusy(null); }
+  };
+
+  const revive = byKey('streak_revive');
+  const reviveOwned = owned(revive);
+  const reviveMax = revive?.max_owned ?? 3;
+
+  const graceItems = items.filter((r) => r.category === 'focus_boost');
+  const ownedGraceKeys = new Set(GRACE_TIERS.filter((t) => owned(graceItems.find((r) => r.key === t.key)) > 0).map((t) => t.key));
+  const currentGraceTier = [...GRACE_TIERS].reverse().find((t) => ownedGraceKeys.has(t.key));
+  const nextGraceTier = GRACE_TIERS.find((t) => !ownedGraceKeys.has(t.key));
+  const nextGraceItem = nextGraceTier ? graceItems.find((r) => r.key === nextGraceTier.key) : null;
+
+  const equippedAuraKey = user?.equipped_focus_aura || 'focus_aura_cyan_pulse';
+  const equippedSoundKey = user?.equipped_focus_sound || null;
+
+  const screenCount = useMemo(
+    () => AURA_ORDER.filter((k) => k === 'focus_aura_cyan_pulse' || owned(byKey(k)) > 0).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, qty],
+  );
+  const soundCount = useMemo(
+    () => SOUND_ORDER.filter((k) => owned(byKey(k)) > 0).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, qty],
+  );
+  const tabMeta = {
+    essentials: `${reviveOwned}/${reviveMax}`,
+    upgrades: currentGraceTier ? `${ownedGraceKeys.size}/${GRACE_TIERS.length}` : null,
+    screens: `${screenCount}/${AURA_ORDER.length}`,
+    sounds: `${soundCount}/${SOUND_ORDER.length}`,
   };
 
   if (loading) return (
@@ -132,155 +154,210 @@ export default function FocusShopPage() {
     </div>
   );
 
-  const price = revive?.price_gems ?? 200;
-  const max = revive?.max_owned ?? 3;
-  const isFull = owned >= max;
-  const canAfford = (gems ?? 0) >= price;
+  const equipHint = (to, text) => (
+    <Link to={to} className={`${MONO} text-[10px] text-[#95DEE6] hover:underline`} data-testid="focus-equip-link">{text}</Link>
+  );
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 pb-32 md:pb-8 animate-slide-up" data-testid="focus-shop-page">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl sm:text-3xl font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em]">Shop</h1>
-        <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-[#95DEE6]" data-testid="focus-gem-balance">
-          <Gem className="w-4 sm:w-5 h-4 sm:h-5 text-[#183A3F]" />
-          <span className="text-base sm:text-lg font-['Archivo'] font-black text-[#183A3F]">{gems ?? 0}</span>
-        </div>
-      </div>
-
-      {/* Protection */}
-      <Section title="Protection">
-        {revive && (
-          <div className={`p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-streak_revive">
-            <div className="w-12 h-12 rounded-xl bg-[#95DEE6] flex items-center justify-center flex-shrink-0">
-              <Flame className="w-6 h-6 text-[#183A3F]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">{revive.name}</p>
-              <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">Restores a broken streak</p>
-              <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">{owned}/{max} owned</p>
-            </div>
-            <Button
-              onClick={handleBuy}
-              disabled={buying || isFull || !canAfford}
-              className={`text-sm px-4 h-9 rounded-full flex-shrink-0 font-bold ${
-                isFull || !canAfford ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
-              }`}
-              data-testid="focus-buy-streak_revive"
-            >
-              {buying ? <Loader2 className="w-4 h-4 animate-spin" /> :
-               isFull ? 'Max' :
-               !canAfford ? 'Not enough' :
-               <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> {price}</span>}
-            </Button>
-          </div>
-        )}
-
-        {/* Streak Shield pointer — not sold here (500g home-screen button) */}
-        <div className={`p-4 ${CARD} flex items-center gap-3`} data-testid="focus-shield-pointer">
-          <div className="w-10 h-10 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
-            <Shield className="w-5 h-5 text-[#95DEE6]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Streak Shield</p>
-            <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">Available on your home screen.</p>
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-32 md:pb-8 animate-slide-up" data-testid="focus-shop-page">
+      {/* Sticky header: title, gem balance and tabs stay in view while scrolling */}
+      <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-6 pb-3 bg-[color:var(--gm-bg)]">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl sm:text-3xl font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em]">Shop</h1>
+          <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-[#95DEE6]" data-testid="focus-gem-balance">
+            <Gem className="w-4 sm:w-5 h-4 sm:h-5 text-[#183A3F]" />
+            <span className="text-base sm:text-lg font-['Archivo'] font-black text-[#183A3F]">{gems ?? 0}</span>
           </div>
         </div>
-      </Section>
-
-      {/* Focus Upgrades */}
-      <Section title="Focus Upgrades">
-        <div className={`p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-grace-extender">
-          <div className="w-12 h-12 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
-            <Clock className="w-6 h-6 text-[#95DEE6]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Grace Extender</p>
-            <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">
-              {currentGraceTier ? `${currentGraceTier.name} · ${currentGraceTier.graceMs / 1000}s grace active` : 'Longer buffer before a tab-switch fails your session'}
-            </p>
-            {nextGraceTier && (
-              <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">
-                Next: {nextGraceTier.name} · {nextGraceTier.graceMs / 1000}s
-              </p>
-            )}
-          </div>
-          {nextGraceItem ? (
-            <Button
-              onClick={handleBuyGrace}
-              disabled={graceBusy || (gems ?? 0) < nextGraceItem.price_gems}
-              className={`text-sm px-4 h-9 rounded-full flex-shrink-0 font-bold ${
-                (gems ?? 0) < nextGraceItem.price_gems ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
-              }`}
-              data-testid="focus-buy-grace-extender"
-            >
-              {graceBusy ? <Loader2 className="w-4 h-4 animate-spin" /> :
-               (gems ?? 0) < nextGraceItem.price_gems ? 'Not enough' :
-               <span className="flex items-center gap-1.5"><Gem className="w-3.5 h-3.5" /> {nextGraceItem.price_gems}</span>}
-            </Button>
-          ) : (
-            <span className="text-xs font-['JetBrains_Mono'] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] flex-shrink-0">Maxed</span>
-          )}
-        </div>
-      </Section>
-
-      {/* Timer Screens — buy here, equip in Settings */}
-      <Section
-        title="Timer Screens"
-        hint={<Link to="/dashboard/settings" className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#95DEE6] hover:underline" data-testid="focus-screens-settings-link">Equip in Settings</Link>}
-      >
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" data-testid="focus-aura-section">
-          {AURA_ORDER.map((key) => {
-            const aura = getAura(key);
-            const item = auraItems.find((r) => r.key === key);
-            const isOwned = (auraOwned[key] ?? 0) > 0;
-            const isEquipped = key === equippedAuraKey;
-            const isDefault = key === 'focus_aura_cyan_pulse';
-            const itemPrice = item?.price_gems ?? 0;
-            const busy = auraBusy === key;
-            const affordable = (gems ?? 0) >= itemPrice;
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar" role="tablist" data-testid="focus-shop-tabs">
+          {TABS.map((t) => {
+            const active = tab === t.id;
             return (
-              <div key={key} className={`p-3 ${CARD} flex flex-col items-center text-center`} data-testid={`focus-aura-card-${key}`}>
-                <span
-                  className="w-14 h-14 rounded-full flex items-center justify-center"
-                  style={{
-                    background: aura.bg,
-                    boxShadow: [
-                      aura.style === 'glow' ? `0 0 14px 2px ${hexA(aura.accent, 0.45)}` : null,
-                      `inset 0 0 0 1px ${hexA(aura.ink, 0.18)}`,
-                    ].filter(Boolean).join(', '),
-                  }}
-                >
-                  {isEquipped && <Check className="w-5 h-5" style={{ color: aura.ink }} strokeWidth={3} />}
-                </span>
-                <p className="mt-2.5 text-[13px] font-['General_Sans'] font-bold text-[color:var(--gm-ink)] leading-tight">{aura.name}</p>
-                <p className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-0.5">
-                  {aura.style === 'glow' ? 'Dark · glow' : 'Solid'}
-                </p>
-                <div className="mt-3 h-8 flex items-center">
-                  {isEquipped ? (
-                    <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.08em] text-[#95DEE6]">Equipped</span>
-                  ) : isOwned || (isDefault && itemPrice === 0) ? (
-                    <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">{isDefault ? 'Default' : 'Owned'}</span>
-                  ) : (
-                    <Button
-                      onClick={() => item && handleBuyAura(item)}
-                      disabled={!item || busy || !affordable}
-                      className={`text-xs px-3 h-8 rounded-full font-bold ${
-                        !affordable ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)] cursor-not-allowed' : 'bg-[#95DEE6] hover:brightness-105 text-[#183A3F]'
-                      }`}
-                      data-testid={`focus-buy-aura-${key}`}
-                    >
-                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
-                       <span className="flex items-center gap-1"><Gem className="w-3 h-3" /> {itemPrice}</span>}
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(t.id)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full ${MONO} text-[11px] font-bold transition-colors ${
+                  active ? 'bg-[#95DEE6] text-[#183A3F]' : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
+                }`}
+                data-testid={`focus-tab-${t.id}`}
+              >
+                {t.label}
+                {tabMeta[t.id] && <span className={active ? 'opacity-70' : 'opacity-60'}>{tabMeta[t.id]}</span>}
+              </button>
             );
           })}
         </div>
-      </Section>
+      </div>
+
+      <div className="mt-3 space-y-3" role="tabpanel">
+        {tab === 'essentials' && (
+          <>
+            {revive && (
+              <div className={`p-4 ${CARD} flex items-center gap-4`} data-testid="focus-item-streak_revive">
+                <div className="w-12 h-12 rounded-xl bg-[#95DEE6] flex items-center justify-center flex-shrink-0">
+                  <Flame className="w-6 h-6 text-[#183A3F]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">{revive.name}</p>
+                  <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">Restores a broken streak</p>
+                  <p className={`${MONO} text-[10px] text-[color:var(--gm-muted)] mt-1.5`}>{reviveOwned}/{reviveMax} owned</p>
+                </div>
+                {reviveOwned >= reviveMax ? (
+                  <span className={`${MONO} text-xs text-[color:var(--gm-muted)] flex-shrink-0`}>Max</span>
+                ) : (
+                  <BuyButton price={revive.price_gems ?? 200} gems={gems} busy={busy === revive.key}
+                    onClick={() => buy(revive, 'Streak Revive purchased!')} testId="focus-buy-streak_revive" />
+                )}
+              </div>
+            )}
+            <div className={`p-4 ${CARD} flex items-center gap-3`} data-testid="focus-shield-pointer">
+              <div className="w-10 h-10 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
+                <Shield className="w-5 h-5 text-[#95DEE6]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Streak Shield</p>
+                <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">Sold on your home screen.</p>
+              </div>
+              <Link to="/dashboard" className={`${MONO} text-[10px] text-[#95DEE6] hover:underline flex-shrink-0`}>Go home</Link>
+            </div>
+          </>
+        )}
+
+        {tab === 'upgrades' && (
+          <div className={`p-4 ${CARD}`} data-testid="focus-item-grace-extender">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0">
+                <Clock className="w-6 h-6 text-[#95DEE6]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Grace Extender</p>
+                <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">
+                  How long you can leave the tab before the session fails. Default 3s.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              {GRACE_TIERS.map((t) => {
+                const have = ownedGraceKeys.has(t.key);
+                const isNext = nextGraceTier?.key === t.key;
+                const item = graceItems.find((r) => r.key === t.key);
+                return (
+                  <div key={t.key} className="flex items-center gap-3 rounded-xl bg-[color:var(--gm-bg)] px-3 py-2.5" data-testid={`focus-grace-tier-${t.key}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${have ? 'bg-[#95DEE6]' : 'border border-[color:var(--gm-track)]'}`}>
+                      {have && <Check className="w-3 h-3 text-[#183A3F]" strokeWidth={3} />}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-['General_Sans'] font-bold text-[color:var(--gm-ink)] leading-tight">{t.name}</p>
+                      <p className={`${MONO} text-[10px] text-[color:var(--gm-muted)] mt-0.5`}>{t.graceMs / 1000}s grace</p>
+                    </div>
+                    {have ? (
+                      <span className={`${MONO} text-[10px] font-bold text-[#95DEE6]`}>Active</span>
+                    ) : isNext && item ? (
+                      <BuyButton price={item.price_gems} gems={gems} busy={busy === item.key}
+                        onClick={() => buy(item, `${item.name} unlocked!`)} testId={`focus-buy-${t.key}`} />
+                    ) : (
+                      <span className={`${MONO} text-[10px] text-[color:var(--gm-muted)]`}>Unlock {GRACE_TIERS[0].name} first</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {tab === 'screens' && (
+          <>
+            <div className="flex items-center justify-between">
+              <p className={SECTION_LABEL}>{screenCount} of {AURA_ORDER.length} owned</p>
+              {equipHint('/dashboard/settings', 'Equip in Settings')}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" data-testid="focus-aura-section">
+              {AURA_ORDER.map((key) => {
+                const aura = getAura(key);
+                const item = byKey(key);
+                const isDefault = key === 'focus_aura_cyan_pulse';
+                const isOwned = owned(item) > 0 || isDefault;
+                const isEquipped = key === equippedAuraKey;
+                return (
+                  <div key={key} className={`p-3 ${CARD} flex flex-col items-center text-center ${isEquipped ? 'ring-1 ring-[#95DEE6]' : ''}`} data-testid={`focus-aura-card-${key}`}>
+                    <span
+                      className="w-14 h-14 rounded-full flex items-center justify-center"
+                      style={{
+                        background: aura.bg,
+                        boxShadow: [
+                          aura.style === 'glow' ? `0 0 14px 2px ${hexA(aura.accent, 0.45)}` : null,
+                          `inset 0 0 0 1px ${hexA(aura.ink, 0.18)}`,
+                        ].filter(Boolean).join(', '),
+                      }}
+                    >
+                      {isEquipped && <Check className="w-5 h-5" style={{ color: aura.ink }} strokeWidth={3} />}
+                    </span>
+                    <p className="mt-2.5 text-[13px] font-['General_Sans'] font-bold text-[color:var(--gm-ink)] leading-tight">{aura.name}</p>
+                    <p className={`${MONO} text-[9px] text-[color:var(--gm-muted)] mt-0.5`}>{aura.style === 'glow' ? 'Dark · glow' : 'Solid'}</p>
+                    <div className="mt-3 h-8 flex items-center">
+                      {isEquipped ? (
+                        <span className={`${MONO} text-[10px] font-bold text-[#95DEE6]`}>Equipped</span>
+                      ) : isOwned ? (
+                        <span className={`${MONO} text-[10px] font-bold text-[color:var(--gm-muted)]`}>{isDefault ? 'Default' : 'Owned'}</span>
+                      ) : item ? (
+                        <BuyButton price={item.price_gems} gems={gems} busy={busy === key}
+                          onClick={() => buy(item, `${item.name} unlocked — equip it in Settings`)} testId={`focus-buy-aura-${key}`} disabledLabel={`${item.price_gems}`} />
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {tab === 'sounds' && (
+          <>
+            <div className="flex items-center justify-between">
+              <p className={SECTION_LABEL}>{soundCount} of {SOUND_ORDER.length} owned</p>
+              {equipHint('/dashboard/settings', 'Equip in Settings')}
+            </div>
+            <div className="space-y-3" data-testid="focus-sound-section">
+              {SOUND_ORDER.map((key) => {
+                const sound = getSound(key);
+                const item = byKey(key);
+                if (!sound) return null;
+                const isOwned = owned(item) > 0;
+                const isEquipped = key === equippedSoundKey;
+                const playing = previewKey === key;
+                return (
+                  <div key={key} className={`p-4 ${CARD} flex items-center gap-4 ${isEquipped ? 'ring-1 ring-[#95DEE6]' : ''}`} data-testid={`focus-sound-card-${key}`}>
+                    <button
+                      type="button"
+                      onClick={() => togglePreview(key)}
+                      className="w-12 h-12 rounded-xl bg-[color:var(--gm-badge)] flex items-center justify-center flex-shrink-0 text-[#95DEE6] hover:brightness-110 transition"
+                      aria-label={playing ? `Stop ${sound.name} preview` : `Preview ${sound.name}`}
+                      data-testid={`focus-sound-preview-${key}`}
+                    >
+                      {playing ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">{sound.name}</p>
+                      <p className="text-xs text-[color:var(--gm-muted)] mt-0.5">{sound.blurb}</p>
+                      {playing && <p className={`${MONO} text-[10px] text-[#95DEE6] mt-1.5 flex items-center gap-1`}><Volume2 className="w-3 h-3" /> Previewing</p>}
+                    </div>
+                    {isEquipped ? (
+                      <span className={`${MONO} text-[10px] font-bold text-[#95DEE6] flex-shrink-0`}>Equipped</span>
+                    ) : isOwned ? (
+                      <span className={`${MONO} text-[10px] font-bold text-[color:var(--gm-muted)] flex-shrink-0`}>Owned</span>
+                    ) : item ? (
+                      <BuyButton price={item.price_gems} gems={gems} busy={busy === key}
+                        onClick={() => buy(item, `${item.name} unlocked — equip it in Settings`)} testId={`focus-buy-sound-${key}`} />
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* How to Earn */}
       <div className={`mt-8 p-4 ${CARD}`}>

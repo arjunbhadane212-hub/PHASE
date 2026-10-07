@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { TitleBadge } from '../components/profile/FlexBadge';
 import { rankInfo } from '../data/levels';
 import { AURA_ORDER, getAura, hexA } from '../data/focusAuras';
+import { SOUND_ORDER, getSound } from '../data/focusSounds';
 
 // v2 design system — shared with Progress / Level / Home.
 // cyan #95DEE6 = active/selected, lime #DBF67F = progress, purple #A59BCC =
@@ -930,11 +931,12 @@ function TimerScreenSection() {
   const [ownedIds, setOwnedIds] = useState(new Set());
   const [busy, setBusy] = useState(null);
   const equippedKey = user?.equipped_focus_aura || 'focus_aura_cyan_pulse';
+  const equippedSound = user?.equipped_focus_sound || null;
 
   const load = useCallback(async () => {
     try {
       const { data: rows } = await supabase.from('shop_items')
-        .select('id,key,name,price_gems').eq('category', 'focus_aura');
+        .select('id,key,name,price_gems,category').in('category', ['focus_aura', 'focus_sound']);
       const ids = (rows || []).map((r) => r.id);
       const { data: inv } = ids.length
         ? await supabase.from('user_inventory').select('shop_item_id,quantity').in('shop_item_id', ids)
@@ -962,13 +964,27 @@ function TimerScreenSection() {
     } finally { setBusy(null); }
   };
 
+  const equipSound = async (item) => {
+    setBusy(item ? item.key : 'sound-off');
+    try {
+      const { error } = item
+        ? await supabase.rpc('equip_item', { p_shop_item_id: item.id })
+        : await supabase.rpc('unequip_item', { p_category: 'focus_sound' });
+      if (error) throw error;
+      await Promise.all([refreshUser(), load()]);
+      toast.success(item ? `${item.name} equipped` : 'Session sound off');
+    } catch (e) {
+      toast.error(e?.message || 'Could not update');
+    } finally { setBusy(null); }
+  };
+
   if (!items) return null;
 
   return (
     <section className="mb-6 sm:mb-8" data-testid="timer-screen-settings">
       <div className="flex items-baseline justify-between gap-3 mb-3">
         <h2 className={SECTION_LABEL}>Timer Screen</h2>
-        <Link to="/dashboard/focus-shop" className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#95DEE6] hover:underline">Get more in Shop</Link>
+        <Link to="/dashboard/focus-shop?tab=screens" className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#95DEE6] hover:underline">Get more in Shop</Link>
       </div>
       <div className={`${CARD} p-4`}>
         <p className="text-sm text-[color:var(--gm-muted)] mb-3">The look of your full-screen focus session.</p>
@@ -1007,6 +1023,39 @@ function TimerScreenSection() {
               </button>
             );
           })}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-[color:var(--gm-track)]" data-testid="session-sound-settings">
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <p className="text-sm text-[color:var(--gm-muted)]">Session sound — plays quietly during a focus session.</p>
+            <Link to="/dashboard/focus-shop?tab=sounds" className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#95DEE6] hover:underline flex-shrink-0">Get more</Link>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[null, ...SOUND_ORDER].map((key) => {
+              const sound = key ? getSound(key) : null;
+              const item = key ? items.find((r) => r.key === key) : null;
+              if (key && !item) return null;
+              const isEquipped = (equippedSound || null) === key;
+              const canUse = !key || ownedIds.has(item.id);
+              return (
+                <button
+                  key={key || 'off'}
+                  type="button"
+                  onClick={() => canUse && !isEquipped && equipSound(item)}
+                  disabled={!canUse || isEquipped || busy === (item ? item.key : 'sound-off')}
+                  title={canUse ? (sound ? sound.name : 'Off') : `${sound.name} (Unlock in Shop)`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.06em] transition-colors ${
+                    isEquipped ? 'bg-[#95DEE6] text-[#183A3F]' : canUse ? 'bg-[color:var(--gm-bg)] text-[color:var(--gm-ink)] hover:brightness-125' : 'bg-[color:var(--gm-bg)] text-[color:var(--gm-muted)] opacity-50 cursor-not-allowed'
+                  } disabled:cursor-default`}
+                  data-testid={`session-sound-${key || 'off'}`}
+                >
+                  {!canUse && <Lock className="w-3 h-3" />}
+                  {isEquipped && <Check className="w-3 h-3" strokeWidth={3} />}
+                  {sound ? sound.name : 'Off'}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
