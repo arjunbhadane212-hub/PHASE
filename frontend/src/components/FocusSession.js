@@ -4,6 +4,7 @@ import { Check, Volume2, VolumeX } from 'lucide-react';
 import { fireRoast } from './RoastNotification';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
+import { showTitleUnlocks } from './profile/TitleUnlockToast';
 import { useAuth } from '../contexts/AuthContext';
 import { getAura, hexA, DEFAULT_GRACE_MS } from '../data/focusAuras';
 import { createSoundEngine, getSound } from '../data/focusSounds';
@@ -96,10 +97,46 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
 
   const habitId = habit.habit_id ?? habit.id;
 
+  // The session row. Until Oct 2026 the timer was purely client-side and
+  // nothing was written down, which is why "hours tracked" had no source of
+  // truth and the hours titles could never unlock. Now a session is a real row
+  // and its duration is measured SERVER-SIDE from started_at/ended_at -- this
+  // component never tells the server how long it ran.
+  const sessionIdRef = useRef(null);
+  const creditedRef = useRef(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc('start_focus_session', {
+          p_habit_id: habitId, p_planned_minutes: duration,
+        });
+        if (!cancelled) sessionIdRef.current = data?.session_id ?? null;
+      } catch { /* a missing row only costs hours credit, never the session */ }
+    })();
+    return () => { cancelled = true; };
+  }, [habitId, duration]);
+
   const elapsed = Math.min(totalSeconds, Math.floor((now - startTimeRef.current) / 1000));
   const secondsLeft = Math.max(0, totalSeconds - elapsed);
   const completed = elapsed >= totalSeconds;
   useEffect(() => { if (completed) soundRef.current?.stop(); }, [completed]);
+
+  // Credit the session the instant the clock hits zero, NOT when the user taps
+  // Back -- they may never tap it, and the work is already done. The ref guards
+  // against the effect re-running; the RPC is idempotent regardless.
+  useEffect(() => {
+    if (!completed || creditedRef.current || !sessionIdRef.current) return;
+    creditedRef.current = true;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc('complete_focus_session', {
+          p_session_id: sessionIdRef.current,
+        });
+        showTitleUnlocks(data?.newly_unlocked);
+      } catch { /* ignore -- the session still ended for the user */ }
+    })();
+  }, [completed]);
 
   // Single tick loop. setInterval is throttled when backgrounded but our state
   // is derived from Date.now() so resuming always shows the correct value.
@@ -153,6 +190,9 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         const { data: pen } = await supabase.rpc('abandon_focus_session', {
           p_habit_id: habitId, p_reason: 'tab_switch',
         });
+        if (sessionIdRef.current) {
+          await supabase.rpc('close_focus_session', { p_session_id: sessionIdRef.current });
+        }
         const { data } = await supabase.rpc('check_roast', { p_event: 'tab_switch' });
         if (data?.roast) setTimeout(() => fireRoast(data.roast), 300);
         toast(`You left the tab — session ended · -${pen?.penalty ?? 45} gems`);
@@ -205,6 +245,12 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
       const { data: pen } = await supabase.rpc('abandon_focus_session', {
         p_habit_id: habitId, p_reason: 'abandon',
       });
+      // Abandoned sessions credit ZERO hours -- crediting partial time would
+      // make start-abandon-repeat a faster route to an hours title than
+      // actually sitting the sessions.
+      if (sessionIdRef.current) {
+        await supabase.rpc('close_focus_session', { p_session_id: sessionIdRef.current });
+      }
       if (pen?.penalty != null) penalty = pen.penalty;
       // Roast within 5s — copy/timing already tuned, left as-is.
       const { data } = await supabase.rpc('check_roast', { p_event: 'abandon' });

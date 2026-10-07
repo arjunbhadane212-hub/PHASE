@@ -25,13 +25,30 @@ const MONO = "font-['JetBrains_Mono'] uppercase tracking-[0.08em]";
 const TIER_ORDER = ['common', 'rare', 'epic', 'legendary', 'mythic'];
 
 // How a locked title is obtained, in the fewest words that are still exact.
-function unlockLabel(item) {
+// For the two EARNED ladders this also shows how close you are, because
+// "250-day streak" tells you nothing about whether that is next week or next
+// year -- "118 / 250-day streak" does.
+function unlockLabel(item, progress) {
   const d = item.metadata?.days;
   const h = item.metadata?.hours;
-  if (item.source_system === 'streak' && d) return `${d}-day streak`;
-  if (item.source_system === 'hours' && h) return `${h} hours tracked`;
+  if (item.source_system === 'streak' && d) {
+    const cur = Math.floor(progress?.streak ?? 0);
+    return cur > 0 ? `${cur} / ${d}-day streak` : `${d}-day streak`;
+  }
+  if (item.source_system === 'hours' && h) {
+    const cur = progress?.hours ?? 0;
+    return cur >= 0.1 ? `${cur.toFixed(1)} / ${h} hours` : `${h} hours tracked`;
+  }
   if (item.source_system === 'box') return `${(item.box_tier || 'loot').toUpperCase()} box`;
   return 'Locked';
+}
+
+// Fraction of the way to an earned title, for the hairline progress bar.
+function unlockPct(item, progress) {
+  const target = Number(item.metadata?.days ?? item.metadata?.hours ?? 0);
+  if (!target) return null;
+  const cur = item.source_system === 'streak' ? (progress?.streak ?? 0) : (progress?.hours ?? 0);
+  return Math.max(0, Math.min(1, cur / target));
 }
 
 const FILTERS = [
@@ -41,7 +58,7 @@ const FILTERS = [
   { id: 'locked', label: 'Locked' },
 ];
 
-export default function TitlesGrid({ titles, gems, buying, onBuy, equippedKey, onEquip, equipping }) {
+export default function TitlesGrid({ titles, gems, buying, onBuy, equippedKey, onEquip, equipping, progress }) {
   const [filter, setFilter] = useState('all');
 
   const shown = useMemo(() => {
@@ -88,7 +105,8 @@ export default function TitlesGrid({ titles, gems, buying, onBuy, equippedKey, o
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {shown.map((t) => (
             <TitleCard key={t.key} t={t} gems={gems} buying={buying} onBuy={onBuy}
-              equipped={equippedKey === t.key} onEquip={onEquip} equipping={equipping} />
+              equipped={equippedKey === t.key} onEquip={onEquip} equipping={equipping}
+              progress={progress} />
           ))}
         </div>
       )}
@@ -96,17 +114,23 @@ export default function TitlesGrid({ titles, gems, buying, onBuy, equippedKey, o
   );
 }
 
-function TitleCard({ t, gems, buying, onBuy, equipped, onEquip, equipping }) {
+function TitleCard({ t, gems, buying, onBuy, equipped, onEquip, equipping, progress }) {
   const busy = buying === t.id || equipping === `title-${t.key}`;
   const afford = gems >= (t.price || 0);
+  const pct = !t.owned && !t.buyable ? unlockPct(t, progress) : null;
 
   return (
     <div className={`${CARD} p-3 flex items-center gap-3`} data-testid={`title-card-${t.key}`}>
       <div className="min-w-0 flex-1">
         <TitlePlate titleKey={t.key} name={t.name} tier={t.rarity_tier} size="md" />
         <p className={`${MONO} text-[9px] text-[color:var(--gm-muted)] mt-1.5`}>
-          {t.rarity_tier}{!t.buyable && ` · ${unlockLabel(t)}`}
+          {t.rarity_tier}{!t.buyable && ` · ${unlockLabel(t, progress)}`}
         </p>
+        {pct != null && pct > 0 && (
+          <div className="mt-1.5 h-[3px] rounded-full bg-[color:var(--gm-track)] overflow-hidden" data-testid={`title-progress-${t.key}`}>
+            <div className="h-full rounded-full bg-[#DBF67F]" style={{ width: `${pct * 100}%` }} />
+          </div>
+        )}
       </div>
 
       {t.owned ? (

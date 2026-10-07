@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import TierEmblem from '../components/TierEmblem';
+import LeagueLadder from '../components/LeagueLadder';
 import ProfilePopout, { useProfilePopout } from '../components/profile/ProfilePopout';
 import { tierInfo } from '../data/leaderboardTiers';
 
@@ -104,9 +105,10 @@ export default function LeaderboardPage() {
             <TierEmblem tier={user?.leaderboard_tier ?? 1} size={104} />
           </div>
           <p className="text-lg font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] mb-1">Your league starts soon</p>
-          <p className="text-sm text-[color:var(--gm-muted)] max-w-xs mx-auto">
+          <p className="text-sm text-[color:var(--gm-muted)] max-w-xs mx-auto mb-6">
             Complete a few habits and you'll be placed in a {tier.key} group with others. Keep earning XP to climb.
           </p>
+          <LeagueLadder current={user?.leaderboard_tier ?? 1} />
         </div>
       </Shell>
     );
@@ -200,6 +202,11 @@ export default function LeaderboardPage() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* League ladder — your place on the 10-tier climb */}
+      <div className="mt-3">
+        <LeagueLadder current={data.tier} />
       </div>
 
       {/* Standings */}

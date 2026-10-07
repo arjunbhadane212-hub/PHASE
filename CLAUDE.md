@@ -314,11 +314,26 @@ all 56, with earned/box ones locked and labelled with their unlock condition.
 
 **Titles are permanent.** A broken streak never revokes one.
 
-⚠️ **Hours titles still cannot be earned** — there is no source of truth for
-"hours spent" (no `focus_sessions` table, no start/end timestamps;
-`habits.session_duration` is *planned* length, not time served). The 9 hours
-titles are seeded, render, and show as locked. Do not invent a proxy metric.
-Switch-on steps: `supabase/migrations/README_progress_titles.md`.
+**Hours are LIVE as of 2026-10-07.** The source is `focus_sessions` — a real row
+per Focus Mode session, written by `start_focus_session` / `complete_focus_session`
+/ `close_focus_session`. Until then the timer was purely client-side and nothing
+was recorded, which is why hours titles could render but never unlock.
+
+**Duration is measured server-side** from `started_at`/`ended_at`; the client
+never reports how long it ran. Two guards, both deliberate:
+- `credited = least(elapsed, planned_minutes)` — leaving a tab open for 8 hours
+  on a 25-minute session credits 25 minutes, not 8 hours.
+- **Abandoned sessions credit ZERO.** Partial credit would make
+  start-abandon-repeat a faster route to an hours title than sitting the sessions.
+
+A stale `active` row (closed tab, crash, reload) is swept to `abandoned` by the
+next `start_focus_session`, so an orphan can never bank away-from-keyboard time.
+`complete_focus_session` is idempotent — a double-tap cannot double-credit.
+
+⚠️ **Hours only accrue in Focus Mode**, because Game Mode has no timer and habit
+completions have no duration (an instant is not a duration). A Game Mode player
+who wants hours titles has to switch modes. That is the honest mapping, not an
+oversight — do not synthesise hours from habit counts.
 
 ---
 

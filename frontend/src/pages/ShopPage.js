@@ -56,7 +56,7 @@ const RARITY_BADGE_STYLE = {
 // TODO: timed restock/rotation to be rebuilt in a future session.
 
 export default function ShopPage() {
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { gems, fetchGameStatus, activeBoostMultiplier } = useGame();
   const [tab, setTab] = useState('powerups');
   const [openedBoxId, setOpenedBoxId] = useState(null);
@@ -66,6 +66,9 @@ export default function ShopPage() {
   const [profileItems, setProfileItems] = useState({ icons: [], animations: [], banners: [], decorations: [], battles: [] });
   const [boxData, setBoxData] = useState({ byKey: {}, keyToId: {} });
   const [equippedTitle, setEquippedTitle] = useState(null);
+  // Live progress toward the EARNED ladders, so a locked title can show how
+  // far off it is instead of just saying 'locked'.
+  const [progress, setProgress] = useState({ streak: 0, hours: 0 });
   const [equipping, setEquipping] = useState(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
@@ -88,6 +91,16 @@ export default function ShopPage() {
         supabase.from('loot_boxes').select('id, key, name, price_gems, items_per_open'),
         supabase.from('loot_box_drop_table').select('loot_box_id, shop_item_id, weight'),
       ]);
+
+      // Hours are the sum of CREDITED minutes on completed focus sessions --
+      // the same number sync_progress_titles awards from, so the shop and the
+      // server can never disagree about how close a title is.
+      const { data: fs } = await supabase.from('focus_sessions')
+        .select('credited_minutes').eq('status', 'completed');
+      setProgress({
+        streak: Math.max(user?.current_streak || 0, user?.longest_streak_ever || 0),
+        hours: (fs || []).reduce((t, r) => t + Number(r.credited_minutes || 0), 0) / 60,
+      });
       const ownedQty = {};
       (inv || []).forEach((r) => { ownedQty[r.shop_item_id] = r.quantity; });
       const equippedIds = new Set((eq || []).map((r) => r.shop_item_id));
@@ -190,7 +203,7 @@ export default function ShopPage() {
       });
       setBoxData({ byKey, keyToId });
     } catch { /* ignore */ } finally { setLoading(false); }
-  }, []);
+  }, [user?.current_streak, user?.longest_streak_ever]);
 
   useEffect(() => { fetchShop(); }, [fetchShop]);
 
@@ -347,7 +360,8 @@ export default function ShopPage() {
           <DecorationsGrid items={profileItems.decorations || []} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : (
           <TitlesGrid titles={titles} gems={gems} buying={buying} onBuy={handleBuy}
-            equippedKey={equippedTitle} onEquip={handleEquipTitle} equipping={equipping} />
+            equippedKey={equippedTitle} onEquip={handleEquipTitle} equipping={equipping}
+            progress={progress} />
         )}
       </div>
 

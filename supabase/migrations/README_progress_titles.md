@@ -87,3 +87,41 @@ No other line in the function, and nothing downstream, needs to change.
 Cooking as rare and Aflame as epic, where the confirmed pyramid makes them
 common and rare. It is gone; `get_earned_titles` is now an empty stub. No
 frontend surface read it.
+
+---
+
+## RESOLVED 2026-10-07 — hours are live
+
+The open item above is closed. `focus_sessions` is the source of truth:
+
+```
+focus_sessions(id, user_id, habit_id, started_at, ended_at,
+               planned_minutes, credited_minutes, status)
+status: active | completed | abandoned
+```
+
+RPCs (all SECURITY DEFINER; the table is read-only to its owner via RLS, so a
+client cannot insert a fabricated session):
+
+- `start_focus_session(p_habit_id, p_planned_minutes)` — opens a row and sweeps
+  any stale `active` row to `abandoned` first.
+- `complete_focus_session(p_session_id)` — measures elapsed server-side, writes
+  `credited_minutes`, calls `sync_progress_titles`, returns `newly_unlocked`.
+- `close_focus_session(p_session_id)` — abandons a row, credits zero.
+
+`sync_progress_titles` now sums `credited_minutes` over completed sessions.
+
+**Guards (all verified through the real RPCs, rolled back):**
+
+| case | result |
+|---|---|
+| 8h tab left open, 25 min planned | credited **25.00**, not 480 |
+| complete the same session twice | `already_closed`, no double credit |
+| 4 min sat, 60 min planned | credited **4.00** (honest elapsed) |
+| orphaned active row + new start | orphan → abandoned, 1 active remains |
+| +2h abandoned session | hours unchanged |
+| 25h total | exactly `Timekeeper`; nothing above |
+| 50h total | exactly `Chronos`; `Temporal Drift` (100h) stays locked |
+
+**Scope:** hours accrue in Focus Mode only — Game Mode has no timer and habit
+completions carry no duration. Do not synthesise hours from completion counts.
