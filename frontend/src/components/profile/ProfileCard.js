@@ -25,6 +25,11 @@ const RESULT_STYLE = {
   held:     { label: 'Held', color: '#7D818F' },
 };
 
+// The equipped title's rarity sets how much ambient light it casts on the
+// profile — a steady, same-colour bloom in the title's own accent. No
+// animation: that is the "natural, not AI" guardrail. A common casts none.
+const TITLE_AMBIENT = { common: 0, rare: 0.05, epic: 0.09, legendary: 0.15, mythic: 0.2 };
+
 function countdown(endsAt) {
   if (!endsAt) return null;
   const diff = new Date(endsAt).getTime() - Date.now();
@@ -54,13 +59,28 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
   // same colour its chip uses — so header and chip can never disagree. With the
   // profile otherwise black, this is the only tint in the section.
   const titleAccent = accentFor(profile.equipped_title).surface;
+  const ambient = TITLE_AMBIENT[profile.equipped_title_rarity_tier] ?? 0;
   const xpToNext = lvl.isMax ? null
     : Math.max(0, (profile.level_max_xp || 0) - (profile.current_xp || 0) + 1);
   const resets = countdown(standing?.ends_at);
 
   return (
     <div className="relative" data-testid="profile-card">
-      {/* Stage: banner + rank-keyed ambient bloom. Radial only — no diagonal gradients. */}
+      {/* Title ambient — the equipped title's rarity casts a natural, steady
+          bloom in its own accent, behind the header. The only colour the
+          otherwise-black profile carries, and it scales with how rare the
+          title is. Sits under the banner (which paints over it) and behind the
+          z-10 content (which glows through the black gaps). */}
+      {profile.equipped_title && ambient > 0 && (
+        <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none z-0"
+          style={{
+            height: compact ? '18rem' : '26rem',
+            background: `radial-gradient(90% 60% at 50% ${compact ? '16%' : '20%'}, color-mix(in srgb, ${titleAccent} ${Math.round(ambient * 100)}%, transparent), transparent 62%)`,
+          }}
+          data-testid="profile-title-ambient"
+        />
+      )}
+      {/* Stage: the equipped banner. Radial only — no diagonal gradients. */}
       <div className={`relative overflow-hidden ${compact ? 'h-24 rounded-t-3xl' : 'h-40 sm:h-52'}`} data-testid="profile-banner">
         <div className="absolute inset-0"><PhaseBanner bannerKey={bannerArt} /></div>
         {/* The stage fades to the page background and nothing else. The rank
@@ -139,7 +159,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
               {lvl.isMax ? 'MAX RANK' : `${(profile.current_xp || 0).toLocaleString()} / ${(profile.level_max_xp || 0).toLocaleString()} XP`}
             </span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#161C28' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--gm-track)' }}>
             <div
               className="h-full rounded-full transition-[width] duration-700"
               style={{
@@ -197,7 +217,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
         {/* Live league context line. */}
         {standing && !compact && (
           <div className="mb-4 flex items-center gap-2.5 px-3.5 py-3 rounded-2xl"
-            style={{ background: '#0B0F1A', border: '1px solid #182038' }}
+            style={{ background: 'var(--gm-card)', border: '1px solid var(--gm-track)' }}
             data-testid="profile-league-live">
             <TierEmblem tier={standing.tier} size={30} glow={false} />
             <div className="flex-1 min-w-0">
@@ -244,7 +264,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
                 const when = h.ends_at ? new Date(h.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
                 return (
                   <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-                    style={{ background: '#0F1525', border: '1px solid #182038' }}>
+                    style={{ background: 'var(--gm-badge)', border: '1px solid var(--gm-track)' }}>
                     <TierEmblem tier={h.tier_num || tierNumByName(h.tier_name)} size={26} glow={false} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-[color:var(--gm-ink)] truncate">{h.tier_name || 'League'}</p>
@@ -271,7 +291,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
 
 function Stat({ icon, label, value }) {
   return (
-    <div className="p-3.5 rounded-xl" style={{ background: '#0F1525', border: '1px solid #182038' }}
+    <div className="p-3.5 rounded-xl" style={{ background: 'var(--gm-badge)', border: '1px solid var(--gm-track)' }}
       data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
       <div className="flex items-center gap-1.5 mb-1.5">
         {icon}

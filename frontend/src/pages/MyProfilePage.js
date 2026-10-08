@@ -8,8 +8,16 @@ import { PhaseBanner } from '../components/banners/PhaseBanners';
 import { FlameGlyph } from '../components/profile/Sigil';
 import { TitleBadge } from '../components/profile/FlexBadge';
 import { streakTier } from '../data/profileIdentity';
+import { accentFor } from '../data/titleGlyphs';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
+
+// How much ambient light the equipped title casts on the profile, by rarity.
+// A natural, steady same-colour bloom — no animation (that is the "less AI"
+// guardrail). A day-one common casts none; a mythic lights the room a little.
+const TITLE_AMBIENT = { common: 0, rare: 0.05, epic: 0.09, legendary: 0.15, mythic: 0.2 };
+const ambientBg = (accent, amt) =>
+  `radial-gradient(100% 70% at 50% 0%, color-mix(in srgb, ${accent} ${Math.round(amt * 100)}%, transparent), transparent 62%)`;
 
 // Shop banners (shop_items.key = 'banner_*') and the hardcoded banner SVG set
 // (bannerComponents keys = 'starter_/delta_/phase_*') use different key
@@ -48,6 +56,10 @@ export default function ProfilePanel({ open, onClose }) {
   // Canonical only: equip/unequip go through the RPCs (no direct users.equipped_*
 
   const equippedTitle = user?.equipped_title;
+  // The equipped title's accent + rarity drive the only colour on the profile:
+  // a natural ambient bloom scaled by how rare the title is.
+  const titleAccent = accentFor(equippedTitle).surface;
+  const ambient = TITLE_AMBIENT[equippedTitleObj?.rarity_tier] ?? 0;
 
   // The equipped-main-colour branch is gone (Oct 2026): profile colours are
   // retired and the panel is the neutral theme surface, always. The --panel-*
@@ -98,13 +110,17 @@ export default function ProfilePanel({ open, onClose }) {
           </div>
         </div>
 
-        {/* Lower section with equipped main color */}
-        <div className="relative -mt-10 rounded-t-3xl min-h-[60vh] px-5 pt-1 pb-8" style={{ backgroundColor: lowerBg, ...panelVars }}>
+        {/* Lower section — the equipped title's rarity casts a natural ambient
+            bloom here, in its own accent (layered behind content as the
+            section's own background). Steady, no animation. */}
+        <div className="relative -mt-10 rounded-t-3xl min-h-[60vh] px-5 pt-1 pb-8"
+          style={{ background: equippedTitle && ambient > 0 ? `${ambientBg(titleAccent, ambient)}, ${lowerBg}` : lowerBg, ...panelVars }}
+          data-testid="panel-lower">
           {/* Avatar */}
           <div className="flex items-end gap-4 mb-4 -mt-6">
             <div
               className={`w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-['Archivo'] font-black text-[color:var(--panel-ink)] ${animClass}`}
-              style={{ backgroundColor: avatarBg, color: hasColor ? '#ffffff' : '#183A3F', border: `4px solid ${lowerBg}`, boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}
+              style={{ backgroundColor: avatarBg, color: 'var(--gm-ink)', border: `4px solid ${lowerBg}`, boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}
               data-testid="panel-avatar"
             >
               {user?.first_name?.[0]}{user?.last_name?.[0]}
