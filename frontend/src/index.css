@@ -541,37 +541,42 @@ input:focus, textarea:focus, select:focus {
 }
 
 
-/* ===== PROFILE ANIMATIONS (30 unique) ===== */
-@keyframes pa-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
-@keyframes pa-glow { 0%,100%{box-shadow:0 0 8px rgba(139,92,246,0.3)} 50%{box-shadow:0 0 20px rgba(139,92,246,0.6)} }
-@keyframes pa-breathe { 0%,100%{opacity:0.8} 50%{opacity:1} }
+/* ===== PROFILE ANIMATIONS =====
+   Rethemed Oct 2026 (profile remodel): on-theme cyan #95DEE6 / lime #DBF67F /
+   white #EAFCFF only. No purple, no rainbow, no neon #0ff, no hue-rotate — the
+   old set was the app's worst "AI" slop. Glows are soft and slow; the tiers are
+   told apart by MOTION and by the cyan/lime mix, not by garish colour. All stop
+   under prefers-reduced-motion (rule at the end of this block). */
+@keyframes pa-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+@keyframes pa-glow { 0%,100%{box-shadow:0 0 8px rgba(149,222,230,0.35)} 50%{box-shadow:0 0 22px rgba(149,222,230,0.65)} }
+@keyframes pa-breathe { 0%,100%{opacity:0.82} 50%{opacity:1} }
 @keyframes pa-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 @keyframes pa-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-@keyframes pa-sparkle { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.3)} }
+@keyframes pa-sparkle { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.22)} }
 @keyframes pa-orbit { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 @keyframes pa-wave { 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
-@keyframes pa-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-@keyframes pa-fadepulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
-@keyframes pa-neon { 0%,100%{box-shadow:0 0 5px #0ff,0 0 10px #0ff} 50%{box-shadow:0 0 15px #0ff,0 0 30px #0ff} }
-@keyframes pa-aurora { 0%{box-shadow:0 0 15px #43cea2} 33%{box-shadow:0 0 15px #185a9d} 66%{box-shadow:0 0 15px #a855f7} 100%{box-shadow:0 0 15px #43cea2} }
-@keyframes pa-firering { 0%,100%{box-shadow:0 0 10px #f97316,0 0 20px #ef4444} 50%{box-shadow:0 0 20px #f97316,0 0 40px #ef4444} }
-@keyframes pa-icering { 0%,100%{box-shadow:0 0 10px #06b6d4,0 0 20px #3b82f6} 50%{box-shadow:0 0 20px #06b6d4,0 0 40px #3b82f6} }
-@keyframes pa-electric { 0%,100%{box-shadow:0 0 8px #fbbf24} 25%{box-shadow:3px -2px 12px #fbbf24} 75%{box-shadow:-3px 2px 12px #fbbf24} }
-@keyframes pa-rainbow { 0%{box-shadow:0 0 15px red} 16%{box-shadow:0 0 15px orange} 33%{box-shadow:0 0 15px yellow} 50%{box-shadow:0 0 15px green} 66%{box-shadow:0 0 15px blue} 83%{box-shadow:0 0 15px violet} 100%{box-shadow:0 0 15px red} }
-@keyframes pa-galaxy { from{transform:rotate(0);filter:hue-rotate(0)} to{transform:rotate(360deg);filter:hue-rotate(360deg)} }
-@keyframes pa-ripple { 0%{box-shadow:0 0 0 0 rgba(99,102,241,0.4)} 100%{box-shadow:0 0 0 20px rgba(99,102,241,0)} }
-@keyframes pa-vortex { 0%{transform:rotate(0) scale(1)} 50%{transform:rotate(180deg) scale(0.95)} 100%{transform:rotate(360deg) scale(1)} }
-@keyframes pa-matrix { 0%{text-shadow:0 0 5px #0f0} 50%{text-shadow:0 0 15px #0f0} 100%{text-shadow:0 0 5px #0f0} }
-@keyframes pa-plasma { 0%{box-shadow:0 0 15px #a855f7,0 0 30px #ec4899} 50%{box-shadow:0 0 25px #ec4899,0 0 50px #a855f7} 100%{box-shadow:0 0 15px #a855f7,0 0 30px #ec4899} }
-@keyframes pa-shadowflame { 0%,100%{box-shadow:0 0 15px #1a1a2e,0 0 30px #e94560} 50%{box-shadow:0 0 25px #e94560,0 0 50px #1a1a2e} }
-@keyframes pa-lightning { 0%,100%{box-shadow:0 0 10px #fbbf24} 10%{box-shadow:0 0 30px #fff} 12%{box-shadow:0 0 10px #fbbf24} 50%{box-shadow:0 0 10px #3b82f6} 52%{box-shadow:0 0 35px #fff} 54%{box-shadow:0 0 10px #3b82f6} }
-@keyframes pa-cosmic { 0%{box-shadow:0 0 20px #6366f1;transform:scale(1)} 50%{box-shadow:0 0 40px #a855f7;transform:scale(1.02)} 100%{box-shadow:0 0 20px #6366f1;transform:scale(1)} }
-@keyframes pa-goldenaura { 0%,100%{box-shadow:0 0 15px #fbbf24,0 0 30px #f59e0b} 50%{box-shadow:0 0 30px #fbbf24,0 0 60px #f59e0b} }
-@keyframes pa-voidpulse { 0%,100%{box-shadow:0 0 15px #1a1a2e,inset 0 0 15px rgba(139,92,246,0.2)} 50%{box-shadow:0 0 30px #0a0a15,inset 0 0 30px rgba(139,92,246,0.4)} }
-@keyframes pa-supernova { 0%{box-shadow:0 0 20px #f97316;transform:scale(1)} 25%{box-shadow:0 0 40px #fbbf24} 50%{box-shadow:0 0 60px #fff;transform:scale(1.05)} 75%{box-shadow:0 0 40px #a855f7} 100%{box-shadow:0 0 20px #f97316;transform:scale(1)} }
-@keyframes pa-ethereal { 0%,100%{box-shadow:0 0 20px rgba(255,255,255,0.1);filter:brightness(1)} 50%{box-shadow:0 0 40px rgba(200,200,255,0.3);filter:brightness(1.1)} }
-@keyframes pa-inferno { 0%{box-shadow:0 0 15px #dc2626,0 0 30px #f97316} 33%{box-shadow:0 0 25px #f97316,0 0 50px #fbbf24} 66%{box-shadow:0 0 25px #fbbf24,0 0 50px #dc2626} 100%{box-shadow:0 0 15px #dc2626,0 0 30px #f97316} }
-@keyframes pa-divine { 0%{box-shadow:0 0 30px #fbbf24,0 0 60px #fff;transform:scale(1)} 50%{box-shadow:0 0 60px #fff,0 0 100px #fbbf24;transform:scale(1.03)} 100%{box-shadow:0 0 30px #fbbf24,0 0 60px #fff;transform:scale(1)} }
+@keyframes pa-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+@keyframes pa-fadepulse { 0%,100%{opacity:0.62} 50%{opacity:1} }
+@keyframes pa-neon { 0%,100%{box-shadow:0 0 5px #95DEE6,0 0 10px #95DEE6} 50%{box-shadow:0 0 14px #95DEE6,0 0 28px #95DEE6} }
+@keyframes pa-aurora { 0%,100%{box-shadow:0 0 16px #95DEE6} 50%{box-shadow:0 0 22px #DBF67F} }
+@keyframes pa-firering { 0%,100%{box-shadow:0 0 10px #DBF67F,0 0 20px #95DEE6} 50%{box-shadow:0 0 20px #DBF67F,0 0 38px #95DEE6} }
+@keyframes pa-icering { 0%,100%{box-shadow:0 0 10px #95DEE6,0 0 20px #5FB8C4} 50%{box-shadow:0 0 20px #95DEE6,0 0 40px #5FB8C4} }
+@keyframes pa-electric { 0%,100%{box-shadow:0 0 8px #95DEE6} 25%{box-shadow:2px -2px 14px #EAFCFF} 75%{box-shadow:-2px 2px 14px #95DEE6} }
+@keyframes pa-rainbow { 0%,100%{box-shadow:0 0 16px #95DEE6} 50%{box-shadow:0 0 16px #DBF67F} }
+@keyframes pa-galaxy { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+@keyframes pa-ripple { 0%{box-shadow:0 0 0 0 rgba(149,222,230,0.4)} 100%{box-shadow:0 0 0 20px rgba(149,222,230,0)} }
+@keyframes pa-vortex { 0%{transform:rotate(0) scale(1)} 50%{transform:rotate(180deg) scale(0.96)} 100%{transform:rotate(360deg) scale(1)} }
+@keyframes pa-matrix { 0%,100%{text-shadow:0 0 5px #95DEE6} 50%{text-shadow:0 0 15px #95DEE6} }
+@keyframes pa-plasma { 0%,100%{box-shadow:0 0 15px #95DEE6,0 0 30px #DBF67F} 50%{box-shadow:0 0 24px #DBF67F,0 0 48px #95DEE6} }
+@keyframes pa-shadowflame { 0%,100%{box-shadow:0 0 15px #0A0E10,0 0 30px #95DEE6} 50%{box-shadow:0 0 24px #95DEE6,0 0 48px #0A0E10} }
+@keyframes pa-lightning { 0%,100%{box-shadow:0 0 10px #95DEE6} 10%{box-shadow:0 0 30px #EAFCFF} 12%{box-shadow:0 0 10px #95DEE6} 50%{box-shadow:0 0 10px #5FB8C4} 52%{box-shadow:0 0 34px #EAFCFF} 54%{box-shadow:0 0 10px #5FB8C4} }
+@keyframes pa-cosmic { 0%,100%{box-shadow:0 0 20px #95DEE6;transform:scale(1)} 50%{box-shadow:0 0 40px #DBF67F;transform:scale(1.02)} }
+@keyframes pa-goldenaura { 0%,100%{box-shadow:0 0 15px #DBF67F,0 0 30px #EAFCFF} 50%{box-shadow:0 0 28px #DBF67F,0 0 56px #EAFCFF} }
+@keyframes pa-voidpulse { 0%,100%{box-shadow:0 0 15px #06090B,inset 0 0 15px rgba(149,222,230,0.22)} 50%{box-shadow:0 0 30px #04070A,inset 0 0 28px rgba(149,222,230,0.42)} }
+@keyframes pa-supernova { 0%,100%{box-shadow:0 0 20px #95DEE6;transform:scale(1)} 50%{box-shadow:0 0 56px #EAFCFF;transform:scale(1.05)} 75%{box-shadow:0 0 38px #DBF67F} }
+@keyframes pa-ethereal { 0%,100%{box-shadow:0 0 20px rgba(234,252,255,0.14);filter:brightness(1)} 50%{box-shadow:0 0 40px rgba(149,222,230,0.4);filter:brightness(1.08)} }
+@keyframes pa-inferno { 0%,100%{box-shadow:0 0 15px #DBF67F,0 0 30px #95DEE6} 50%{box-shadow:0 0 26px #EAFCFF,0 0 52px #DBF67F} }
+@keyframes pa-divine { 0%,100%{box-shadow:0 0 30px #DBF67F,0 0 60px #EAFCFF;transform:scale(1)} 50%{box-shadow:0 0 56px #EAFCFF,0 0 96px #95DEE6;transform:scale(1.03)} }
 
 .profile-anim-pulse { animation: pa-pulse 2s ease-in-out infinite }
 .profile-anim-glow { animation: pa-glow 2.5s ease-in-out infinite }
@@ -618,10 +623,13 @@ input:focus, textarea:focus, select:focus {
 @keyframes deco-pulse-bg { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.15)} }
 @keyframes deco-shift { 0%{filter:hue-rotate(0)} 100%{filter:hue-rotate(360deg)} }
 
-.deco-flame-ring{background:linear-gradient(135deg,#0a0000,#3d0c02 20%,#8b2500 40%,#f97316 60%,#fbbf24 80%,#3d0c02);background-size:300% 300%;animation:deco-move 6s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
-.deco-frost-ring{background:linear-gradient(135deg,#0a1628,#0c2d48 25%,#06b6d4 50%,#67e8f9 75%,#0a1628);background-size:300% 300%;animation:deco-move 8s ease infinite}
-.deco-lightning-arc{background:linear-gradient(160deg,#0a0a2e,#1a1a4e 30%,#3b82f6 50%,#fbbf24 60%,#0a0a2e 80%);background-size:400% 400%;animation:deco-move 4s ease infinite}
-.deco-galaxy-spiral{background:linear-gradient(135deg,#0a0015,#1a0033,#2d0066,#6b21a8,#ec4899,#2d0066,#0a0015);background-size:400% 400%;animation:deco-move 10s ease infinite,deco-shift 20s linear infinite}
+/* The four PROFILE EFFECTS that are actually equippable (see data/shopEffects.js)
+   — rethemed Oct 2026 to cyan/lime radial/conic (no banned diagonal gradients,
+   no purple/pink/rainbow). The deco-* classes below these are legacy and unused. */
+.deco-flame-ring{background:radial-gradient(circle,#DBF67F,#0A0E10 70%);animation:pa-firering 2.5s ease-in-out infinite}
+.deco-frost-ring{background:radial-gradient(circle,#95DEE6,#0A0E10 70%);animation:pa-icering 3s ease-in-out infinite}
+.deco-lightning-arc{background:radial-gradient(circle,#EAFCFF,#0A0E10 72%);animation:pa-lightning 3s ease-in-out infinite}
+.deco-galaxy-spiral{background:conic-gradient(from 0deg,#95DEE6,#DBF67F,#5FB8C4,#95DEE6);animation:pa-galaxy 10s linear infinite}
 .deco-void-portal{background:radial-gradient(ellipse at center,#1a0033 0%,#0a0015 30%,#000 60%,#1a0033 100%);background-size:200% 200%;animation:deco-move 6s ease infinite,deco-pulse-bg 4s ease-in-out infinite}
 .deco-golden-wreath{background:linear-gradient(135deg,#1a1000,#3d2800 25%,#fbbf24 45%,#f59e0b 55%,#3d2800 75%,#1a1000);background-size:300% 300%;animation:deco-move 6s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-neon-pulse{background:linear-gradient(135deg,#0a001a,#00ffff 20%,#ff00ff 40%,#00ff00 60%,#ff00ff 80%,#0a001a);background-size:400% 400%;animation:deco-move 5s ease infinite}
@@ -890,4 +898,6 @@ input:focus, textarea:focus, select:focus {
   .tchip--legendary::before { animation: none; transform: translateX(-200%); }
   .tchip--mythic .tchip__frame { animation: none; opacity: 1; }
   .tchip { transition: none; }
+  /* Equipped profile animations + effects hold still too. */
+  [class*="profile-anim-"], [class*="deco-"] { animation: none !important; }
 }

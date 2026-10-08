@@ -10,6 +10,7 @@ import { rankInfo } from '../../data/levels';
 import { tierNumByName } from '../../data/leaderboardTiers';
 import { streakTier, levelBadge } from '../../data/profileIdentity';
 import { accentFor } from '../../data/titleGlyphs';
+import { animCssFor } from '../../data/shopAnimations';
 import { RankBadge, StreakBadge, StandingBadge, GlobalRankBadge, TitleBadge, ZoneChip } from './FlexBadge';
 
 const RESULT_STYLE = {
@@ -88,7 +89,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
         {/* Avatar — ring + bloom coloured by rank, alive from Elite up. */}
         <div className="flex items-end justify-between gap-3 mb-4">
           <div
-            className={`rounded-full flex items-center justify-center font-['Archivo'] font-black text-[color:var(--gm-ink)] bg-[color:var(--gm-badge)] ${compact ? 'w-20 h-20 text-xl' : 'w-24 h-24 sm:w-28 sm:h-28 text-2xl sm:text-3xl'}`}
+            className={`rounded-full flex items-center justify-center font-['Archivo'] font-black text-[color:var(--gm-ink)] bg-[color:var(--gm-badge)] ${animCssFor(profile.equipped_animation)} ${compact ? 'w-20 h-20 text-xl' : 'w-24 h-24 sm:w-28 sm:h-28 text-2xl sm:text-3xl'}`}
             style={{ border: '4px solid var(--gm-card)' }}
             data-testid="profile-avatar"
           >

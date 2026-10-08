@@ -9,6 +9,7 @@ import { FlameGlyph } from '../components/profile/Sigil';
 import { TitleBadge } from '../components/profile/FlexBadge';
 import { streakTier } from '../data/profileIdentity';
 import { accentFor } from '../data/titleGlyphs';
+import { animCssFor } from '../data/shopAnimations';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 
@@ -63,9 +64,9 @@ export default function ProfilePanel({ open, onClose }) {
     '--panel-line': 'var(--gm-track)',
   };
 
-  // Animations carry no css preview in shop_items (the old backend synthesized
-  // css_class); the avatar animation class degrades to none. See NOTES_FOR_SACHIN.md.
-  const animClass = '';
+  // The equipped animation now actually renders on the avatar (it used to be
+  // hardcoded off, so a bought animation showed nothing). '' when none equipped.
+  const animClass = animCssFor(user?.equipped_animation);
 
   if (!open) return null;
 
