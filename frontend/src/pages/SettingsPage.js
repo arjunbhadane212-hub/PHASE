@@ -20,6 +20,16 @@ import { SOUND_ORDER, getSound } from '../data/focusSounds';
 // cyan #95DEE6 = active/selected, lime #DBF67F = progress, purple #A59BCC =
 // outline-pill accent, red #B91C1C = destructive (all inlined below).
 const LIME = '#DBF67F';
+// Focus-time counter (users.total_focus_minutes) -> a readable all-time figure.
+// Accrues only in Focus Mode; this is the number the hours titles unlock against.
+function formatFocusHours(mins) {
+  const m = Math.max(0, Math.round(Number(mins) || 0));
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h === 0) return `${r}m`;
+  return r === 0 ? `${h}h` : `${h}h ${r}m`;
+}
+
 const SECTION_LABEL = "font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
 const DIALOG = 'bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0';
@@ -120,6 +130,10 @@ export default function SettingsPage() {
               <div>
                 <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Habits Completed</p>
                 <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{user?.total_habits_completed || 0}</p>
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Focus Hours</p>
+                <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{formatFocusHours(user?.total_focus_minutes)}</p>
               </div>
               <div className="col-span-2">
                 <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Member Since</p>

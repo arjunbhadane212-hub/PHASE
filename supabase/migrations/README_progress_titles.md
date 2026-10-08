@@ -125,3 +125,25 @@ client cannot insert a fabricated session):
 
 **Scope:** hours accrue in Focus Mode only — Game Mode has no timer and habit
 completions carry no duration. Do not synthesise hours from completion counts.
+
+---
+
+## 2026-10-08 — persistent focus-time counter
+
+`users.total_focus_minutes numeric(10,2) NOT NULL DEFAULT 0` is a maintained
+per-user counter so "total hours spent" is an O(1) read (shown in Settings →
+All-Time Stats → Focus Hours) instead of summing the ledger each view.
+
+- **Source of truth stays `focus_sessions`.** The column is a cache.
+- `complete_focus_session` **recomputes** it from the ledger each completion
+  (`sum(credited_minutes) where status='completed'`), not an increment — so it
+  cannot drift. Verified: counter == ledger (1510 == 1510) after a real session.
+- **New users:** the `DEFAULT 0` registers them automatically — any insert that
+  omits the column still gets 0, no signup wiring needed.
+- **Existing users:** backfilled from the ledger in the migration.
+- Frontend reads it via AuthContext's `select('*')` → `user.total_focus_minutes`,
+  formatted by `formatFocusHours()` in SettingsPage ("25h 10m").
+
+Nothing else changed: awarding is still `sync_progress_titles` inside
+`complete_focus_session`, and streak/hours titles equip from the profile panel
+via `<Inventory/>` → `equip_item` (both verified).
