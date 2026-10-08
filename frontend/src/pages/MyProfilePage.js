@@ -19,17 +19,6 @@ const TITLE_AMBIENT = { common: 0, rare: 0.05, epic: 0.09, legendary: 0.15, myth
 const ambientBg = (accent, amt) =>
   `radial-gradient(100% 70% at 50% 0%, color-mix(in srgb, ${accent} ${Math.round(amt * 100)}%, transparent), transparent 62%)`;
 
-// Shop banners (shop_items.key = 'banner_*') and the hardcoded banner SVG set
-// (bannerComponents keys = 'starter_/delta_/phase_*') use different key
-// namespaces. Map the ones that have real art by key; everything else falls
-// back to a neutral placeholder tile. See NOTES_FOR_SACHIN.md (banner art gap).
-const BANNER_KEY_TO_ART = {
-  banner_circuit: 'starter_circuit',
-  banner_grid: 'starter_grid',
-  banner_pulse: 'delta_pulse',
-  banner_void_fracture: 'delta_void',
-};
-
 export default function ProfilePanel({ open, onClose }) {
   const { user, refreshUser } = useAuth();
   const { isGameMode } = useMode();
@@ -106,7 +95,7 @@ export default function ProfilePanel({ open, onClose }) {
         {/* Banner — Phase SVG banner component (mapped from equipped shop key) */}
         <div className="h-32 sm:h-36 relative overflow-hidden" data-testid="panel-banner">
           <div className="absolute inset-0">
-            <PhaseBanner bannerKey={BANNER_KEY_TO_ART[user?.equipped_banner] || 'default'} />
+            <PhaseBanner bannerKey={user?.equipped_banner || 'default'} />
           </div>
         </div>
 

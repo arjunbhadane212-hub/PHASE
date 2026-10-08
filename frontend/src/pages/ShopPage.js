@@ -13,6 +13,7 @@ import { boostIconFor } from '../data/shopIcons';
 import { animCssFor } from '../data/shopAnimations';
 import { effectCssFor } from '../data/shopEffects';
 import { ShopItemIcon, SparkleIcon, shopItemTone } from '../components/ShopIcons';
+import { PhaseBanner } from '../components/banners/PhaseBanners';
 
 // v2 card surface (shared with the rest of the app).
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
@@ -450,7 +451,7 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
             {/* Preview */}
             <div className="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 flex items-center justify-center">
               {type === 'banner' ? (
-                <div className="w-full h-10 sm:h-14 rounded-lg" style={{ background: item.gradient || '#1F2937' }} />
+                <div className="w-full h-10 sm:h-14 rounded-lg overflow-hidden"><PhaseBanner bannerKey={item.key} /></div>
               ) : type === 'animation' ? (
                 <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[color:var(--gm-badge)] ${animClass}`} />
               ) : (

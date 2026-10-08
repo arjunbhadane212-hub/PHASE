@@ -27,13 +27,6 @@ import { effectCssFor } from '../data/shopEffects';
 
 const MONO = "font-['JetBrains_Mono'] uppercase tracking-[0.08em]";
 
-const BANNER_KEY_TO_ART = {
-  banner_circuit: 'starter_circuit',
-  banner_grid: 'starter_grid',
-  banner_pulse: 'delta_pulse',
-  banner_void_fracture: 'delta_void',
-};
-
 // Every equippable category, in one list. Adding a category to the shop means
 // adding exactly one row here and it appears on both surfaces at once.
 const SECTIONS = [
@@ -177,7 +170,7 @@ function ItemTile({ item, category, equipped, busy, onEquip }) {
   }
 
   const preview =
-    category === 'banner' ? <PhaseBanner bannerKey={BANNER_KEY_TO_ART[item.key] || 'default'} />
+    category === 'banner' ? <PhaseBanner bannerKey={item.key} />
     : category === 'anim' ? <div className={`w-7 h-7 rounded-full bg-[#95DEE6] ${animCssFor(item.key)}`} />
     : <div className={`w-7 h-7 rounded-full bg-[#95DEE6] ${effectCssFor(item.key)}`} />;
 

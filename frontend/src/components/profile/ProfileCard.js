@@ -12,13 +12,6 @@ import { streakTier, levelBadge } from '../../data/profileIdentity';
 import { accentFor } from '../../data/titleGlyphs';
 import { RankBadge, StreakBadge, StandingBadge, GlobalRankBadge, TitleBadge, ZoneChip } from './FlexBadge';
 
-const BANNER_KEY_TO_ART = {
-  banner_circuit: 'starter_circuit',
-  banner_grid: 'starter_grid',
-  banner_pulse: 'delta_pulse',
-  banner_void_fracture: 'delta_void',
-};
-
 const RESULT_STYLE = {
   promoted: { label: 'Promoted', color: '#DBF67F' },
   demoted:  { label: 'Relegated', color: '#B91C1C' },
@@ -49,7 +42,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
   const s = streakTier(streak);
   const standing = profile.live_standing || null;
 
-  const bannerArt = BANNER_KEY_TO_ART[profile.equipped_banner] || 'default';
+  const bannerArt = profile.equipped_banner || 'default';
   const memberDate = profile.member_since
     ? new Date(profile.member_since).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : '';
