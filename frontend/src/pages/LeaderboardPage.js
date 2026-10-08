@@ -184,7 +184,8 @@ export default function LeaderboardPage() {
 
       {/* Hero */}
       <div className="relative overflow-hidden rounded-3xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]" data-testid="leaderboard-hero">
-        <div className="absolute inset-0" style={{ background: `radial-gradient(120% 90% at 50% -20%, ${tier.a}55, transparent 62%)`, opacity: 0.6 }} />
+        {/* Flat tier-colour accent bar instead of an ambient glow bloom */}
+        <div className="absolute inset-x-0 top-0 h-1" style={{ background: tier.a }} />
         <div className="relative text-center px-4 pt-6 pb-5">
           <div className="mx-auto mb-1" style={{ width: 112 }}>
             <TierEmblem tier={data.tier} size={112} />

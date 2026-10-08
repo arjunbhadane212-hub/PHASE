@@ -80,21 +80,14 @@ export default function LeagueLadder({ current = 1 }) {
                   {cap}
                 </div>
 
-                <div
-                  className="rounded-full flex items-center justify-center"
-                  style={isCurrent ? {
-                    padding: 6,
-                    background: `radial-gradient(circle, ${t.a}30, transparent 70%)`,
-                    boxShadow: `0 0 0 2px ${t.a}, 0 0 22px ${t.a}80`,
-                  } : { padding: 4 }}
-                >
-                  <TierEmblem tier={t.n} size={size} glow={!locked && !isPast} locked={locked} />
+                <div className="flex items-center justify-center" style={{ padding: 4 }}>
+                  <TierEmblem tier={t.n} size={size} locked={locked} current={isCurrent} />
                 </div>
 
                 {isPast && (
                   <span
                     className="absolute flex items-center justify-center rounded-full"
-                    style={{ top: 16, right: 12, width: 17, height: 17, background: t.a }}
+                    style={{ top: 16, right: 14, width: 17, height: 17, background: t.a, border: '2px solid var(--gm-card)' }}
                   >
                     <Check className="w-2.5 h-2.5" strokeWidth={3.5} style={{ color: '#0b0d10' }} />
                   </span>

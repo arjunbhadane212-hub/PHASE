@@ -77,7 +77,7 @@ export function StandingBadge({ standing, leagueTier, size = 'md' }) {
       title={b.placed
         ? `#${b.position} of ${b.groupSize} in ${b.tierName} · ${b.zoneLabel.toLowerCase()} zone · live`
         : 'Not placed in a league this period'}
-      icon={<TierEmblem tier={b.tier.n} size={18} glow={false} />}
+      icon={<TierEmblem tier={b.tier.n} size={18} plate={false} />}
       label={b.tierName}
       value={b.placed ? `#${b.position}` : 'UNPLACED'}
       data-testid="badge-standing"

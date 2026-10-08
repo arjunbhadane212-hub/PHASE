@@ -63,7 +63,8 @@ export default function PeriodResultModal() {
           transition={{ type: 'spring', stiffness: 320, damping: 26 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="absolute inset-0" style={{ background: `radial-gradient(110% 70% at 50% -10%, ${tier.a}55, transparent 60%)`, opacity: 0.6 }} />
+          {/* Flat tier-colour accent bar instead of an ambient glow bloom */}
+          <div className="absolute inset-x-0 top-0 h-1" style={{ background: tier.a }} />
           <div className="relative text-center px-6 pt-8 pb-6">
             <p className="font-['JetBrains_Mono'] text-[11px] font-bold tracking-[0.2em] uppercase text-[color:var(--gm-muted)] mb-4">Weekly League · Results</p>
             <div className="mx-auto mb-3" style={{ width: 132 }}>
