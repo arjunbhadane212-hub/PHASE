@@ -609,6 +609,28 @@ input:focus, textarea:focus, select:focus {
 .profile-anim-inferno { animation: pa-inferno 3s ease-in-out infinite }
 .profile-anim-divine { animation: pa-divine 4s ease-in-out infinite }
 
+/* ===== MOTION RINGS (Oct 2026) — the flat, no-glow animation/effect system.
+   Applied to circles inside MotionRing. Motion only (rotate, scale, opacity,
+   stroke colour, dash), never a box-shadow glow, particle or shimmer. Replaces
+   the glowy pa- and deco- treatment as the avatar and shop/inventory render for
+   the anim and effect categories. */
+.mr-ring { transform-box: fill-box; transform-origin: center; }
+.mr-spin  { animation: mr-rot 3s linear infinite; }
+.mr-spin2 { animation: mr-rot 4.4s linear infinite reverse; }
+.mr-spins { animation: mr-rot 6.5s linear infinite; }
+.mr-fast  { animation: mr-rot 1.9s linear infinite; }
+.mr-pulse { animation: mr-pulse 2.6s ease-in-out infinite; }
+.mr-pulse.mr-d { animation-delay: .7s; }
+.mr-op    { animation: mr-op 2.8s ease-in-out infinite; }
+.mr-shift { animation: mr-shift 3s ease-in-out infinite; }
+.mr-draw  { animation: mr-draw 3s ease-in-out infinite; }
+@keyframes mr-rot { to { transform: rotate(360deg); } }
+@keyframes mr-pulse { 0%,100%{ transform: scale(.82); opacity:.95 } 50%{ transform: scale(1.06); opacity:.2 } }
+@keyframes mr-op { 0%,100%{ opacity:1 } 50%{ opacity:.28 } }
+@keyframes mr-shift { 0%,100%{ stroke:#95DEE6 } 50%{ stroke:#DBF67F } }
+@keyframes mr-draw { 0%{ stroke-dashoffset:126 } 45%,55%{ stroke-dashoffset:0 } 100%{ stroke-dashoffset:-126 } }
+@media (prefers-reduced-motion: reduce) { .mr-ring { animation: none !important; } }
+
 /* The legacy .title-{rarity} text classes are gone. There is now exactly one
    title implementation — <TitleBadge> in components/profile/FlexBadge.js,
    rendering the plate systems defined at the end of this file. SettingsPage and

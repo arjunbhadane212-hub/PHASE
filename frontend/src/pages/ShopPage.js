@@ -14,6 +14,7 @@ import { animCssFor } from '../data/shopAnimations';
 import { effectCssFor } from '../data/shopEffects';
 import { ShopItemIcon, SparkleIcon, shopItemTone } from '../components/ShopIcons';
 import { PhaseBanner } from '../components/banners/PhaseBanners';
+import MotionRing from '../components/profile/MotionRing';
 
 // v2 card surface (shared with the rest of the app).
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
@@ -442,7 +443,6 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
       {sorted.map((item) => {
         const isBuying = buying === item.id;
         const canAfford = (gems ?? 0) >= item.price;
-        const animClass = type === 'animation' ? item.css || '' : '';
         return (
           <button key={item.key} onClick={() => !item.owned && canAfford && !isBuying && onBuy(item.id)} disabled={item.owned || !canAfford || isBuying}
             className={`relative p-3 sm:p-5 ${CARD} transition-all text-center`}
@@ -453,7 +453,7 @@ function ProfileItemsGrid({ items, type, gems, buying, onBuy }) {
               {type === 'banner' ? (
                 <div className="w-full h-10 sm:h-14 rounded-lg overflow-hidden"><PhaseBanner bannerKey={item.key} /></div>
               ) : type === 'animation' ? (
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[color:var(--gm-badge)] ${animClass}`} />
+                <div className="relative w-12 h-12 sm:w-16 sm:h-16"><MotionRing itemKey={item.key} /></div>
               ) : (
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[color:var(--gm-badge)] flex items-center justify-center">
                   <SparkleIcon className="w-7 h-7" />
@@ -497,14 +497,9 @@ function DecorationsGrid({ items, gems, buying, onBuy }) {
               className={`relative ${CARD} p-4 flex flex-col items-center text-center transition-all`}
               data-testid={`shop-deco-${item.key}`}
             >
-              {/* Circular aura medallion — the effect animates inside the ring */}
-              <div className="relative w-24 h-24 mb-3">
-                <div
-                  className={`absolute inset-0 rounded-full overflow-hidden ${item.css || ''}`}
-                  style={item.css ? undefined : { background: item.bg || 'var(--gm-badge)' }}
-                />
-                <div className="absolute inset-0 rounded-full ring-1 ring-[#95DEE6]/50" />
-                <div className="absolute inset-0 rounded-full" style={{ boxShadow: 'inset 0 0 24px rgba(9,12,18,0.55)' }} />
+              {/* Flat motion-ring medallion — the effect's ring animation */}
+              <div className="relative w-24 h-24 mb-3 flex items-center justify-center">
+                <div className="relative w-16 h-16"><MotionRing itemKey={item.key} /></div>
               </div>
               <p className="text-xs sm:text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] truncate w-full">{item.name}</p>
               <p className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-0.5 mb-2">Profile Effect</p>

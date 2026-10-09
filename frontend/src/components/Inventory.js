@@ -22,8 +22,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import TitlePlate from './profile/TitlePlate';
 import { PhaseBanner } from './banners/PhaseBanners';
-import { animCssFor } from '../data/shopAnimations';
-import { effectCssFor } from '../data/shopEffects';
+import MotionRing from './profile/MotionRing';
 
 const MONO = "font-['JetBrains_Mono'] uppercase tracking-[0.08em]";
 
@@ -171,8 +170,7 @@ function ItemTile({ item, category, equipped, busy, onEquip }) {
 
   const preview =
     category === 'banner' ? <PhaseBanner bannerKey={item.key} />
-    : category === 'anim' ? <div className={`w-7 h-7 rounded-full bg-[#95DEE6] ${animCssFor(item.key)}`} />
-    : <div className={`w-7 h-7 rounded-full bg-[#95DEE6] ${effectCssFor(item.key)}`} />;
+    : <div className="relative w-9 h-9"><MotionRing itemKey={item.key} /></div>;
 
   return (
     <button onClick={onEquip} disabled={equipped || busy}

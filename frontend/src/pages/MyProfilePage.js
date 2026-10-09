@@ -7,8 +7,8 @@ import { Calendar, Shield, ExternalLink, Gem, X } from 'lucide-react';
 import { PhaseBanner } from '../components/banners/PhaseBanners';
 import { FlameGlyph, XpGlyph } from '../components/profile/Sigil';
 import { TitleBadge } from '../components/profile/FlexBadge';
+import MotionRing from '../components/profile/MotionRing';
 import { streakTier } from '../data/profileIdentity';
-import { animCssFor } from '../data/shopAnimations';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 
@@ -52,10 +52,6 @@ export default function ProfilePanel({ open, onClose }) {
     '--panel-line': 'var(--gm-track)',
   };
 
-  // The equipped animation now actually renders on the avatar (it used to be
-  // hardcoded off, so a bought animation showed nothing). '' when none equipped.
-  const animClass = animCssFor(user?.equipped_animation);
-
   if (!open) return null;
 
   return (
@@ -96,11 +92,12 @@ export default function ProfilePanel({ open, onClose }) {
           {/* Avatar */}
           <div className="flex items-end gap-4 mb-4 -mt-6">
             <div
-              className={`w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-['Archivo'] font-black text-[color:var(--panel-ink)] ${animClass}`}
+              className="relative w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-['Archivo'] font-black text-[color:var(--panel-ink)]"
               style={{ backgroundColor: avatarBg, color: 'var(--gm-ink)', border: `4px solid ${lowerBg}`, boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}
               data-testid="panel-avatar"
             >
               {user?.first_name?.[0]}{user?.last_name?.[0]}
+              {user?.equipped_animation && <MotionRing itemKey={user.equipped_animation} />}
             </div>
             <div className="pb-1 flex-1 min-w-0">
               <h2 className="text-lg font-['Archivo'] font-extrabold text-[color:var(--panel-ink)] truncate">{user?.first_name} {user?.last_name}</h2>
