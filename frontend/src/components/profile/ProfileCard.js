@@ -2,10 +2,10 @@
 // Discord-style popout. Everything it renders comes from get_public_profile —
 // there are no placeholder badges, and every number is live at fetch time.
 
-import { Target, CalendarCheck, Sparkles, ArrowUpRight, Clock } from 'lucide-react';
+import { CalendarCheck, Sparkles, ArrowUpRight, Clock } from 'lucide-react';
 import { PhaseBanner } from '../banners/PhaseBanners';
 import TierEmblem from '../TierEmblem';
-import { FlameGlyph } from './Sigil';
+import { FlameGlyph, XpGlyph } from './Sigil';
 import { rankInfo } from '../../data/levels';
 import { tierNumByName } from '../../data/leaderboardTiers';
 import { streakTier, levelBadge } from '../../data/profileIdentity';
@@ -18,11 +18,6 @@ const RESULT_STYLE = {
   demoted:  { label: 'Relegated', color: '#B91C1C' },
   held:     { label: 'Held', color: '#7D818F' },
 };
-
-// The equipped title's rarity sets how much ambient light it casts on the
-// profile — a steady, same-colour bloom in the title's own accent. No
-// animation: that is the "natural, not AI" guardrail. A common casts none.
-const TITLE_AMBIENT = { common: 0, rare: 0.05, epic: 0.09, legendary: 0.15, mythic: 0.2 };
 
 function countdown(endsAt) {
   if (!endsAt) return null;
@@ -53,27 +48,12 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
   // same colour its chip uses — so header and chip can never disagree. With the
   // profile otherwise black, this is the only tint in the section.
   const titleAccent = accentFor(profile.equipped_title).surface;
-  const ambient = TITLE_AMBIENT[profile.equipped_title_rarity_tier] ?? 0;
   const xpToNext = lvl.isMax ? null
     : Math.max(0, (profile.level_max_xp || 0) - (profile.current_xp || 0) + 1);
   const resets = countdown(standing?.ends_at);
 
   return (
     <div className="relative" data-testid="profile-card">
-      {/* Title ambient — the equipped title's rarity casts a natural, steady
-          bloom in its own accent, behind the header. The only colour the
-          otherwise-black profile carries, and it scales with how rare the
-          title is. Sits under the banner (which paints over it) and behind the
-          z-10 content (which glows through the black gaps). */}
-      {profile.equipped_title && ambient > 0 && (
-        <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none z-0"
-          style={{
-            height: compact ? '18rem' : '26rem',
-            background: `radial-gradient(90% 60% at 50% ${compact ? '16%' : '20%'}, color-mix(in srgb, ${titleAccent} ${Math.round(ambient * 100)}%, transparent), transparent 62%)`,
-          }}
-          data-testid="profile-title-ambient"
-        />
-      )}
       {/* Stage: the equipped banner. Radial only — no diagonal gradients. */}
       <div className={`relative overflow-hidden ${compact ? 'h-24 rounded-t-3xl' : 'h-40 sm:h-52'}`} data-testid="profile-banner">
         <div className="absolute inset-0"><PhaseBanner bannerKey={bannerArt} /></div>
@@ -200,7 +180,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
 
         {/* Secondary stats — quiet on purpose, blue iconography only. */}
         <div className="grid grid-cols-3 gap-2.5 mb-4" data-testid="profile-stats">
-          <Stat icon={<Target className="w-4 h-4 text-[color:var(--gm-muted)]" strokeWidth={2} />} label="Total XP" value={(profile.total_xp_all_time || 0).toLocaleString()} />
+          <Stat icon={<XpGlyph size={16} style={{ color: 'var(--gm-muted)' }} />} label="Total XP" value={(profile.total_xp_all_time || 0).toLocaleString()} />
           <Stat
             icon={<FlameGlyph stage={streakTier(profile.longest_streak_ever).flame} size={16} style={{ color: 'var(--gm-muted)' }} />}
             label="Best Streak" value={`${profile.longest_streak_ever || 0}`}
