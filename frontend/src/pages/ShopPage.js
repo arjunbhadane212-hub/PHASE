@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
-import { Gem, Lock, Clock, Check, Zap, Crown, Sparkles, Frame, Star, Swords } from 'lucide-react';
+import { Gem, Lock, Clock, Check, Zap, Sparkles, Frame, Star, Swords } from 'lucide-react';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
 import MysteryBoxesHeader from '../components/MysteryBoxesHeader';
-import TitlesGrid from '../components/TitlesGrid';
 import BoxDetailModal from '../components/BoxDetailModal';
 import BoxOpening from '../components/BoxOpening';
 import { supabase } from '../lib/supabaseClient';
@@ -58,20 +57,14 @@ const RARITY_BADGE_STYLE = {
 // TODO: timed restock/rotation to be rebuilt in a future session.
 
 export default function ShopPage() {
-  const { user, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   const { gems, fetchGameStatus, activeBoostMultiplier } = useGame();
   const [tab, setTab] = useState('powerups');
   const [openedBoxId, setOpenedBoxId] = useState(null);
   const [openingState, setOpeningState] = useState(null); // { boxId, items } once API resolves
   const [shopItems, setShopItems] = useState([]);
-  const [titles, setTitles] = useState([]);
   const [profileItems, setProfileItems] = useState({ icons: [], animations: [], banners: [], decorations: [], battles: [] });
   const [boxData, setBoxData] = useState({ byKey: {}, keyToId: {} });
-  const [equippedTitle, setEquippedTitle] = useState(null);
-  // Live progress toward the EARNED ladders, so a locked title can show how
-  // far off it is instead of just saying 'locked'.
-  const [progress, setProgress] = useState({ streak: 0, hours: 0 });
-  const [equipping, setEquipping] = useState(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(null);
 
@@ -94,15 +87,6 @@ export default function ShopPage() {
         supabase.from('loot_box_drop_table').select('loot_box_id, shop_item_id, weight'),
       ]);
 
-      // Hours are the sum of CREDITED minutes on completed focus sessions --
-      // the same number sync_progress_titles awards from, so the shop and the
-      // server can never disagree about how close a title is.
-      const { data: fs } = await supabase.from('focus_sessions')
-        .select('credited_minutes').eq('status', 'completed');
-      setProgress({
-        streak: Math.max(user?.current_streak || 0, user?.longest_streak_ever || 0),
-        hours: (fs || []).reduce((t, r) => t + Number(r.credited_minutes || 0), 0) / 60,
-      });
       const ownedQty = {};
       (inv || []).forEach((r) => { ownedQty[r.shop_item_id] = r.quantity; });
       const equippedIds = new Set((eq || []).map((r) => r.shop_item_id));
@@ -127,25 +111,6 @@ export default function ShopPage() {
         multiplier: r.metadata?.multiplier ?? null,
       })));
 
-      // Titles -> TitlesGrid. The grid shows the FULL catalogue, so `buyable`
-      // has to be derived rather than assumed: only shop-sourced rows are
-      // priced and non-box_only. Everything else is an earned/box title and
-      // renders locked with its unlock condition.
-      setTitles(byCat('title').map((r) => ({
-        id: r.id,
-        key: r.key,
-        name: r.name,
-        rarity_tier: r.rarity_tier || 'common',
-        source_system: r.source_system,
-        box_tier: r.box_tier,
-        metadata: r.metadata || {},
-        price: r.price_gems,
-        owned: (ownedQty[r.id] || 0) > 0,
-        buyable: !r.box_only && r.price_gems != null,
-      })));
-      setEquippedTitle(
-        (items || []).find((r) => equippedIds.has(r.id) && r.category === 'title')?.key || null
-      );
 
       // Anims/Banners/Effects -> ProfileItemsGrid / DecorationsGrid.
       // Anim css from data/shopAnimations.js (Step 2c); effect css from
@@ -205,7 +170,7 @@ export default function ShopPage() {
       });
       setBoxData({ byKey, keyToId });
     } catch { /* ignore */ } finally { setLoading(false); }
-  }, [user?.current_streak, user?.longest_streak_ever]);
+  }, []);
 
   useEffect(() => { fetchShop(); }, [fetchShop]);
 
@@ -247,30 +212,11 @@ export default function ShopPage() {
     }
   };
 
-  // Equip straight from the shop. Buying a title and then having to go hunt
-  // for it in a different screen to actually wear it is the exact "I bought it
-  // and nothing happened" gap this tab closes.
-  const handleEquipTitle = async (t) => {
-    setEquipping(`title-${t.key}`);
-    try {
-      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: t.id });
-      if (error) throw error;
-      setEquippedTitle(t.key);
-      toast.success(`Equipped ${t.name}`);
-      await Promise.all([fetchShop(), refreshUser()]);
-    } catch (e) {
-      toast.error(e?.message || 'Could not equip');
-    } finally {
-      setEquipping(null);
-    }
-  };
-
   const TABS = [
     { id: 'powerups', icon: Zap, label: 'Boosts' },
     { id: 'anims', icon: Sparkles, label: 'Anims' },
     { id: 'banners', icon: Frame, label: 'Banners' },
     { id: 'decos', icon: Star, label: 'Effects' },
-    { id: 'titles', icon: Crown, label: 'Titles' },
   ];
 
   return (
@@ -358,12 +304,8 @@ export default function ShopPage() {
           <ProfileItemsGrid items={profileItems.animations} type="animation" gems={gems} buying={buying} onBuy={handleBuy} />
         ) : tab === 'banners' ? (
           <ProfileItemsGrid items={profileItems.banners} type="banner" gems={gems} buying={buying} onBuy={handleBuy} />
-        ) : tab === 'decos' ? (
-          <DecorationsGrid items={profileItems.decorations || []} gems={gems} buying={buying} onBuy={handleBuy} />
         ) : (
-          <TitlesGrid titles={titles} gems={gems} buying={buying} onBuy={handleBuy}
-            equippedKey={equippedTitle} onEquip={handleEquipTitle} equipping={equipping}
-            progress={progress} />
+          <DecorationsGrid items={profileItems.decorations || []} gems={gems} buying={buying} onBuy={handleBuy} />
         )}
       </div>
 
