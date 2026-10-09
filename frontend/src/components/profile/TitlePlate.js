@@ -1,34 +1,34 @@
 // The title chip — a compact, FLAT prestige ladder.
 //
-// Rebuilt Oct 2026 (profile remodel, Arjun): the previous version leaned on
-// halo / sheen / breathing glow to signal rarity, which read as "AI", and its
-// top tiers were oversized and too bright. New rule (see memory
-// feedback-no-neon-glow): premium comes from flat solid/tonal colour, bold
-// Archivo type and STRUCTURE — never glow. So every tier is a compact dark
-// plate where the accent is an edge, a glyph or a small emblem, and prestige
-// climbs by structure, not by getting brighter or bigger:
+// Rebuilt Oct 2026 (profile remodel, Arjun). Standing rules (memory
+// feedback-no-neon-glow): premium is flat solid/tonal colour + bold type +
+// STRUCTURE, never glow. Later refinement pass (Arjun, live review): drop the
+// shine, drop the hairline border, dial the weight back, keep proportions
+// clean. So each tier is a plain dark plate with NO border and NO bevel; the
+// accent shows only through the glyph and, from epic up, a solid emblem block.
+// Prestige climbs by structure, not brightness, size, or outline:
 //
-//   common     outlined tag, muted                         26px
-//   rare       dark plate, accent left bar + accent glyph   28px
-//   epic       dark plate, solid accent emblem block        30px
-//   legendary  + accent name + accent base rule             33px
-//   mythic     + accent top rule + rank pips                37px
+//   common     dark plate, muted glyph + name
+//   rare       dark plate, accent glyph
+//   epic       + inset accent emblem
+//   legendary  + full-height accent emblem block
+//   mythic     + emblem block + rank pips
 //
-// Identity (which title this is) is still the per-title glyph + accent from
-// data/titleGlyphs.js. API is unchanged: callers pass titleKey/name/tier/size.
+// Identity (which title) is still the per-title glyph + accent from
+// data/titleGlyphs.js. API unchanged: titleKey / name / tier / size / showTier.
 
 import { TitleGlyph, accentFor } from '../../data/titleGlyphs';
 
-// Base geometry per tier (md). Prestige is structure, so heights stay close —
-// a mythic is only a touch taller than a common, not double.
+// Base geometry per tier (md). Heights stay close so the ladder reads as one
+// family; prestige is the emblem/pips, not size.
 const TIER = {
-  common:    { h: 26, font: 11.5, glyph: 13 },
-  rare:      { h: 28, font: 12,   glyph: 14 },
-  epic:      { h: 30, font: 12.5, glyph: 16 },
-  legendary: { h: 33, font: 13.5, glyph: 17 },
-  mythic:    { h: 37, font: 14,   glyph: 13 },
+  common:    { h: 28, font: 11.5, glyph: 14, radius: 7 },
+  rare:      { h: 28, font: 12,   glyph: 15, radius: 7 },
+  epic:      { h: 30, font: 12.5, glyph: 16, radius: 8 },
+  legendary: { h: 32, font: 13,   glyph: 17, radius: 8 },
+  mythic:    { h: 36, font: 13.5, glyph: 14, radius: 9 },
 };
-const SCALE = { sm: 0.82, md: 1, lg: 1.14 };
+const SCALE = { sm: 0.84, md: 1, lg: 1.12 };
 
 function alpha(hex, a) {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
@@ -44,76 +44,54 @@ export default function TitlePlate({ titleKey, name, tier = 'common', size = 'md
   const px = (n) => Math.round(n * k * 100) / 100;
   const h = px(t.h);
 
-  const base = {
+  // Flat dark plate: a solid fill, no border, no bevel, no shine. Common is a
+  // hair softer so it reads as the base tier without an outline.
+  const style = {
     display: 'inline-flex', alignItems: 'center', overflow: 'hidden',
-    height: h, borderRadius: px(tier === 'common' ? 7 : tier === 'mythic' ? 10 : 8),
-    fontFamily: "'Archivo', sans-serif", fontWeight: tier === 'common' ? 800 : 900,
-    fontSize: px(t.font), letterSpacing: '0.05em', textTransform: 'uppercase',
-    lineHeight: 1, whiteSpace: 'nowrap', verticalAlign: 'middle',
-    // flat bevel = a crisp opaque top highlight, never a blurred colour glow
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+    height: h, borderRadius: px(t.radius), background: tier === 'common' ? alpha('#ffffff', 0.04) : 'var(--gm-card)',
+    fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: px(t.font),
+    letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1,
+    whiteSpace: 'nowrap', verticalAlign: 'middle',
   };
 
-  const glyphEl = (color, sw = 2) => (
-    <span style={{ color, display: 'inline-flex' }}>
+  const glyph = (color, sw = 2.2) => (
+    <span style={{ color, display: 'inline-flex', paddingLeft: px(10) }}>
       <TitleGlyph titleKey={titleKey} size={px(t.glyph)} strokeWidth={sw} />
     </span>
   );
-  const emblem = (dim) => (
+  // Emblem block. `full` = flush full-height (legendary/mythic); otherwise a
+  // smaller inset rounded square (epic).
+  const emblem = (full) => (
     <span style={{
-      width: h, height: h, flex: 'none', display: 'grid', placeItems: 'center',
-      background: surface, color: ink,
-      boxShadow: dim ? 'inset -1px 0 0 rgba(0,0,0,0.18)' : undefined,
-    }}>{glyphEl(ink, 2.4)}</span>
+      width: full ? h : px(t.h - 10), height: full ? h : px(t.h - 10),
+      marginLeft: full ? 0 : px(5), flex: 'none', display: 'grid', placeItems: 'center',
+      borderRadius: full ? 0 : px(6), background: surface, color: ink,
+    }}>
+      <TitleGlyph titleKey={titleKey} size={px(t.glyph)} strokeWidth={2.4} />
+    </span>
   );
-  const nameEl = (color) => (
-    <span style={{ padding: `0 ${px(11)}px`, color }}>{name}</span>
-  );
+  const nameEl = (color) => <span style={{ padding: `0 ${px(11)}px`, color }}>{name}</span>;
   const tierTag = showTier ? (
     <span style={{
       fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, fontSize: px(8.5),
-      letterSpacing: '0.12em', opacity: 0.55, paddingRight: px(10),
+      letterSpacing: '0.12em', color: 'var(--gm-muted)', paddingRight: px(10),
     }}>{tier}</span>
   ) : null;
 
-  let style = base, inner = null;
-  if (tier === 'common') {
-    style = { ...base, boxShadow: 'inset 0 0 0 1px var(--gm-track)', color: 'var(--gm-muted)' };
-    inner = (<>
-      <span style={{ paddingLeft: px(9), display: 'inline-flex' }}>{glyphEl('var(--gm-muted)', 2.2)}</span>
-      {nameEl('var(--gm-muted)')}{tierTag}
-    </>);
-  } else if (tier === 'rare') {
-    style = { ...base, background: 'var(--gm-card)', boxShadow: `${base.boxShadow}, inset 0 0 0 1px var(--gm-track)` };
-    inner = (<>
-      <span style={{ width: px(3), alignSelf: 'stretch', background: surface, flex: 'none' }} />
-      <span style={{ paddingLeft: px(9), display: 'inline-flex' }}>{glyphEl(surface)}</span>
-      {nameEl('var(--gm-ink)')}{tierTag}
-    </>);
-  } else if (tier === 'epic') {
-    style = { ...base, background: 'var(--gm-card)', boxShadow: `${base.boxShadow}, inset 0 0 0 1px var(--gm-track)` };
-    inner = (<>{emblem(true)}{nameEl('var(--gm-ink)')}{tierTag}</>);
-  } else if (tier === 'legendary') {
-    style = { ...base, background: 'var(--gm-card)',
-      boxShadow: `${base.boxShadow}, inset 0 0 0 1px ${alpha(surface, 0.32)}, inset 0 -2px 0 ${alpha(surface, 0.5)}` };
-    inner = (<>{emblem(true)}{nameEl(surface)}{tierTag}</>);
-  } else { // mythic
-    style = { ...base, background: 'var(--gm-card)', color: 'var(--gm-ink)',
-      boxShadow: `inset 0 2px 0 ${alpha(surface, 0.55)}, inset 0 0 0 1px var(--gm-track)` };
-    inner = (<>
-      <span style={{
-        width: px(22), height: px(22), marginLeft: px(11), flex: 'none', display: 'grid',
-        placeItems: 'center', borderRadius: px(6), background: surface, color: ink,
-      }}>{glyphEl(ink, 2.4)}</span>
-      {nameEl('var(--gm-ink)')}
-      <span style={{ display: 'inline-flex', gap: px(3), marginRight: px(11) }}>
-        {[0, 1, 2].map((i) => (
-          <span key={i} style={{ width: px(4), height: px(4), borderRadius: 999, background: i === 1 ? surface : alpha(surface, 0.55) }} />
-        ))}
-      </span>
-      {tierTag}
-    </>);
-  }
+  let inner;
+  if (tier === 'common') inner = (<>{glyph('var(--gm-muted)')}{nameEl('var(--gm-muted)')}{tierTag}</>);
+  else if (tier === 'rare') inner = (<>{glyph(surface)}{nameEl('var(--gm-ink)')}{tierTag}</>);
+  else if (tier === 'epic') inner = (<>{emblem(false)}{nameEl('var(--gm-ink)')}{tierTag}</>);
+  else if (tier === 'legendary') inner = (<>{emblem(true)}{nameEl('var(--gm-ink)')}{tierTag}</>);
+  else inner = (<>
+    {emblem(true)}{nameEl('var(--gm-ink)')}
+    <span style={{ display: 'inline-flex', gap: px(3), marginRight: px(11) }}>
+      {[0, 1, 2].map((i) => (
+        <span key={i} style={{ width: px(4), height: px(4), borderRadius: 999, background: i === 1 ? surface : alpha(surface, 0.5) }} />
+      ))}
+    </span>
+    {tierTag}
+  </>);
 
   return (
     <span style={style} data-testid="title-plate" data-title={titleKey} data-tier={tier} title={name}>

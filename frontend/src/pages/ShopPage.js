@@ -340,7 +340,7 @@ export default function ShopPage() {
         {TABS.map(({ id, icon: Icon, label }) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-              tab === id ? 'bg-[#95DEE6] text-[#183A3F]' : 'bg-[color:var(--gm-card)] text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
+              tab === id ? 'bg-[color:var(--gm-badge)] text-[color:var(--gm-ink)]' : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
             }`} data-testid={`tab-${id}`}>
             <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {label}
           </button>
