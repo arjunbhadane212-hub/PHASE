@@ -147,3 +147,25 @@ All-Time Stats → Focus Hours) instead of summing the ledger each view.
 Nothing else changed: awarding is still `sync_progress_titles` inside
 `complete_focus_session`, and streak/hours titles equip from the profile panel
 via `<Inventory/>` → `equip_item` (both verified).
+
+---
+
+## 2026-10-19 — titles fully un-buyable + profile leak fix
+
+Verified (dry-run through the real RPCs) that after removing the shop's Titles
+tab, `purchase_shop_item` STILL sold the 24 `source_system='shop'` titles when
+called directly — it gates on `box_only`, not `is_active`, so the earlier
+"retire via is_active=false" idea would NOT have blocked buying.
+
+Migrations:
+- `retire_buyable_shop_titles`: the 24 shop titles set `box_only=true` (so
+  `purchase_shop_item` refuses them) + `is_active=false` (retired). Re-verified:
+  buying a shop title via RPC is now REJECTED; **0 titles buyable by any path**.
+  Reversible (flip both back). No real user owned any — only the QA seed account.
+- `get_public_profile_filter_inactive_titles`: `owned_titles` / `titles_owned_count`
+  now filter `coalesce(si.is_active,true)`. Before, retiring a title left it
+  LEAKING onto the public profile (showed 9) while the Inventory (which filters
+  is_active) showed 5. Now both agree; retired titles appear nowhere.
+
+Shop UI already had no title surface (ShopPage: no Titles tab, no title
+buy/equip path — commit 1327321). Titles are earned-only, equipped on the profile.
