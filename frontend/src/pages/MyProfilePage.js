@@ -118,13 +118,19 @@ export default function ProfilePanel({ open, onClose }) {
             </div>
           )}
 
-          {/* Public link */}
-          {user?.username && (
-            <Link to={`/profile/${user.username}`} onClick={onClose}
-              className="inline-flex items-center gap-1.5 text-[11px] text-[color:var(--panel-muted)] hover:opacity-80 transition-opacity mb-5">
-              <ExternalLink className="w-3 h-3" /> View public profile
+          {/* Links: full Profile page (the whole section) + public view */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-5">
+            <Link to="/dashboard/profile" onClick={onClose}
+              className="inline-flex items-center gap-1.5 text-[11px] font-['General_Sans'] font-semibold text-[color:var(--panel-ink)] hover:opacity-80 transition-opacity">
+              <ExternalLink className="w-3 h-3" /> Open full Profile page
             </Link>
-          )}
+            {user?.username && (
+              <Link to={`/profile/${user.username}`} onClick={onClose}
+                className="inline-flex items-center gap-1.5 text-[11px] text-[color:var(--panel-muted)] hover:opacity-80 transition-opacity">
+                View public profile
+              </Link>
+            )}
+          </div>
 
           {/* Stats */}
           <div className="grid grid-cols-4 gap-2 mb-5">

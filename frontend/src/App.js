@@ -15,6 +15,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import DashboardLayout from "./pages/DashboardLayout";
 import HomePage from "./pages/HomePage";
+import ProfilePage from "./pages/ProfilePage";
 import LevelPage from "./pages/LevelPage";
 import ProgressPage from "./pages/ProgressPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -157,6 +158,7 @@ function AppRoutes() {
       <Route path="/profile/:username" element={<PublicProfilePage />} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<HomePage />} />
+        <Route path="profile" element={<ProfilePage />} />
         <Route path="progress" element={<ProgressPage />} />
         <Route path="level" element={<LevelPage />} />
         <Route path="leaderboard" element={<LeaderboardPage />} />
