@@ -7,17 +7,24 @@
 // (hero, streak badge, stat tile). The XP mark is new: a faceted energy core
 // with a bolt, so XP reads as its own thing instead of a generic target.
 
-/* Streak flame. Accepts the old `stage`/`stroke` props so existing callers keep
-   working, but renders one clean flame regardless of stage. */
-export function FlameGlyph({ size = 18, stroke = 2, className = '', style }) {
+/* Streak flame. A bold filled duotone mark — vivid cyan body with a lime inner
+   core so it reads ALIVE, not a pale outline. Accepts the old `stage`/`stroke`
+   props so existing callers keep working (ignored). The `streak-flame-alive`
+   class (added by the hero for live streaks) adds a flat flicker, no glow. */
+export function FlameGlyph({ size = 18, className = '', style }) {
   return (
     <svg
-      viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"
-      className={className} width={size} height={size} style={style} strokeWidth={stroke}
+      viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"
+      className={className} width={size} height={size} style={style}
     >
-      <path d="M12 2.8c.4 3.2 2.6 4.6 4 6.4 1.4 1.8 2 3.6 2 5.3a6 6 0 0 1-12 0c0-1.1.3-2.1.9-3 .2 1.3 1.2 1.9 2 1.5C7.4 11.9 9 9.6 9.4 7c1 1 1.9 1.4 2.3.6.5-1 .6-3 .3-4.8Z" />
-      <path d="M12 14c1 1.3 1.9 2.1 1.9 3.5a1.9 1.9 0 0 1-3.8 0c0-1.1.9-1.9 1.9-3.5Z" />
+      <path
+        d="M12 2C14 6 18 8 18 13A6 6 0 0 1 6 13C6 9.6 8.4 8 9.4 6.4C9.7 8.7 10.9 9 11.2 7.5C11.6 5.6 12 3.8 12 2Z"
+        fill="#95DEE6"
+      />
+      <path
+        d="M12 10.6C13.1 12.8 14.2 13.8 14.2 15.7A2.2 2.2 0 0 1 9.8 15.7C9.8 13.9 10.9 13 12 10.6Z"
+        fill="#DBF67F"
+      />
     </svg>
   );
 }

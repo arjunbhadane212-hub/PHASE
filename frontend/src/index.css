@@ -316,6 +316,11 @@ code {
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-flame { animation: flame-breathe 1.5s ease-in-out infinite; }
 .animate-flame-glow { animation: flame-glow 2s ease-in-out infinite; }
+/* Streak flame "alive" — a flat flicker (scale only, no glow), anchored at the
+   base so it licks upward like a real flame. */
+.streak-flame-alive { animation: flame-flicker 1.7s ease-in-out infinite; transform-origin: 50% 88%; }
+@keyframes flame-flicker { 0%,100%{ transform: scale(1,1) } 45%{ transform: scale(1.05,1.11) } 70%{ transform: scale(0.98,1.03) } }
+@media (prefers-reduced-motion: reduce) { .streak-flame-alive { animation: none; } }
 .animate-gem-shimmer { animation: gem-shimmer 3s ease-in-out infinite; }
 .animate-xp-pop { animation: xp-pop 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; will-change: transform, opacity; }
 .animate-level-glow { animation: level-badge-glow 3s ease-in-out infinite; }
