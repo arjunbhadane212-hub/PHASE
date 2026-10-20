@@ -10,7 +10,6 @@ import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Separator } from '../components/ui/separator';
 import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Check, ExternalLink, Sun, Moon } from 'lucide-react';
-import Inventory from '../components/Inventory';
 import { toast } from 'sonner';
 import { rankInfo } from '../data/levels';
 import { AURA_ORDER, getAura, hexA } from '../data/focusAuras';
@@ -169,10 +168,11 @@ export default function SettingsPage() {
           </section>
         )}
 
-        {/* Profile Customization - Game Mode Only */}
-        {isGameMode && <ProfileCustomizationSection />}
+        {/* Profile customization now lives in ONE place — the Profile panel
+            (game mode). It used to be duplicated here, which is what made
+            cosmetics feel scattered across Settings and the profile. */}
 
-        {/* Timer Screen - Focus Mode Only */}
+        {/* Timer Screen - Focus Mode Only (Focus has no profile panel) */}
         {!isGameMode && <TimerScreenSection />}
 
         {/* App Experience */}
@@ -551,20 +551,6 @@ function NotificationSettings({ user, isGameMode }) {
         </>
       )}
     </div>
-  );
-}
-
-function ProfileCustomizationSection() {
-  // One inventory, shared with the profile panel. This used to be a second,
-  // divergent implementation that rendered Titles/Animations/Banners but NOT
-  // Effects -- so a purchased Profile Effect landed in user_inventory and this
-  // screen had nowhere to show it. The shared component owns every equippable
-  // category, so that class of bug cannot come back.
-  return (
-    <section className="mb-8">
-      <h2 className={`${SECTION_LABEL} mb-3`}>Inventory</h2>
-      <Inventory />
-    </section>
   );
 }
 
