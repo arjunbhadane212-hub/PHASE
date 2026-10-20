@@ -169,3 +169,37 @@ Migrations:
 
 Shop UI already had no title surface (ShopPage: no Titles tab, no title
 buy/equip path — commit 1327321). Titles are earned-only, equipped on the profile.
+
+---
+
+## 2026-10-20 — title-unlock notifications (good UX)
+
+Arjun: a streak/hours title must never just appear silently in the inventory —
+the user should be notified, see what it is, and know it's in their Profile to
+equip. Built a durable notify-and-catch-up pipeline.
+
+Migrations:
+- `title_unlock_notifications`: `notifications` gains `metadata jsonb`.
+  `sync_progress_titles` now writes a durable `type='title'` notification per
+  unlock (text "New title earned: X — equip it from your Profile." + metadata
+  for the chip). New RPC `check_title_unlocks()` drains unread title
+  notifications for `auth.uid()`, marks them read in the same statement
+  (toasted once, never twice), and returns their metadata (same shape as
+  `newly_unlocked`).
+- `notifications_allow_title_type`: CHECK extended to include 'title'
+  (was roast/reminder/system).
+
+Frontend (TitleUnlockToast.js + HomePage/FocusSession/App):
+- REAL-TIME: after a completion whose response has `newly_unlocked.length`,
+  `drainTitleUnlocks()` pulls the fresh notifications and toasts them.
+- CATCH-UP: `<TitleUnlockListener>` (mounted in App beside RoastListener) drains
+  on app load, so a toast the user blinked past — or a session that closed
+  mid-flight — resurfaces. Nothing is earned silently.
+- Toast card now says "Equip it in your Profile" (cyan) so the user knows where
+  it went and that it's theirs to equip.
+
+Verified (dry-run, rolled back): award at 160 days wrote 6 titles + 6 notifs;
+drain #1 returned all 6; drain #2 returned 0 (no double-toast).
+
+Note: streak/hours titles are only awarded during an online completion, so the
+real-time path always fires for the active user; the catch-up is the safety net.

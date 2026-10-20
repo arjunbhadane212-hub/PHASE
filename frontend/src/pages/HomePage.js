@@ -15,7 +15,7 @@ import XpPopAnimation from '../components/XpPopAnimation';
 import FocusSession from '../components/FocusSession';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
-import { showTitleUnlocks } from '../components/profile/TitleUnlockToast';
+import { drainTitleUnlocks } from '../components/profile/TitleUnlockToast';
 import { soundEngine } from '../utils/SoundEngine';
 
 // Client's LOCAL calendar day (YYYY-MM-DD). The complete/uncomplete RPCs key
@@ -166,7 +166,9 @@ export default function HomePage() {
       // Focus Mode gamification ban. Swallowing it would mean the player only
       // discovers the title later in the equip list, which is the exact failure
       // this replaces.
-      showTitleUnlocks(data?.newly_unlocked);
+      // A title just unlocked -> drain the durable notification(s) it wrote
+      // and toast them (marks them read, so the app-load catch-up won't repeat).
+      if (data?.newly_unlocked?.length) drainTitleUnlocks();
 
       if (isGameMode) {
         soundEngine.habitComplete();

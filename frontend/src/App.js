@@ -26,6 +26,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import AdminPage from "./pages/AdminPage";
 import RoastNotification, { RoastListener } from "./components/RoastNotification";
+import { TitleUnlockListener } from "./components/profile/TitleUnlockToast";
 
 // Shown when the admin dashboard has banned this account. The account was
 // already signed out server-side (see AuthContext.loadUser); this just
@@ -191,6 +192,7 @@ function App() {
               <Toaster position="top-right" />
               <RoastNotification />
               <RoastListener />
+              <TitleUnlockListener />
             </GameProvider>
           </ModeProvider>
         </AuthProvider>

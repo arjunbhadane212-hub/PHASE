@@ -4,7 +4,7 @@ import { Check, Volume2, VolumeX } from 'lucide-react';
 import { fireRoast } from './RoastNotification';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
-import { showTitleUnlocks } from './profile/TitleUnlockToast';
+import { drainTitleUnlocks } from './profile/TitleUnlockToast';
 import { useAuth } from '../contexts/AuthContext';
 import { getAura, hexA, DEFAULT_GRACE_MS } from '../data/focusAuras';
 import { createSoundEngine, getSound } from '../data/focusSounds';
@@ -141,7 +141,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         const { data } = await supabase.rpc('complete_focus_session', {
           p_session_id: sessionIdRef.current,
         });
-        showTitleUnlocks(data?.newly_unlocked);
+        if (data?.newly_unlocked?.length) drainTitleUnlocks();
       } catch { /* ignore -- the session still ended for the user */ }
     })();
   }, [completed, sessionReady]);
