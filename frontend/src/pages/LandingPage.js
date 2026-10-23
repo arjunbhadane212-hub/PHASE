@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ArrowRight, Check, Minus, Gamepad2, Eye } from 'lucide-react';
+import { motion, AnimatePresence, useInView, useReducedMotion, animate } from 'framer-motion';
+import { Menu, X, ArrowRight, Check, Minus, Gamepad2, Eye, Dumbbell, Brain, Target, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import PhaseWordmark from '../components/brand/PhaseMark';
 import {
   HeroDemo, LoopPhone, PhoneFrame, GameModeScreen, FocusTimerScreen, FocusListScreen,
-  RankLadder, LootBoxes, TitleMarquee, ProfilePreview, RoastDemo, LeagueDemo, eyebrow,
+  LootBox, BOXES, ProfilePreview, RoastDemo, MiniLevel, MiniLeague, eyebrow,
 } from '../components/landing/Demos';
 import {
   Accordion,
@@ -16,13 +16,25 @@ import {
 } from '../components/ui/accordion';
 
 // Phase landing page — v2 system (Archivo / General Sans / JetBrains Mono,
-// flat --gm-* surfaces, cyan = action, lime = success). Every visual on this
-// page is a working miniature of a real Phase screen, not an illustration.
+// flat --gm-* surfaces, cyan = action, lime = success).
+//
+// The page tells one story, in order: what Phase is → proof it works → why
+// habits usually fail → how Phase works → what you can build with it → why
+// it's fun → who keeps you honest → how you want to play → price → FAQ.
+// Self-improvement leads; the game layer is the "why it's fun" chapter.
+
+// ⚠️ PLACEHOLDER IMPACT NUMBERS — replace with real figures before launch.
+// (Live database on 2026-10-22: 11 users, 53 habits completed, ~27 focus hours.)
+const IMPACT = [
+  { value: 12000, format: (n) => `${Math.round(n / 1000)}K+`, label: 'people building better routines' },
+  { value: 1.8, format: (n) => `${n.toFixed(1)}M`, label: 'habits checked off' },
+  { value: 240, format: (n) => `${Math.round(n)}K`, label: 'hours of focused work' },
+];
 
 const NAV = [
   ['loop', 'How it works'],
+  ['areas', 'What you can build'],
   ['modes', 'Modes'],
-  ['rewards', 'Rewards'],
   ['pricing', 'Pricing'],
   ['faq', 'FAQ'],
 ];
@@ -155,23 +167,23 @@ export default function LandingPage() {
         </AnimatePresence>
       </nav>
 
-      {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section className="relative pt-28 lg:pt-36 pb-20 lg:pb-28" data-testid="hero-section">
+      {/* ── 1. Hero ─────────────────────────────────────────────────────── */}
+      <section className="relative pt-28 lg:pt-36 pb-20 lg:pb-24" data-testid="hero-section">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-[1.1fr_1fr] gap-14 lg:gap-10 items-center">
           <div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <span className={`${eyebrow} text-[11px] inline-flex items-center gap-2 rounded-full bg-[var(--gm-card)] px-3 py-1.5 text-[var(--gm-muted)]`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#DBF67F]" /> The habit tracker that keeps score
+                <span className="w-1.5 h-1.5 rounded-full bg-[#DBF67F]" /> The habit tracker for a better life
               </span>
               <h1
-                className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[56px] sm:text-[80px] xl:text-[96px] leading-[0.86] tracking-[-0.035em] mt-6"
+                className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[60px] sm:text-[88px] xl:text-[104px] leading-[0.86] tracking-[-0.035em] mt-6"
                 data-testid="hero-title"
               >
-                Discipline<br />you can{' '}
-                <span className="inline-block bg-[#95DEE6] text-[#183A3F] px-3 sm:px-4 rounded-[18px] sm:rounded-[24px] -rotate-2 mt-2">flex.</span>
+                Discipline,<br />made{' '}
+                <span className="inline-block bg-[#95DEE6] text-[#183A3F] px-3 sm:px-4 rounded-[18px] sm:rounded-[24px] -rotate-2 mt-2">fun.</span>
               </h1>
               <p className="text-lg sm:text-xl font-medium text-[var(--gm-muted)] mt-7 max-w-[540px] leading-relaxed" data-testid="hero-subtitle">
-                Phase turns every habit you finish into XP, gems and a streak that's on the line every single day. Climb 15 ranks, unlock titles money can't buy, and put it all on a profile built to be shared.
+                Phase helps you build the habits that change your life: training, sleep, reading, focus. Then it makes showing up every day feel like progress you can actually see.
               </p>
             </motion.div>
 
@@ -181,7 +193,7 @@ export default function LandingPage() {
               transition={{ duration: 0.5, delay: 0.12 }}
               className="mt-9 flex flex-col sm:flex-row gap-3"
             >
-              <CTA testId="hero-cta-btn">Start your streak, free <ArrowRight className="w-4 h-4" /></CTA>
+              <CTA testId="hero-cta-btn">Start building, free <ArrowRight className="w-4 h-4" /></CTA>
               <button
                 onClick={() => go('loop')}
                 className="h-[52px] px-7 rounded-full bg-[var(--gm-card)] text-[15px] font-bold text-[var(--gm-ink)] hover:bg-[var(--gm-badge)] transition-colors"
@@ -190,133 +202,109 @@ export default function LandingPage() {
               </button>
             </motion.div>
 
-            <motion.div
+            <motion.ul
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="mt-10 grid grid-cols-3 max-w-[480px] divide-x divide-[var(--gm-track)]"
+              className="mt-8 flex flex-wrap gap-x-6 gap-y-2"
             >
-              {[['15', 'Ranks to climb'], ['50+', 'Titles to earn'], ['$0', 'To start']].map(([n, l]) => (
-                <div key={l} className="px-4 first:pl-0">
-                  <div className="font-['Archivo'] font-black text-[30px] sm:text-[36px] leading-none">{n}</div>
-                  <div className={`${eyebrow} text-[10px] text-[var(--gm-muted)] mt-2`}>{l}</div>
-                </div>
+              {['Free forever', 'No ads', 'Set up in a minute'].map((t) => (
+                <li key={t} className="flex items-center gap-2 text-sm font-bold text-[var(--gm-muted)]">
+                  <Check className="w-4 h-4 text-[#DBF67F]" strokeWidth={3} /> {t}
+                </li>
               ))}
-            </motion.div>
+            </motion.ul>
           </div>
 
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: [0.2, 0.7, 0.2, 1] }}
-            className="flex flex-col items-center"
+            className="flex justify-center"
           >
             <HeroDemo />
-            <p className={`${eyebrow} text-[10px] text-[var(--gm-muted)] mt-5`}>Live demo · tap a habit</p>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Why Phase ───────────────────────────────────────────────────── */}
+      {/* ── 2. Impact ───────────────────────────────────────────────────── */}
+      <Impact />
+
+      {/* ── 3. Why habits fail ──────────────────────────────────────────── */}
       <WhyPhase />
 
-      {/* ── How it works ────────────────────────────────────────────────── */}
+      {/* ── 4. How it works ─────────────────────────────────────────────── */}
       <HowItWorks />
 
-      {/* ── Modes ───────────────────────────────────────────────────────── */}
-      <Modes />
+      {/* ── 5. What you can build ───────────────────────────────────────── */}
+      <LifeAreas />
 
-      {/* ── Ranks ───────────────────────────────────────────────────────── */}
-      <section className="py-24 lg:py-32" data-testid="ranks-section">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8">
-          <motion.div {...reveal} className="max-w-3xl mb-12">
-            <Eyebrow>The ladder</Eyebrow>
-            <H2 className="mt-4">15 ranks. Most people stall at Adept.</H2>
-            <p className="text-lg font-medium text-[var(--gm-muted)] mt-6 max-w-xl">
-              Every XP point moves you up. Ten ranks from Rookie to Apex, then five prestige ranks for the few who keep going. Drag to see where showing up takes you.
-            </p>
-          </motion.div>
-          <motion.div {...reveal}>
-            <RankLadder />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Rewards ─────────────────────────────────────────────────────── */}
-      <section id="rewards" className="py-24 lg:py-32 landing-band" data-testid="rewards-section">
+      {/* ── 6. Why it's fun ─────────────────────────────────────────────── */}
+      <section id="fun" className="py-24 lg:py-32" data-testid="fun-section">
         <div className="max-w-7xl mx-auto px-5 sm:px-8">
           <motion.div {...reveal} className="grid lg:grid-cols-2 gap-6 items-end mb-12">
             <div>
-              <Eyebrow>Gems, boxes, titles</Eyebrow>
-              <H2 className="mt-4">Earn it. Then wear it.</H2>
+              <Eyebrow>Why you'll stick with it</Eyebrow>
+              <H2 className="mt-4">The work is real. The feeling is fun.</H2>
             </div>
             <p className="text-lg font-medium text-[var(--gm-muted)] lg:pb-2">
-              Every habit drops gems. Spend them in the shop or on loot boxes. Gems are only ever earned, never sold, so nobody can buy their way past you.
+              Changing your life is hard. Phase adds just enough play to make tomorrow easier than today: a little reward, a little progress, a little competition.
             </p>
           </motion.div>
-
-          <motion.div {...reveal}>
-            <LootBoxes />
-          </motion.div>
-
-          <motion.div {...reveal} className="mt-20">
-            <div className="flex items-end justify-between gap-6 mb-6">
-              <div>
-                <h3 className="font-['Archivo'] font-black text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em]">Titles that say what you did.</h3>
-                <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-2 max-w-xl">
-                  Some you buy. Some only drop from boxes. The best ones are earned: hold a 1,000-day streak or log 1,000 focus hours. Once you have one, it's yours for good.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-        <TitleMarquee />
-      </section>
-
-      {/* ── Profile ─────────────────────────────────────────────────────── */}
-      <section className="py-24 lg:py-32" data-testid="profile-section">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-14 items-center">
-          <motion.div {...reveal}>
-            <Eyebrow>Your public profile</Eyebrow>
-            <H2 className="mt-4">Proof, not promises.</H2>
-            <p className="text-lg font-medium text-[var(--gm-muted)] mt-6 max-w-lg">
-              Anyone can say they're consistent. Your Phase profile shows it: your rank, your streak, your title, every habit you've closed. One link. Always free.
-            </p>
-            <ul className="mt-8 space-y-3">
-              {['Shareable link and screenshot-ready card', 'Equip the title you earned', 'Free forever, on every plan'].map((t) => (
-                <li key={t} className="flex items-center gap-3 text-[15px] font-bold">
-                  <span className="w-6 h-6 rounded-full bg-[#DBF67F] flex items-center justify-center"><Check className="w-3.5 h-3.5 text-[#2A3B0B]" strokeWidth={3} /></span>
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-          <motion.div {...reveal} className="flex justify-center lg:justify-end">
-            <motion.div whileHover={{ rotate: 0, y: -4 }} initial={{ rotate: 2 }} className="w-full max-w-[400px]">
-              <ProfilePreview />
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Roasts + League ─────────────────────────────────────────────── */}
-      <section className="pb-24 lg:pb-32" data-testid="accountability-section">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8">
-          <motion.div {...reveal} className="max-w-3xl mb-12">
-            <Eyebrow>Accountability</Eyebrow>
-            <H2 className="mt-4">It notices when you don't show up.</H2>
-          </motion.div>
-          <div className="grid lg:grid-cols-2 gap-4">
-            <motion.div {...reveal}><RoastDemo /></motion.div>
-            <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.08 }}><LeagueDemo /></motion.div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <FunCard
+              title="Level up as you grow"
+              body="Every habit adds XP. Watch yourself climb from Rookie to Eternal as your routine gets stronger."
+            >
+              <MiniLevel />
+            </FunCard>
+            <FunCard
+              title="Rewards for showing up"
+              body="Habits earn gems for boxes, titles and more. Earned only by doing the work, never sold."
+              bare
+            >
+              <LootBox box={BOXES[2]} />
+            </FunCard>
+            <FunCard
+              title="A little friendly pressure"
+              body="An optional weekly league with people at your level. Nothing motivates like someone just ahead."
+            >
+              <MiniLeague />
+            </FunCard>
           </div>
         </div>
       </section>
 
-      {/* ── Pricing ─────────────────────────────────────────────────────── */}
+      {/* ── 7. Accountability ───────────────────────────────────────────── */}
+      <section className="pb-24 lg:pb-32" data-testid="accountability-section">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <motion.div {...reveal} className="max-w-3xl mb-12">
+            <Eyebrow>Accountability</Eyebrow>
+            <H2 className="mt-4">You won't be doing it alone.</H2>
+          </motion.div>
+          <div className="grid lg:grid-cols-2 gap-4">
+            <motion.div {...reveal}><RoastDemo /></motion.div>
+            <motion.div {...reveal} className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 sm:p-8 flex flex-col">
+              <Eyebrow>Your profile</Eyebrow>
+              <h3 className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em] mt-2">Proof you can share.</h3>
+              <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3">
+                Your streak, your progress and your best run, on one link. Send it to the friend who's keeping you honest. Always free.
+              </p>
+              <div className="mt-6 flex-1 flex items-center justify-center">
+                <ProfilePreview />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8. Modes ────────────────────────────────────────────────────── */}
+      <Modes />
+
+      {/* ── 9. Pricing ──────────────────────────────────────────────────── */}
       <Pricing />
 
-      {/* ── FAQ ─────────────────────────────────────────────────────────── */}
+      {/* ── 10. FAQ ─────────────────────────────────────────────────────── */}
       <section id="faq" className="py-24 lg:py-32" data-testid="faq-section">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-[1fr_1.4fr] gap-10 lg:gap-16">
           <motion.div {...reveal}>
@@ -345,15 +333,15 @@ export default function LandingPage() {
 
       {/* ── Final CTA ───────────────────────────────────────────────────── */}
       <section className="px-4 sm:px-6 pb-6">
-        <motion.div {...reveal} className="max-w-7xl mx-auto rounded-[32px] bg-[#95DEE6] px-6 sm:px-12 py-16 sm:py-24 relative overflow-hidden">
-          <div className="relative grid lg:grid-cols-[1fr_auto] gap-10 items-end">
+        <motion.div {...reveal} className="max-w-7xl mx-auto rounded-[32px] bg-[#95DEE6] px-6 sm:px-12 py-16 sm:py-24">
+          <div className="grid lg:grid-cols-[1fr_auto] gap-10 items-end">
             <div>
               <span className={`${eyebrow} text-[11px] text-[#3E6C71]`}>Day 1</span>
-              <h2 className="font-['Archivo'] font-black text-[#183A3F] text-[56px] sm:text-[88px] lg:text-[112px] leading-[0.85] tracking-[-0.035em] mt-4">
-                Your streak<br />starts today.
+              <h2 className="font-['Archivo'] font-black text-[#183A3F] text-[52px] sm:text-[84px] lg:text-[104px] leading-[0.86] tracking-[-0.035em] mt-4">
+                Your better<br />routine starts today.
               </h2>
               <p className="text-lg font-medium text-[#3E6C71] mt-6 max-w-md">
-                Make an account, add one habit, check it off. That's day one. Phase handles the rest.
+                Pick one habit. Check it off. That's day one. Phase helps with every day after.
               </p>
             </div>
             <div className="flex flex-col gap-3">
@@ -391,32 +379,84 @@ export default function LandingPage() {
   );
 }
 
-/* ── Why Phase ─────────────────────────────────────────────────────────── */
+/* ── Impact: big, unmissable numbers ───────────────────────────────────── */
+
+function CountUp({ value, format }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, amount: 0.6 });
+  const reduce = useReducedMotion();
+  const [n, setN] = useState(reduce ? value : 0);
+  useEffect(() => {
+    if (!inView || reduce) return undefined;
+    const c = animate(0, value, { duration: 1.6, ease: [0.2, 0.7, 0.2, 1], onUpdate: setN });
+    return () => c.stop();
+  }, [inView, reduce, value]);
+  return <span ref={ref}>{format(n)}</span>;
+}
+
+function Impact() {
+  return (
+    <section className="py-20 lg:py-28 landing-band" data-testid="impact-section">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8">
+        <motion.div {...reveal} className="max-w-2xl">
+          <Eyebrow>The proof</Eyebrow>
+          <H2 className="mt-4">Real people. Better days.</H2>
+        </motion.div>
+        <div className="mt-12 grid md:grid-cols-3 gap-4">
+          {IMPACT.map((s, i) => (
+            <motion.div
+              key={s.label}
+              {...reveal}
+              transition={{ ...reveal.transition, delay: i * 0.08 }}
+              className={`rounded-[28px] p-7 sm:p-9 ${i === 0 ? 'bg-[#DBF67F]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)]'}`}
+            >
+              <div
+                className={`font-['Archivo'] font-black text-[72px] sm:text-[96px] xl:text-[112px] leading-[0.85] tracking-[-0.04em] tabular-nums ${i === 0 ? 'text-[#2A3B0B]' : 'text-[var(--gm-ink)]'}`}
+                data-testid={`impact-${i}`}
+              >
+                <CountUp value={s.value} format={s.format} />
+              </div>
+              <div className={`text-lg sm:text-xl font-bold mt-5 ${i === 0 ? 'text-[#2A3B0B]' : 'text-[var(--gm-muted)]'}`}>{s.label}</div>
+            </motion.div>
+          ))}
+        </div>
+        <motion.div {...reveal} className="mt-4 rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-7 sm:p-9 grid md:grid-cols-[auto_1fr] gap-6 md:gap-10 items-center">
+          <div className="font-['Archivo'] font-black text-[72px] sm:text-[96px] leading-[0.85] tracking-[-0.04em]">66 days</div>
+          <p className="text-lg sm:text-xl font-medium text-[var(--gm-muted)] max-w-xl">
+            The average time it takes for a new habit to feel automatic, according to research from University College London. Phase is built to carry you through all 66.
+          </p>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Why habits fail ───────────────────────────────────────────────────── */
 
 const COMPARE = [
-  ['You tick a box.', 'Every habit pays out XP and gems.'],
-  ['Miss a day, lose everything, quit.', 'Shields save a bad day. Revives bring a streak back.'],
-  ['Progress nobody ever sees.', 'A public profile made to be screenshotted.'],
-  ['The same polite reminder.', 'Roasts that call you out.'],
-  ['Nothing left to chase by week two.', '15 ranks, a weekly league, 50+ titles.'],
+  ['Motivation runs out by week two.', 'Small wins you can see, every single day.'],
+  ['One bad day and you give up.', 'Streak Shields forgive a slip, so you keep going.'],
+  ["No idea if you're actually improving.", 'Charts that show your consistency climbing.'],
+  ["Nobody knows you're even trying.", 'Friends and a profile that keep you accountable.'],
+  ['It feels like a chore.', 'It feels like leveling up your actual life.'],
 ];
 
 function WhyPhase() {
   return (
-    <section className="py-24 lg:py-32 landing-band" data-testid="why-section">
+    <section className="py-24 lg:py-32" data-testid="why-section">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         <motion.div {...reveal} className="max-w-3xl">
           <Eyebrow>Why Phase</Eyebrow>
-          <H2 className="mt-4">You've quit habit apps before. That's not on you.</H2>
+          <H2 className="mt-4">Motivation fades. Systems don't.</H2>
           <p className="text-lg font-medium text-[var(--gm-muted)] mt-6 max-w-xl">
-            Most trackers are a checklist with a calendar. Nothing is at stake, nothing is earned, and nobody sees it. Phase is built around the opposite.
+            Most people don't quit because they're lazy. They quit because nothing makes tomorrow easier than today. Phase is built to change that.
           </p>
         </motion.div>
 
         <div className="mt-14 rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] overflow-hidden">
           <div className="grid grid-cols-2 border-b border-[var(--gm-track)]">
-            <div className={`${eyebrow} text-[10px] sm:text-[11px] text-[var(--gm-muted)] px-5 sm:px-8 py-4`}>Every other tracker</div>
-            <div className={`${eyebrow} text-[10px] sm:text-[11px] text-[#183A3F] bg-[#95DEE6] px-5 sm:px-8 py-4`}>Phase</div>
+            <div className={`${eyebrow} text-[10px] sm:text-[11px] text-[var(--gm-muted)] px-5 sm:px-8 py-4`}>Doing it alone</div>
+            <div className={`${eyebrow} text-[10px] sm:text-[11px] text-[#183A3F] bg-[#95DEE6] px-5 sm:px-8 py-4`}>With Phase</div>
           </div>
           {COMPARE.map(([old, phase], i) => (
             <motion.div
@@ -450,23 +490,23 @@ function WhyPhase() {
 const STEPS = [
   {
     k: 'Plan',
-    title: 'Build your day.',
-    body: 'Add habits to Morning, Afternoon or Night. Set the difficulty, and the reward scales with it: Easy +10 XP, Medium +25, Hard +50.',
+    title: 'Choose what matters.',
+    body: 'Pick the habits you want in your life and put them where they fit: morning, afternoon or night. Start small. Phase grows with you.',
   },
   {
     k: 'Do',
-    title: 'Check it off. Get paid.',
-    body: 'XP and gems land the second you finish. No waiting for the end of the week to feel like it counted.',
+    title: 'Check it off. Feel it.',
+    body: 'Every habit counts the second you finish it. Small wins, stacked day after day, are how real change happens.',
   },
   {
-    k: 'Keep',
-    title: 'Keep the streak alive.',
-    body: 'Show up every day and the number climbs. Miss one and it resets, unless a Streak Shield takes the hit for you.',
+    k: 'Repeat',
+    title: 'Build the streak.',
+    body: 'Show up again tomorrow, and the day after. Miss one and a Streak Shield can catch you, because one bad day shouldn’t undo a good month.',
   },
   {
-    k: 'Climb',
-    title: 'Rank up. Flex it.',
-    body: 'Your XP moves you up the ladder from Rookie to Eternal, and unlocks titles along the way. Everything shows on your profile.',
+    k: 'Grow',
+    title: 'Watch yourself change.',
+    body: "Your consistency, your hours of focus, your longest streak. Proof that you're becoming the person you said you'd be.",
   },
 ];
 
@@ -514,12 +554,13 @@ function HowItWorks() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
   return (
-    <section id="loop" className="py-24 lg:py-32" data-testid="loop-section">
+    <section id="loop" className="py-24 lg:py-32 landing-band" data-testid="loop-section">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         <motion.div {...reveal} className="max-w-3xl">
           <Eyebrow>How it works</Eyebrow>
-          <H2 className="mt-4">Four moves. Every day.</H2>
+          <H2 className="mt-4">Four steps. Every day.</H2>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-10 mt-10 lg:mt-0">
@@ -544,29 +585,121 @@ function HowItWorks() {
   );
 }
 
+/* ── What you can build ────────────────────────────────────────────────── */
+
+const AREAS = [
+  { icon: Dumbbell, name: 'Body', line: 'Feel stronger, sleep better.', habits: ['Morning run', '8 hours of sleep', 'Drink 2L of water', 'Stretch for 10 minutes'] },
+  { icon: Brain, name: 'Mind', line: 'Calmer, clearer, kinder to yourself.', habits: ['Meditate 10 minutes', 'Journal before bed', 'Read 10 pages', 'No social media till noon'] },
+  { icon: Target, name: 'Focus', line: 'Do the work that matters.', habits: ['2 hours of deep work', 'Study session', 'Practice a language', 'Practice an instrument'] },
+  { icon: Sun, name: 'Life', line: 'The small things that add up.', habits: ['Wake up at 6:30', 'Make your bed', 'Plan tomorrow', 'Call someone you love'] },
+];
+
+function AreaCard({ area, index }) {
+  const Icon = area.icon;
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, amount: 0.5 });
+  const [done, setDone] = useState([false, false, false, false]);
+
+  // When the card scrolls in, the first habits tick themselves off; the rest
+  // are left for the visitor to tap.
+  useEffect(() => {
+    if (!inView) return undefined;
+    const timers = [0, 1].map((i) => setTimeout(() => {
+      setDone((d) => d.map((v, j) => (j === i ? true : v)));
+    }, 500 + index * 150 + i * 450));
+    return () => timers.forEach(clearTimeout);
+  }, [inView, index]);
+
+  const count = done.filter(Boolean).length;
+  return (
+    <motion.div
+      ref={ref}
+      {...reveal}
+      transition={{ ...reveal.transition, delay: index * 0.06 }}
+      className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 flex flex-col"
+    >
+      <div className="flex items-center justify-between">
+        <div className="w-11 h-11 rounded-xl bg-[#95DEE6] flex items-center justify-center">
+          <Icon className="w-5 h-5 text-[#183A3F]" />
+        </div>
+        <span className={`${eyebrow} text-[10px] text-[var(--gm-muted)]`}>{count}/4 today</span>
+      </div>
+      <div className="font-['Archivo'] font-black text-[30px] leading-none mt-5">{area.name}</div>
+      <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-2">{area.line}</p>
+      <div className="mt-5 space-y-2">
+        {area.habits.map((h, i) => (
+          <button
+            key={h}
+            onClick={() => setDone((d) => d.map((v, j) => (j === i ? !v : v)))}
+            className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${done[i] ? 'bg-[#DBF67F]' : 'bg-[var(--gm-bg)] hover:bg-[var(--gm-badge)]'}`}
+          >
+            <span className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${done[i] ? 'bg-[#2A3B0B]' : 'border-2 border-[var(--gm-checkbox)]'}`}>
+              {done[i] && <Check className="w-3 h-3 text-[#DBF67F]" strokeWidth={3} />}
+            </span>
+            <span className={`text-sm font-bold ${done[i] ? 'text-[#2A3B0B]' : 'text-[var(--gm-ink)]'}`}>{h}</span>
+          </button>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function LifeAreas() {
+  return (
+    <section id="areas" className="py-24 lg:py-32" data-testid="areas-section">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8">
+        <motion.div {...reveal} className="grid lg:grid-cols-2 gap-6 items-end mb-12">
+          <div>
+            <Eyebrow>What you can build</Eyebrow>
+            <H2 className="mt-4">Whatever you're working on.</H2>
+          </div>
+          <p className="text-lg font-medium text-[var(--gm-muted)] lg:pb-2">
+            Your body, your mind, your work, your everyday. Track any habit you want, as many as you want, free.
+          </p>
+        </motion.div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {AREAS.map((a, i) => <AreaCard key={a.name} area={a} index={i} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Why it's fun ──────────────────────────────────────────────────────── */
+
+function FunCard({ title, body, children, bare = false }) {
+  return (
+    <motion.div {...reveal} className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 flex flex-col">
+      <div className={bare ? '[&>button]:!bg-[var(--gm-bg)] [&>button]:!shadow-none [&>button]:w-full [&>button]:!rounded-2xl' : ''}>{children}</div>
+      <h3 className="font-['Archivo'] font-black text-[24px] leading-[1] tracking-[-0.01em] mt-6">{title}</h3>
+      <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-2">{body}</p>
+    </motion.div>
+  );
+}
+
 /* ── Modes ─────────────────────────────────────────────────────────────── */
 
 const MODE_COPY = {
   game: {
     icon: Gamepad2,
     title: 'Game Mode',
-    line: 'Level up your life. Make it loud.',
+    line: 'Make it a game.',
     points: [
-      'XP, gems and 15 ranks for every habit',
-      'Weekly league against people at your level',
-      'Loot boxes, a shop and 50+ titles',
-      'Trash-talk roasts when you slack',
+      'XP, levels and rewards for every habit',
+      'An optional weekly league',
+      'Tough-love reminders when you slack',
+      'Streaks, titles and a profile to share',
     ],
   },
   focus: {
     icon: Eye,
     title: 'Focus Mode',
-    line: 'Less noise. Pure progress.',
+    line: 'Keep it calm.',
     points: [
       'Tap Begin and a full-screen timer takes over',
       'Sessions from 5 to 60 minutes',
-      'Quit early: the habit fails and costs 30 gems',
-      'No XP, no leaderboard, nothing to distract you',
+      'Leave early and the habit fails',
+      'No XP, no league, nothing to distract you',
     ],
   },
 };
@@ -588,8 +721,8 @@ function Modes() {
       <div className="max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-14 items-center">
         <div>
           <motion.div {...reveal}>
-            <Eyebrow>Two modes</Eyebrow>
-            <H2 className="mt-4">Play it loud. Or lock in.</H2>
+            <Eyebrow>Two ways to use Phase</Eyebrow>
+            <H2 className="mt-4">Make it a game. Or keep it calm.</H2>
             <p className="text-lg font-medium text-[var(--gm-muted)] mt-6 max-w-lg">
               Same habits, same streak, two very different feels. Pick one when you join and switch whenever you want.
             </p>
@@ -663,31 +796,31 @@ function Modes() {
 const FREE = [
   'Unlimited habits, every time slot',
   'Full Focus Mode',
-  'XP, streaks and ranks 1–5',
-  'Public profile, always',
-  'Roast notifications',
+  'Streaks, progress and levels 1–5',
+  'Your shareable profile',
+  'Reminders that talk back',
   'Earn gems from day one',
 ];
 const PRO = [
   'Everything in Free',
-  'All 15 ranks, up to Eternal',
-  'Loot boxes and the full shop',
-  'Streak Shields',
-  'Equip titles and banners',
-  'Full league standings',
   'Detailed analytics and heatmap',
+  'Streak Shields',
+  'All 15 levels, up to Eternal',
+  'Full weekly league standings',
+  'Rewards, boxes and the full shop',
+  'Equip titles and banners',
   'Profile effects',
 ];
 
 function Pricing() {
   const [annual, setAnnual] = useState(true);
   return (
-    <section id="pricing" className="py-24 lg:py-32 landing-band" data-testid="pricing-section">
+    <section id="pricing" className="py-24 lg:py-32" data-testid="pricing-section">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         <motion.div {...reveal} className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
           <div>
             <Eyebrow>Pricing</Eyebrow>
-            <H2 className="mt-4">Free to start. Pro to go all the way.</H2>
+            <H2 className="mt-4">Free to start. Pro when you're ready.</H2>
           </div>
           <div className="inline-flex self-start lg:self-auto rounded-full bg-[var(--gm-card)] p-1.5 shadow-[var(--gm-shadow-card)]">
             {[[false, 'Monthly'], [true, 'Yearly']].map(([v, l]) => (
@@ -710,7 +843,7 @@ function Pricing() {
               <span className="font-['Archivo'] font-black text-[64px] leading-[0.85] tracking-[-0.03em]">$0</span>
               <span className={`${eyebrow} text-[11px] text-[var(--gm-muted)] pb-1.5`}>forever</span>
             </div>
-            <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-4">Everything you need to build the habit and prove it.</p>
+            <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-4">Everything you need to build the habit and stick with it.</p>
             <ul className="mt-7 space-y-3 flex-1">
               {FREE.map((f) => (
                 <li key={f} className="flex items-center gap-3 text-[15px] font-bold">
@@ -743,7 +876,7 @@ function Pricing() {
               <span className={`${eyebrow} text-[11px] text-[#3E6C71] pb-1.5`}>/ month</span>
             </div>
             <p className="text-[15px] font-medium text-[#3E6C71] mt-4">
-              {annual ? '$49.99 billed once a year.' : 'Billed monthly. Cancel any time.'} Status, not stats: Pro never makes anyone stronger.
+              {annual ? '$49.99 billed once a year.' : 'Billed monthly. Cancel any time.'} Deeper insight into your progress, plus every reward.
             </p>
             <ul className="mt-7 grid sm:grid-cols-2 gap-x-4 gap-y-3 flex-1">
               {PRO.map((f) => (
@@ -762,7 +895,7 @@ function Pricing() {
         </div>
 
         <motion.div {...reveal} className="mt-6 grid sm:grid-cols-3 gap-3">
-          {[['No ads', 'Not now, not ever.'], ['No gem packs', 'Gems are earned. Full stop.'], ['No pay-to-win', 'Pro is cosmetic and social.']].map(([t, s]) => (
+          {[['No ads', 'Not now, not ever.'], ['Nothing to buy your way past', 'Gems are only earned by doing the work.'], ['Your progress is yours', 'Pro adds insight, never an unfair edge.']].map(([t, s]) => (
             <div key={t} className="rounded-2xl bg-[var(--gm-card)] p-5">
               <div className="font-['Archivo'] font-black text-lg">{t}</div>
               <div className="text-sm font-medium text-[var(--gm-muted)] mt-1">{s}</div>
@@ -778,35 +911,31 @@ function Pricing() {
 
 const FAQS = [
   {
+    q: 'What kind of habits can I track?',
+    a: 'Anything you want to do more consistently: workouts, sleep, water, reading, meditation, study, deep work, waking up early. Put each one in the morning, afternoon or night, and set how hard it is.',
+  },
+  {
     q: 'Is Phase actually free?',
-    a: "Yes. Unlimited habits, Focus Mode, XP, streaks, ranks 1 to 5 and your public profile are free forever, with no ads. Phase Pro ($6.99 a month, or $49.99 a year) unlocks the rest of the ladder, loot boxes, the shop and the full league.",
+    a: 'Yes. Unlimited habits, Focus Mode, streaks, your progress and your profile are free forever, with no ads. Phase Pro ($6.99 a month, or $49.99 a year) adds detailed analytics, Streak Shields and the full set of rewards.',
+  },
+  {
+    q: 'What happens if I miss a day?',
+    a: "Your streak resets to zero, unless you have a Streak Shield, which absorbs the miss automatically. Either way, your progress and everything you've earned stays.",
   },
   {
     q: "What's the difference between Game Mode and Focus Mode?",
-    a: 'Game Mode is the full RPG: XP, ranks, gems, loot boxes, a weekly league and loud roasts. Focus Mode strips all of that away. Each habit gets a Begin button that starts a full-screen timer, and leaving early fails the habit and costs you 30 gems.',
+    a: 'Game Mode adds levels, rewards, a weekly league and tough-love reminders to keep things fun. Focus Mode strips all of that away: each habit gets a Begin button that starts a full-screen timer, and leaving early counts as a miss.',
   },
   {
     q: 'Can I switch modes later?',
     a: 'Any time, from Settings. Your habits and your streak come with you.',
   },
   {
-    q: 'What happens if I miss a day?',
-    a: 'Your streak resets to zero. A Streak Shield, if you have one, absorbs the miss automatically and your streak survives. Titles you already earned are permanent and never taken away.',
-  },
-  {
-    q: 'How do I earn XP and gems?',
-    a: 'By completing habits. Easy habits are worth 10 XP and 5 gems, Medium 25 XP and 10 gems, Hard 50 XP and 20 gems.',
-  },
-  {
-    q: 'Can I buy gems?',
-    a: "No. Gems are only earned by doing your habits, and that will never change. It's the only way to keep the leaderboard and the titles honest.",
-  },
-  {
     q: 'Do I need to download anything?',
-    a: 'No. Phase runs in your browser on your phone or your computer. Sign up and you can start your first habit in under a minute.',
+    a: 'No. Phase runs in your browser on your phone or your computer. Sign up and you can check off your first habit in under a minute.',
   },
   {
     q: 'Who can see my profile?',
-    a: 'Your public profile shows your rank, streak, equipped title and stats, so you can share it. The habits themselves stay on your own dashboard.',
+    a: 'Your profile shows your streak, level and stats so you can share it with friends. The habits themselves stay on your own dashboard.',
   },
 ];

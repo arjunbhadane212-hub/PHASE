@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useInView, useReducedMotion } from 'framer-motion';
-import { Check, Gem, Shield, Play, Flame, ChevronUp, ChevronDown, Bell, Clock } from 'lucide-react';
+import { Check, Gem, Shield, Play, Flame, Bell } from 'lucide-react';
 import { RANKS } from '../../data/levels';
 import PhaseBoxArt from '../PhaseBoxArt';
 import TitlePlate from '../profile/TitlePlate';
@@ -140,108 +140,214 @@ function StreakMini({ streak, pips, shield }) {
   );
 }
 
-/* ── Hero: the Game Mode home screen, playing itself ────────────────────── */
+/* ── Cinematic cursor ────────────────────────────────────────────────────── */
+
+// A plain macOS-style arrow. It lives INSIDE the zooming camera layer, so it
+// scales with the screen exactly like the cursor in a product ad does.
+export function Cursor({ x, y, press, show }) {
+  return (
+    <motion.div
+      className="pointer-events-none absolute top-0 left-0 z-30"
+      initial={false}
+      animate={{ x, y, opacity: show ? 1 : 0 }}
+      transition={{ x: { duration: 0.85, ease: [0.45, 0, 0.2, 1] }, y: { duration: 0.85, ease: [0.3, 0, 0.25, 1] }, opacity: { duration: 0.3 } }}
+    >
+      <AnimatePresence>
+        {press && (
+          <motion.span
+            key="ring"
+            initial={{ scale: 0.2, opacity: 0.7 }}
+            animate={{ scale: 1.6, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="absolute -left-4 -top-4 w-8 h-8 rounded-full"
+            style={{ border: '2px solid rgba(244,245,242,0.85)' }}
+          />
+        )}
+      </AnimatePresence>
+      <motion.svg
+        width="22" height="22" viewBox="0 0 24 24"
+        animate={{ scale: press ? 0.82 : 1 }}
+        transition={{ duration: 0.12 }}
+        style={{ transformOrigin: '3px 2px', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.45))' }}
+      >
+        <path d="M3 2 L3 19 L7.6 14.8 L10.6 21.4 L13.5 20.1 L10.6 13.6 L16.8 13.6 Z" fill="#fff" stroke="#0B0D0F" strokeWidth="1.4" strokeLinejoin="round" />
+      </motion.svg>
+    </motion.div>
+  );
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Offset of `el` inside `root` in unscaled layout pixels (offsetTop/Left are
+// layout values, so the camera's transform never skews the measurement).
+function offsetWithin(el, root) {
+  let x = 0; let y = 0; let n = el;
+  while (n && n !== root) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+  return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+}
+
+// Camera transform that centres a content point at zoom `s`, clamped so the
+// screen edge never shows.
+function focusOn(root, fx, fy, s) {
+  const W = root.offsetWidth; const H = root.offsetHeight;
+  const x = Math.min(0, Math.max(W - W * s, W / 2 - fx * s));
+  const y = Math.min(0, Math.max(H - H * s, H / 2 - fy * s));
+  return { x, y, s };
+}
+
+const CAM_EASE = { duration: 0.95, ease: [0.65, 0, 0.35, 1] };
+
+/* ── Hero: the home screen, filmed like a product ad ─────────────────────── */
 
 const HERO_HABITS = [
-  { name: 'Cold shower', xp: 10, gems: 5, sub: 'Morning · Easy' },
+  { name: 'Drink water first thing', xp: 10, gems: 5, sub: 'Morning · Easy' },
   { name: 'Morning run', xp: 50, gems: 20, sub: 'Morning · Hard' },
   { name: 'Read 10 pages', xp: 25, gems: 10, sub: 'Afternoon · Medium' },
   { name: 'Phone off by 11', xp: 25, gems: 10, sub: 'Night · Medium' },
 ];
 
 export function HeroDemo() {
-  const ref = useRef(null);
-  const [auto, setAuto] = useState(true);
-  const tick = useTicker(ref, 1300, auto);
+  const reduce = useReducedMotion();
+  const wrapRef = useRef(null);
+  const layerRef = useRef(null);
+  const rowRefs = useRef([]);
+  const streakRef = useRef(null);
+  const inView = useInView(wrapRef, { amount: 0.4 });
+
   const [done, setDone] = useState([false, false, false, false]);
   const [pop, setPop] = useState(-1);
+  const [bumped, setBumped] = useState(false);
+  const [cam, setCam] = useState({ x: 0, y: 0, s: 1 });
+  const [cur, setCur] = useState({ x: 230, y: 640, press: false, show: false });
 
-  // Autoplay: tick n checks habit n; two beats after the last one, reset.
   useEffect(() => {
-    if (!auto || tick === 0) return;
-    const step = (tick - 1) % (HERO_HABITS.length + 3);
-    if (step < HERO_HABITS.length) {
-      setDone((d) => d.map((v, i) => (i === step ? true : v)));
-      setPop(step);
-    } else if (step === HERO_HABITS.length + 2) {
-      setDone([false, false, false, false]);
-      setPop(-1);
-    }
-  }, [tick, auto]);
+    if (reduce || !inView) return undefined;
+    let alive = true;
+    const step = async (ms) => { await sleep(ms); if (!alive) throw new Error('stop'); };
 
-  const toggle = (i) => {
-    setAuto(false);
-    setDone((d) => d.map((v, j) => (j === i ? !v : v)));
-    setPop(done[i] ? -1 : i);
-  };
+    const run = async () => {
+      const root = layerRef.current;
+      if (!root) return;
+      const H = root.offsetHeight; const W = root.offsetWidth;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        setDone([false, false, false, false]); setPop(-1); setBumped(false);
+        setCam({ x: 0, y: 0, s: 1 });
+        setCur({ x: W * 0.78, y: H + 30, press: false, show: true });
+        await step(900);
 
-  const xp = HERO_HABITS.reduce((s, h, i) => s + (done[i] ? h.xp : 0), 0);
-  const gems = 1240 + HERO_HABITS.reduce((s, h, i) => s + (done[i] ? h.gems : 0), 0);
-  const allDone = done.every(Boolean);
-  const streak = allDone ? 13 : 12;
-  const pips = [true, true, true, true, allDone, false, false];
+        for (let i = 0; i < HERO_HABITS.length; i++) {
+          const r = offsetWithin(rowRefs.current[i], root);
+          const tx = r.x + 26; const ty = r.y + r.h / 2;
+          setCam(focusOn(root, W * 0.4, ty, 1.42));
+          // A little overshoot-and-settle reads as a human hand, not a tween.
+          setCur((c) => ({ ...c, x: tx + 6, y: ty + 4 }));
+          await step(i === 0 ? 1100 : 850);
+          setCur((c) => ({ ...c, x: tx, y: ty }));
+          await step(180);
+          setCur((c) => ({ ...c, press: true }));
+          setDone((d) => d.map((v, j) => (j === i ? true : v)));
+          setPop(i);
+          await step(160);
+          setCur((c) => ({ ...c, press: false }));
+          await step(i === HERO_HABITS.length - 1 ? 700 : 520);
+        }
+
+        // Pull focus to the streak and let the number roll over.
+        const s = offsetWithin(streakRef.current, root);
+        setCam(focusOn(root, s.x + s.w / 2, s.y + s.h / 2, 1.45));
+        setCur((c) => ({ ...c, x: s.x + s.w * 0.72, y: s.y + s.h * 0.62 }));
+        await step(1000);
+        setBumped(true);
+        await step(1700);
+
+        // Wide shot: the whole finished day.
+        setCam({ x: 0, y: 0, s: 1 });
+        setCur((c) => ({ ...c, x: W + 30, y: H * 0.7, show: false }));
+        await step(2600);
+      }
+    };
+    run().catch(() => {});
+    return () => { alive = false; };
+  }, [reduce, inView]);
+
+  const shown = reduce ? [true, true, true, true] : done;
+  const xp = HERO_HABITS.reduce((s, h, i) => s + (shown[i] ? h.xp : 0), 0);
+  const gems = 1240 + HERO_HABITS.reduce((s, h, i) => s + (shown[i] ? h.gems : 0), 0);
+  const finished = reduce || bumped;
+  const streak = finished ? 13 : 12;
+  const pips = [true, true, true, true, finished, false, false];
 
   return (
-    <div ref={ref}>
+    <div ref={wrapRef}>
       <PhoneFrame>
-        <div className="h-full flex flex-col px-4 pb-4 gap-3 overflow-hidden">
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex items-center gap-2">
-              <PhaseMark size={22} />
-              <div>
-                <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Friday</div>
-                <div className="font-['Archivo'] font-black text-[17px] leading-none" style={{ color: C.ink }}>Today</div>
+        <motion.div
+          ref={layerRef}
+          className="absolute inset-0"
+          style={{ transformOrigin: '0 0' }}
+          animate={{ x: cam.x, y: cam.y, scale: cam.s }}
+          transition={CAM_EASE}
+        >
+          <div className="h-full flex flex-col px-4 pb-4 gap-3 overflow-hidden">
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2">
+                <PhaseMark size={22} />
+                <div>
+                  <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Friday</div>
+                  <div className="font-['Archivo'] font-black text-[17px] leading-none" style={{ color: C.ink }}>Today</div>
+                </div>
               </div>
+              <GemPill gems={gems} />
             </div>
-            <GemPill gems={gems} />
-          </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-[14px] p-2.5" style={{ background: C.card }}>
-              <div className="font-['Archivo'] font-black text-[20px] leading-none tabular-nums" style={{ color: C.ink }}>{xp}</div>
-              <div className={`${eyebrow} text-[8px] mt-1.5`} style={{ color: C.muted }}>XP today</div>
+            <div className="grid grid-cols-3 gap-2">
+              {[[xp, 'XP today'], ['LV.4', 'Adept rank'], [`${finished ? 5 : 4}/7`, 'This week']].map(([n, l]) => (
+                <div key={l} className="rounded-[14px] p-2.5" style={{ background: C.card }}>
+                  <div className="font-['Archivo'] font-black text-[20px] leading-none tabular-nums" style={{ color: C.ink }}>{n}</div>
+                  <div className={`${eyebrow} text-[8px] mt-1.5`} style={{ color: C.muted }}>{l}</div>
+                </div>
+              ))}
             </div>
-            <div className="rounded-[14px] p-2.5" style={{ background: C.card }}>
-              <div className="font-['Archivo'] font-black text-[20px] leading-none" style={{ color: C.ink }}>LV.4</div>
-              <div className={`${eyebrow} text-[8px] mt-1.5`} style={{ color: C.muted }}>Adept rank</div>
+
+            <div ref={streakRef}>
+              <StreakMini streak={streak} pips={pips} shield={1} />
             </div>
-            <div className="rounded-[14px] p-2.5" style={{ background: C.card }}>
-              <div className="font-['Archivo'] font-black text-[20px] leading-none tabular-nums" style={{ color: C.ink }}>#3</div>
-              <div className={`${eyebrow} text-[8px] mt-1.5`} style={{ color: C.muted }}>League</div>
+
+            <div className="flex items-center justify-between mt-1">
+              <span className="font-['Archivo'] font-black text-[15px]" style={{ color: C.ink }}>Habits</span>
+              <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>{shown.filter(Boolean).length}/4 done</span>
             </div>
-          </div>
+            <div className="space-y-2">
+              {HERO_HABITS.map((h, i) => (
+                <div key={h.name} ref={(el) => { rowRefs.current[i] = el; }}>
+                  <HabitRow {...h} done={shown[i]} pop={pop === i && shown[i]} />
+                </div>
+              ))}
+            </div>
 
-          <StreakMini streak={streak} pips={pips} shield={1} />
-
-          <div className="flex items-center justify-between mt-1">
-            <span className="font-['Archivo'] font-black text-[15px]" style={{ color: C.ink }}>Habits</span>
-            <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>{done.filter(Boolean).length}/4 done</span>
+            <AnimatePresence>
+              {finished && (
+                <motion.div
+                  initial={{ y: 30, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 30, opacity: 0 }}
+                  className="mt-auto rounded-[14px] px-3 py-2.5 flex items-center gap-2"
+                  style={{ background: C.limeInk }}
+                >
+                  <Flame className="w-4 h-4" style={{ color: C.lime }} />
+                  <span className="text-[12px] font-bold" style={{ color: C.lime }}>Day complete. 13 days strong.</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="space-y-2">
-            {HERO_HABITS.map((h, i) => (
-              <HabitRow key={h.name} {...h} done={done[i]} pop={pop === i && done[i]} onClick={() => toggle(i)} />
-            ))}
-          </div>
-
-          <AnimatePresence>
-            {allDone && (
-              <motion.div
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 30, opacity: 0 }}
-                className="mt-auto rounded-[14px] px-3 py-2.5 flex items-center gap-2"
-                style={{ background: C.limeInk }}
-              >
-                <Flame className="w-4 h-4" style={{ color: C.lime }} />
-                <span className="text-[12px] font-bold" style={{ color: C.lime }}>Day complete. Streak is now 13.</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+          <Cursor {...cur} />
+        </motion.div>
       </PhoneFrame>
     </div>
   );
 }
+
 
 /* ── How it works: four screens, one per step ───────────────────────────── */
 
@@ -308,30 +414,124 @@ function CreateHabitScreen() {
 }
 
 function CompleteScreen() {
-  const ref = useRef(null);
-  const tick = useTicker(ref, 1000);
-  const step = tick % 5;
+  const reduce = useReducedMotion();
+  const wrapRef = useRef(null);
+  const rootRef = useRef(null);
+  const rowRefs = useRef([]);
+  const inView = useInView(wrapRef, { amount: 0.4 });
   const list = [
     { name: 'Meditate 10 min', xp: 25 },
     { name: 'Gym: push day', xp: 50 },
     { name: 'Journal', xp: 10 },
   ];
-  const done = list.map((_, i) => step > i && step < 4);
-  const gems = 860 + [0, 10, 30, 35, 35][step];
+  const [done, setDone] = useState([false, false, false]);
+  const [pop, setPop] = useState(-1);
+  const [cam, setCam] = useState({ x: 0, y: 0, s: 1 });
+  const [cur, setCur] = useState({ x: 200, y: 600, press: false, show: false });
+
+  useEffect(() => {
+    if (reduce || !inView) return undefined;
+    let alive = true;
+    const step = async (ms) => { await sleep(ms); if (!alive) throw new Error('stop'); };
+    const run = async () => {
+      const root = rootRef.current;
+      if (!root) return;
+      const W = root.offsetWidth; const H = root.offsetHeight;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        setDone([false, false, false]); setPop(-1); setCam({ x: 0, y: 0, s: 1 });
+        setCur({ x: W * 0.7, y: H + 30, press: false, show: true });
+        await step(700);
+        for (let i = 0; i < list.length; i++) {
+          const r = offsetWithin(rowRefs.current[i], root);
+          const ty = r.y + r.h / 2;
+          setCam(focusOn(root, W * 0.4, ty, 1.32));
+          setCur((c) => ({ ...c, x: r.x + 26, y: ty }));
+          await step(950);
+          setCur((c) => ({ ...c, press: true }));
+          setDone((d) => d.map((v, j) => (j === i ? true : v)));
+          setPop(i);
+          await step(160);
+          setCur((c) => ({ ...c, press: false }));
+          await step(450);
+        }
+        setCam({ x: 0, y: 0, s: 1 });
+        setCur((c) => ({ ...c, x: W + 30, show: false }));
+        await step(2200);
+      }
+    };
+    run().catch(() => {});
+    return () => { alive = false; };
+  }, [reduce, inView]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const shown = reduce ? [true, true, true] : done;
+  return (
+    <div ref={wrapRef} className="absolute inset-0 overflow-hidden">
+      <motion.div
+        ref={rootRef}
+        className="absolute inset-0 px-4 pt-3"
+        style={{ transformOrigin: '0 0' }}
+        animate={{ x: cam.x, y: cam.y, scale: cam.s }}
+        transition={CAM_EASE}
+      >
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Morning</span>
+            <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>{shown.filter(Boolean).length}/3 done</span>
+          </div>
+          {list.map((h, i) => (
+            <div key={h.name} ref={(el) => { rowRefs.current[i] = el; }}>
+              <HabitRow {...h} done={shown[i]} pop={pop === i && shown[i]} />
+            </div>
+          ))}
+          <div className="rounded-[14px] p-3 flex items-center justify-between" style={{ background: C.card }}>
+            <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Earned this morning</span>
+            <span className="font-['Archivo'] font-black text-[15px] tabular-nums" style={{ color: C.lime }}>
+              +{list.reduce((s, h, i) => s + (shown[i] ? h.xp : 0), 0)} XP
+            </span>
+          </div>
+        </div>
+        <Cursor {...cur} />
+      </motion.div>
+    </div>
+  );
+}
+
+// Step 4: what the habits add up to — consistency climbing week over week.
+function ProgressScreen() {
+  const ref = useRef(null);
+  const tick = useTicker(ref, 140);
+  const t = Math.min(tick % 60, 30) / 30; // grow for ~4s, hold, repeat
+  const weeks = [38, 52, 61, 70, 78, 86, 92];
+  const pct = Math.round(weeks[weeks.length - 1] * t);
   return (
     <div ref={ref} className="h-full px-4 pt-3 space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Morning</span>
-        <GemPill gems={step === 4 ? 860 : gems} />
+      <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Progress</span>
+      <div className="rounded-[18px] p-4" style={{ background: C.card }}>
+        <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Consistency · last 7 weeks</div>
+        <div className="font-['Archivo'] font-black text-[44px] leading-[0.9] tracking-[-0.02em] mt-2 tabular-nums" style={{ color: C.ink }}>{pct}%</div>
+        <div className="text-[12px] font-medium mt-1" style={{ color: C.muted }}>Up from 38% when you started</div>
+        <div className="mt-4 h-[110px] flex items-end gap-1.5">
+          {weeks.map((w, i) => (
+            <div key={i} className="flex-1 rounded-[6px]" style={{
+              height: `${w * t}%`,
+              background: i === weeks.length - 1 ? C.lime : C.badge,
+              transition: 'height 140ms linear',
+            }} />
+          ))}
+        </div>
       </div>
-      {list.map((h, i) => (
-        <HabitRow key={h.name} {...h} done={done[i]} pop={step === i + 1} />
-      ))}
-      <div className="rounded-[14px] p-3 flex items-center justify-between" style={{ background: C.card }}>
-        <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Earned this morning</span>
-        <span className="font-['Archivo'] font-black text-[15px] tabular-nums" style={{ color: C.lime }}>
-          +{list.reduce((s, h, i) => s + (done[i] ? h.xp : 0), 0)} XP
-        </span>
+      <div className="grid grid-cols-2 gap-2">
+        {[['142', 'Habits done'], ['31h', 'Focused']].map(([n, l]) => (
+          <div key={l} className="rounded-[14px] p-3" style={{ background: C.card }}>
+            <div className="font-['Archivo'] font-black text-[22px] leading-none" style={{ color: C.ink }}>{n}</div>
+            <div className={`${eyebrow} text-[8px] mt-1.5`} style={{ color: C.muted }}>{l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-[14px] p-3 flex items-center justify-between" style={{ background: C.cyan }}>
+        <span className="text-[12px] font-bold" style={{ color: C.cyanInk }}>Rank up: Expert</span>
+        <span className={`${eyebrow} text-[9px]`} style={{ color: C.cyanMid }}>LV.6</span>
       </div>
     </div>
   );
@@ -391,65 +591,7 @@ function StreakScreen() {
   );
 }
 
-function RankScreen() {
-  const ref = useRef(null);
-  const tick = useTicker(ref, 120);
-  const t = tick % 70;
-  const from = RANKS[4];
-  const to = RANKS[5];
-  const ranked = t > 40;
-  const rank = ranked ? to : from;
-  const pct = ranked ? Math.min(1, (t - 40) / 60) * 0.25 : Math.min(1, t / 40);
-  return (
-    <div ref={ref} className="h-full px-4 pt-3 space-y-3">
-      <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Level</span>
-      <div className="rounded-[18px] p-4" style={{ background: C.card }}>
-        <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Rank {rank.level} of 15</div>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={rank.name}
-            initial={{ y: 14, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -14, opacity: 0 }}
-            className="font-['Archivo'] font-black text-[38px] leading-[0.9] tracking-[-0.02em] mt-2 uppercase"
-            style={{ color: C.ink }}
-          >
-            {rank.name}
-          </motion.div>
-        </AnimatePresence>
-        <div className="text-[12px] font-medium mt-1.5" style={{ color: C.muted }}>{rank.tagline}</div>
-        <div className="mt-4 h-2.5 rounded-full overflow-hidden" style={{ background: C.badge }}>
-          <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: C.cyan, transition: 'width 120ms linear' }} />
-        </div>
-        <div className="flex justify-between mt-1.5">
-          <span className="font-['JetBrains_Mono'] text-[9px] font-bold" style={{ color: C.muted }}>{rank.min_xp.toLocaleString()} XP</span>
-          <span className="font-['JetBrains_Mono'] text-[9px] font-bold" style={{ color: C.muted }}>{(rank.max_xp + 1).toLocaleString()} XP</span>
-        </div>
-      </div>
-      <AnimatePresence>
-        {ranked && t < 62 && (
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="rounded-[18px] p-4 text-center"
-            style={{ background: C.lime }}
-          >
-            <div className={`${eyebrow} text-[9px]`} style={{ color: C.limeInk }}>Rank up</div>
-            <div className="font-['Archivo'] font-black text-[26px] leading-none mt-1.5 uppercase" style={{ color: C.limeInk }}>{to.name}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <div className="grid grid-cols-5 gap-1">
-        {RANKS.slice(0, 10).map((r) => (
-          <div key={r.level} className="h-1.5 rounded-full" style={{ background: r.level <= rank.level ? C.cyan : C.badge }} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const LOOP_SCREENS = [CreateHabitScreen, CompleteScreen, StreakScreen, RankScreen];
+const LOOP_SCREENS = [CreateHabitScreen, CompleteScreen, StreakScreen, ProgressScreen];
 
 export function LoopPhone({ step }) {
   const Screen = LOOP_SCREENS[step] || CreateHabitScreen;
@@ -558,93 +700,9 @@ export function GameModeScreen() {
   );
 }
 
-/* ── Rank ladder slider ──────────────────────────────────────────────────── */
-
-export function RankLadder() {
-  const [xp, setXp] = useState(1650);
-  const level = [...RANKS].reverse().find((r) => xp >= r.min_xp) || RANKS[0];
-  const pct = Math.min(1, (xp - level.min_xp) / Math.max(1, level.max_xp + 1 - level.min_xp));
-  const max = 32000;
-  // A medium habit (+25 XP) a day: how long to get here.
-  const days = Math.ceil(xp / 25);
-  return (
-    <div className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 sm:p-10">
-      <div className="grid lg:grid-cols-[1fr_auto] gap-8 items-end">
-        <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <span className={`${eyebrow} text-[11px] text-[var(--gm-muted)]`}>Rank {level.level} / 15</span>
-            {level.tier === 'prestige' && (
-              <span className={`${eyebrow} text-[10px] px-2 py-0.5 rounded-full bg-[#DBF67F] text-[#2A3B0B]`}>Prestige</span>
-            )}
-          </div>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={level.name}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -20, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="font-['Archivo'] font-black uppercase text-[var(--gm-ink)] text-[56px] sm:text-[96px] leading-[0.85] tracking-[-0.03em] mt-3 truncate"
-            >
-              {level.name}
-            </motion.div>
-          </AnimatePresence>
-          <p className="text-base sm:text-lg font-medium text-[var(--gm-muted)] mt-3">{level.tagline}</p>
-        </div>
-        <div className="flex lg:flex-col gap-6 lg:gap-4 lg:text-right">
-          <div>
-            <div className="font-['Archivo'] font-black text-[var(--gm-ink)] text-3xl tabular-nums">{xp.toLocaleString()}</div>
-            <div className={`${eyebrow} text-[10px] text-[var(--gm-muted)] mt-1`}>Total XP</div>
-          </div>
-          <div>
-            <div className="font-['Archivo'] font-black text-[var(--gm-ink)] text-3xl tabular-nums">~{days.toLocaleString()}</div>
-            <div className={`${eyebrow} text-[10px] text-[var(--gm-muted)] mt-1`}>Days at +25 XP a day</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-8 h-3 rounded-full bg-[var(--gm-track)] overflow-hidden">
-        <motion.div className="h-full rounded-full bg-[#95DEE6]" animate={{ width: `${pct * 100}%` }} transition={{ duration: 0.15 }} />
-      </div>
-
-      <div className="mt-8">
-        <input
-          type="range"
-          min={0}
-          max={max}
-          step={50}
-          value={xp}
-          onChange={(e) => setXp(Number(e.target.value))}
-          className="phase-range w-full"
-          aria-label="Drag to see each rank"
-          data-testid="rank-slider"
-        />
-        <div className="grid grid-cols-5 sm:grid-cols-[repeat(15,minmax(0,1fr))] gap-1.5 mt-5">
-          {RANKS.map((r) => {
-            const reached = xp >= r.min_xp;
-            const current = r.level === level.level;
-            return (
-              <button
-                key={r.level}
-                onClick={() => setXp(r.min_xp)}
-                className={`rounded-xl py-2.5 px-1 text-center transition-colors ${
-                  current ? 'bg-[#95DEE6]' : reached ? 'bg-[var(--gm-badge)]' : 'bg-[var(--gm-bg)]'
-                }`}
-              >
-                <div className={`font-['Archivo'] font-black text-sm ${current ? 'text-[#183A3F]' : reached ? 'text-[var(--gm-ink)]' : 'text-[var(--gm-muted)]'}`}>{r.level}</div>
-                <div className={`font-['JetBrains_Mono'] font-bold uppercase text-[8px] tracking-[0.04em] truncate mt-0.5 ${current ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>{r.name}</div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Loot boxes ──────────────────────────────────────────────────────────── */
 
-const BOXES = [
+export const BOXES = [
   { id: 'starter', name: 'Starter', odds: 'Common drops', desc: 'Small XP boosts and everyday cosmetics.',
     pool: [['boost', '1.5x XP boost'], ['boost', '2x XP boost'], ['boost', 'Profile animation']] },
   { id: 'delta', name: 'Delta', odds: 'Rare drops', desc: 'Box-exclusive titles. Not sold in the shop.',
@@ -653,7 +711,7 @@ const BOXES = [
     pool: [['title_god_complex', 'God-Complex', 'mythic'], ['title_anti_hero', 'Anti-Hero', 'mythic'], ['title_anomaly', 'Anomaly', 'mythic'], ['title_executioner', 'Executioner', 'mythic'], ['title_cataclysm', 'Cataclysm', 'mythic'], ['title_enforcer', 'Enforcer', 'mythic']] },
 ];
 
-function LootBox({ box }) {
+export function LootBox({ box }) {
   const [state, setState] = useState('idle'); // idle | opening | open
   const [pull, setPull] = useState(box.pool[0]);
   const open = () => {
@@ -709,41 +767,6 @@ function LootBox({ box }) {
         {state === 'open' ? 'Close' : state === 'opening' ? 'Opening…' : 'Tap to open'}
       </span>
     </button>
-  );
-}
-
-export function LootBoxes() {
-  return (
-    <div className="grid md:grid-cols-3 gap-4">
-      {BOXES.map((b) => <LootBox key={b.id} box={b} />)}
-    </div>
-  );
-}
-
-/* ── Title marquee ───────────────────────────────────────────────────────── */
-
-const MARQUEE = [
-  [['title_monk', 'Oblivion', 'epic'], ['title_paragon', 'Eternalflame', 'legendary'], ['title_relentless', 'Stormbringer', 'rare'], ['hours_void_walker', 'Void Walker', 'epic'], ['title_god_complex', 'God-Complex', 'mythic'], ['title_ironclad', 'Voidtouched', 'rare'], ['streak_infernal', 'Infernal', 'epic'], ['title_early_bird', 'Ashborn', 'common'], ['title_architect', 'Starcrusher', 'epic']],
-  [['hours_lord_of_time', 'Lord of Time', 'legendary'], ['title_machine', 'Worldbreaker', 'epic'], ['title_unbroken', 'Grimwarden', 'rare'], ['title_cataclysm', 'Cataclysm', 'mythic'], ['streak_ethereal', 'Ethereal', 'legendary'], ['title_grinder', 'Nightcrawler', 'common'], ['title_immovable', 'Godslayer', 'legendary'], ['hours_chronos', 'Chronos', 'common'], ['streak_sovereign_overlord', 'The Sovereign Overlord', 'mythic']],
-];
-
-export function TitleMarquee() {
-  const reduce = useReducedMotion();
-  return (
-    <div className="space-y-3 overflow-hidden" style={{ maskImage: 'linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent)', WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent)' }}>
-      {MARQUEE.map((row, r) => (
-        <motion.div
-          key={r}
-          className="flex gap-3 w-max"
-          animate={reduce ? {} : { x: r === 0 ? ['0%', '-50%'] : ['-50%', '0%'] }}
-          transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
-        >
-          {[...row, ...row].map(([k, n, t], i) => (
-            <TitlePlate key={`${k}-${i}`} titleKey={k} name={n} tier={t} size="lg" />
-          ))}
-        </motion.div>
-      ))}
-    </div>
   );
 }
 
@@ -809,12 +832,12 @@ export function RoastDemo() {
     <div ref={ref} className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 sm:p-8 h-full flex flex-col">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <span className={`${eyebrow} text-[11px] text-[var(--gm-muted)]`}>Roast notifications</span>
-          <h3 className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em] mt-2">Phase talks back.</h3>
+          <span className={`${eyebrow} text-[11px] text-[var(--gm-muted)]`}>Reminders that talk back</span>
+          <h3 className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em] mt-2">A nudge when you need it.</h3>
         </div>
       </div>
       <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3">
-        Slack off and you'll hear about it. Loud trash talk in Game Mode, a quiet word in Focus. Two a day, max. Turn them off whenever.
+        Slip up and Phase notices. Choose tough love or a gentle word. Two a day at most, and you can switch them off any time.
       </p>
       <div className="mt-5 inline-flex self-start rounded-full bg-[var(--gm-bg)] p-1">
         {['game', 'focus'].map((k) => (
@@ -823,7 +846,7 @@ export function RoastDemo() {
             onClick={() => setTone(k)}
             className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${tone === k ? 'bg-[#95DEE6] text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}
           >
-            {k === 'game' ? 'Game tone' : 'Focus tone'}
+            {k === 'game' ? 'Tough love' : 'Gentle'}
           </button>
         ))}
       </div>
@@ -858,57 +881,70 @@ export function RoastDemo() {
   );
 }
 
-/* ── Weekly league ───────────────────────────────────────────────────────── */
+/* ── Compact "fun part" cards ────────────────────────────────────────────── */
+
+// XP bar filling and the rank name rolling over: Rookie → Novice → …
+export function MiniLevel() {
+  const ref = useRef(null);
+  const tick = useTicker(ref, 90);
+  const per = 40; // ticks per rank
+  const idx = Math.floor(tick / per) % 6;
+  const t = (tick % per) / per;
+  const rank = RANKS[idx];
+  return (
+    <div ref={ref} className="rounded-2xl bg-[var(--gm-bg)] p-5">
+      <div className="flex items-center justify-between">
+        <span className={`${eyebrow} text-[10px] text-[var(--gm-muted)]`}>Level {rank.level}</span>
+        <span className="font-['JetBrains_Mono'] text-[11px] font-bold text-[var(--gm-muted)] tabular-nums">
+          {Math.round(rank.min_xp + (rank.max_xp - rank.min_xp) * t).toLocaleString()} XP
+        </span>
+      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={rank.name}
+          initial={{ y: 14, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -14, opacity: 0 }}
+          className="font-['Archivo'] font-black uppercase text-[var(--gm-ink)] text-[34px] leading-none tracking-[-0.02em] mt-3"
+        >
+          {rank.name}
+        </motion.div>
+      </AnimatePresence>
+      <div className="mt-4 h-2.5 rounded-full bg-[var(--gm-track)] overflow-hidden">
+        <div className="h-full rounded-full bg-[#95DEE6]" style={{ width: `${t * 100}%`, transition: 'width 90ms linear' }} />
+      </div>
+    </div>
+  );
+}
 
 const LEAGUE_BASE = [
-  { name: 'Jordan K.', xp: 1180 },
-  { name: 'Priya S.', xp: 1095 },
-  { name: 'Sam T.', xp: 1010 },
+  { name: 'Jordan', xp: 1180 },
+  { name: 'Priya', xp: 1095 },
   { name: 'You', xp: 940, you: true },
-  { name: 'Leo M.', xp: 905 },
-  { name: 'Ava W.', xp: 860 },
+  { name: 'Leo', xp: 905 },
 ];
 
-export function LeagueDemo() {
+export function MiniLeague() {
   const ref = useRef(null);
   const tick = useTicker(ref, 1500);
-  const gain = [0, 90, 190, 260][tick % 4];
+  const gain = [0, 190, 290, 0][tick % 4];
   const rows = LEAGUE_BASE
     .map((r) => ({ ...r, xp: r.you ? r.xp + gain : r.xp }))
     .sort((a, b) => b.xp - a.xp);
   return (
-    <div ref={ref} className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 sm:p-8 h-full flex flex-col">
-      <span className={`${eyebrow} text-[11px] text-[var(--gm-muted)]`}>Weekly league</span>
-      <h3 className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em] mt-2">Someone's always ahead.</h3>
-      <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3">
-        Get grouped with people at your level. Top of the table moves up a tier on Monday, the bottom drops. Ten tiers, Bronze to Prime.
-      </p>
-      <div className="mt-6 space-y-1.5 flex-1">
-        {rows.map((r, i) => {
-          const up = i < 2;
-          const down = i >= rows.length - 1;
-          return (
-            <motion.div
-              layout
-              key={r.name}
-              transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-              className={`flex items-center gap-3 rounded-2xl px-3.5 py-2.5 ${r.you ? 'bg-[#95DEE6]' : 'bg-[var(--gm-bg)]'}`}
-            >
-              <span className={`font-['Archivo'] font-black w-6 text-sm ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>{i + 1}</span>
-              <span className={`flex-1 text-sm font-bold ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-ink)]'}`}>{r.name}</span>
-              <span className={`font-['JetBrains_Mono'] text-xs font-bold tabular-nums ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>{r.xp.toLocaleString()} XP</span>
-              <span className="w-4">
-                {up && <ChevronUp className={`w-4 h-4 ${r.you ? 'text-[#183A3F]' : 'text-[#DBF67F]'}`} />}
-                {down && <ChevronDown className="w-4 h-4 text-[#E56B6B]" />}
-              </span>
-            </motion.div>
-          );
-        })}
-      </div>
-      <div className="mt-5 flex items-center gap-2 text-[var(--gm-muted)]">
-        <Clock className="w-4 h-4" />
-        <span className={`${eyebrow} text-[10px]`}>Resets every Monday 00:00 UTC</span>
-      </div>
+    <div ref={ref} className="rounded-2xl bg-[var(--gm-bg)] p-3 space-y-1.5">
+      {rows.map((r, i) => (
+        <motion.div
+          layout
+          key={r.name}
+          transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+          className={`flex items-center gap-3 rounded-xl px-3 py-2 ${r.you ? 'bg-[#95DEE6]' : 'bg-[var(--gm-card)]'}`}
+        >
+          <span className={`font-['Archivo'] font-black w-4 text-sm ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>{i + 1}</span>
+          <span className={`flex-1 text-sm font-bold ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-ink)]'}`}>{r.name}</span>
+          <span className={`font-['JetBrains_Mono'] text-[11px] font-bold tabular-nums ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>{r.xp.toLocaleString()}</span>
+        </motion.div>
+      ))}
     </div>
   );
 }

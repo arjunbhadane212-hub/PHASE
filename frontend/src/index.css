@@ -793,11 +793,6 @@ input:focus, textarea:focus, select:focus {
   [class*="profile-anim-"], [class*="deco-"] { animation: none !important; }
 }
 
-/* Landing rank slider — flat v2 track + cyan thumb, no glow. */
-.phase-range { -webkit-appearance: none; appearance: none; height: 8px; border-radius: 9999px; background: var(--gm-track); outline: none; cursor: pointer; }
-.phase-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 9999px; background: #95DEE6; border: 6px solid #183A3F; box-shadow: var(--gm-shadow-cyan); }
-.phase-range::-moz-range-thumb { width: 28px; height: 28px; border-radius: 9999px; background: #95DEE6; border: 6px solid #183A3F; }
-.phase-range:focus-visible::-webkit-slider-thumb { outline: 3px solid #95DEE6; outline-offset: 3px; }
 .landing-band { background: color-mix(in srgb, var(--gm-card) 45%, var(--gm-bg)); }
 /* Keep the sticky landing phone fully on screen on short laptop viewports. */
 @media (max-height: 900px) { .phone-fit { transform: scale(0.82); transform-origin: top center; } }
