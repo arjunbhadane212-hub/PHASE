@@ -620,32 +620,43 @@ export function FocusTimerScreen() {
   const tick = useTicker(ref, 100);
   const total = 25 * 60;
   const sec = total - ((tick * 9) % total);
-  const r = 92;
+  const r = 86;
   const c = 2 * Math.PI * r;
   const mm = String(Math.floor(sec / 60)).padStart(2, '0');
   const ss = String(sec % 60).padStart(2, '0');
+  const elapsed = total - sec;
   return (
-    <div ref={ref} className="h-full flex flex-col items-center justify-between px-6 pt-6 pb-8" style={{ background: '#000' }}>
-      <div className="text-center">
-        <div className={`${eyebrow} text-[10px]`} style={{ color: C.muted }}>Focus session</div>
-        <div className="text-[15px] font-bold mt-1.5" style={{ color: C.ink }}>Deep work: thesis draft</div>
+    <div ref={ref} className="h-full flex flex-col items-center justify-between px-5 pt-4 pb-5" style={{ background: '#000' }}>
+      <div className="w-full flex items-center justify-between">
+        <div>
+          <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Session 2 of 4</div>
+          <div className="text-[14px] font-bold mt-1" style={{ color: C.ink }}>Deep work: thesis</div>
+        </div>
+        <div className="flex gap-1">
+          {[1, 1, 0, 0].map((v, i) => (
+            <span key={i} className="w-2 h-2 rounded-full" style={{ background: v ? C.cyan : C.badge }} />
+          ))}
+        </div>
       </div>
-      <div className="relative w-[210px] h-[210px]">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 210 210">
-          <circle cx="105" cy="105" r={r} fill="none" stroke={C.card} strokeWidth="10" />
-          <circle cx="105" cy="105" r={r} fill="none" stroke={C.cyan} strokeWidth="10" strokeLinecap="round"
+      <div className="relative w-[200px] h-[200px]">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r={r} fill="none" stroke={C.card} strokeWidth="10" />
+          <circle cx="100" cy="100" r={r} fill="none" stroke={C.cyan} strokeWidth="10" strokeLinecap="round"
             strokeDasharray={c} strokeDashoffset={c * (1 - sec / total)} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-['Archivo'] font-black text-[46px] leading-none tabular-nums tracking-[-0.02em]" style={{ color: C.ink }}>{mm}:{ss}</span>
+          <span className="font-['Archivo'] font-black text-[48px] leading-none tabular-nums tracking-[-0.02em]" style={{ color: C.ink }}>{mm}:{ss}</span>
           <span className={`${eyebrow} text-[9px] mt-2`} style={{ color: C.muted }}>of 25:00</span>
+          <span className="font-['JetBrains_Mono'] text-[10px] font-bold mt-3 tabular-nums" style={{ color: C.cyan }}>
+            {Math.floor(elapsed / 60)}m banked
+          </span>
         </div>
       </div>
       <div className="w-full space-y-2">
-        <div className="rounded-[14px] p-3 text-center" style={{ background: C.card }}>
-          <span className="text-[11px] font-medium" style={{ color: C.muted }}>Leave early: habit fails, −30 gems, shield used</span>
+        <div className="rounded-[14px] p-3 flex items-start gap-2.5" style={{ background: C.card }}>
+          <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#E56B6B' }} />
+          <span className="text-[10px] font-medium" style={{ color: C.muted }}>Leaving now fails the habit and costs 30 gems.</span>
         </div>
-        <div className="text-center text-[12px] font-bold" style={{ color: '#E56B6B' }}>End session</div>
       </div>
     </div>
   );
@@ -653,27 +664,68 @@ export function FocusTimerScreen() {
 
 export function FocusListScreen() {
   const list = [
-    { name: 'Deep work: thesis draft', mins: 25 },
-    { name: 'Spanish practice', mins: 15 },
-    { name: 'Stretch', mins: 10 },
+    { name: 'Deep work: thesis draft', mins: 25, done: false },
+    { name: 'Spanish practice', mins: 15, done: true },
+    { name: 'Stretch', mins: 10, done: false },
   ];
+  const todayMins = 42;
+  const weekMins = 318;
+  const weekGoal = 420;
   return (
-    <div className="h-full px-4 pt-3 space-y-2.5">
-      <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Today</span>
-      {list.map((h, i) => (
-        <div key={h.name} className="flex items-center gap-3 rounded-[16px] p-3" style={{ background: C.card }}>
-          <motion.span
-            className="flex items-center gap-1.5 rounded-full py-2 px-3 text-[11px] font-bold"
-            style={{ background: C.cyan, color: C.cyanInk }}
-            animate={i === 0 ? { scale: [1, 0.94, 1] } : {}}
-            transition={{ repeat: Infinity, duration: 2, repeatDelay: 1 }}
-          >
-            <Play className="w-2.5 h-2.5 fill-current" /> Begin
-          </motion.span>
-          <span className="flex-1 text-[13px] font-bold truncate" style={{ color: C.ink }}>{h.name}</span>
-          <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: C.muted }}>{h.mins}m</span>
+    <div className="h-full px-4 pt-3 pb-3 overflow-hidden">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Focus · Today</span>
+          <div className="font-['Archivo'] font-black text-[19px] leading-none mt-1" style={{ color: C.ink }}>Deep work</div>
         </div>
-      ))}
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full" style={{ background: C.cyan }}>
+          <span className="font-['Archivo'] font-black text-[12px] tabular-nums" style={{ color: C.cyanInk }}>{todayMins}m</span>
+        </div>
+      </div>
+
+      {/* Weekly focus-hours stat */}
+      <div className="mt-3 rounded-[18px] p-4" style={{ background: C.cyan }}>
+        <div className="flex items-end justify-between">
+          <div>
+            <span className={`${eyebrow} text-[9px]`} style={{ color: '#76B5BC' }}>This week</span>
+            <div className="font-['Archivo'] font-black text-[36px] leading-[0.88] tracking-[-0.02em] mt-1 tabular-nums" style={{ color: C.cyanInk }}>
+              {Math.floor(weekMins / 60)}h {weekMins % 60}m
+            </div>
+          </div>
+          <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: '#3E6C71' }}>of {Math.floor(weekGoal / 60)}h goal</span>
+        </div>
+        <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: '#83C6CD' }}>
+          <div className="h-full rounded-full" style={{ width: `${(weekMins / weekGoal) * 100}%`, background: C.cyanInk }} />
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between">
+        <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>3 sessions</span>
+        <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>1 done</span>
+      </div>
+
+      <div className="mt-2 space-y-1.5">
+        {list.map((h, i) => (
+          <div key={h.name} className={`flex items-center gap-2.5 rounded-[14px] p-2.5 ${h.done ? '' : ''}`} style={{ background: h.done ? C.limeInk : C.card }}>
+            {h.done ? (
+              <span className="w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: C.lime }}>
+                <Check className="w-3.5 h-3.5" style={{ color: C.limeInk }} strokeWidth={3} />
+              </span>
+            ) : (
+              <motion.span
+                className="flex items-center gap-1 rounded-full py-1.5 px-2.5 text-[10px] font-bold flex-shrink-0"
+                style={{ background: C.cyan, color: C.cyanInk }}
+                animate={i === 0 ? { scale: [1, 0.94, 1] } : {}}
+                transition={{ repeat: Infinity, duration: 2, repeatDelay: 1 }}
+              >
+                <Play className="w-2.5 h-2.5 fill-current" /> Begin
+              </motion.span>
+            )}
+            <span className="flex-1 text-[12px] font-bold truncate" style={{ color: h.done ? C.lime : C.ink }}>{h.name}</span>
+            <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: h.done ? '#9BC24A' : C.muted }}>{h.mins}m</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

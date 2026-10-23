@@ -677,115 +677,168 @@ function FunCard({ title, body, children, bare = false }) {
   );
 }
 
-/* ── Modes ─────────────────────────────────────────────────────────────── */
+/* ── Modes: shown side by side, equal weight, no toggle ──────────────── */
 
-const MODE_COPY = {
-  game: {
-    icon: Gamepad2,
-    title: 'Game Mode',
-    line: 'Make it a game.',
-    points: [
-      'XP, levels and rewards for every habit',
-      'An optional weekly league',
-      'Tough-love reminders when you slack',
-      'Streaks, titles and a profile to share',
-    ],
-  },
-  focus: {
-    icon: Eye,
-    title: 'Focus Mode',
-    line: 'Keep it calm.',
-    points: [
-      'Tap Begin and a full-screen timer takes over',
-      'Sessions from 5 to 60 minutes',
-      'Leave early and the habit fails',
-      'No XP, no league, nothing to distract you',
-    ],
-  },
-};
+// Each mode is a full product card: eyebrow, title, phone preview playing a
+// real screen, one-line tagline and a list of what it gives you. The two
+// cards are the same size and sit side by side — visitors see both at once,
+// so they don't have to pick one to look at it.
+
+function ModeCard({ kind, children }) {
+  const dark = kind === 'game';
+  return (
+    <motion.div
+      {...reveal}
+      className={`rounded-[32px] p-6 sm:p-8 flex flex-col ${dark ? 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)]' : 'bg-[#95DEE6]'}`}
+      data-testid={`mode-card-${kind}`}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 function Modes() {
-  const [mode, setMode] = useState('game');
+  // Each phone cycles through its own screens on its own, so both are "alive"
+  // at the same time without needing to be in focus.
+  const [gameTick, setGameTick] = useState(0);
   const [focusView, setFocusView] = useState('list');
   useEffect(() => {
-    if (mode !== 'focus') return undefined;
-    setFocusView('list');
-    const t = setTimeout(() => setFocusView('timer'), 2200);
-    return () => clearTimeout(t);
-  }, [mode]);
-  const copy = MODE_COPY[mode];
-  const Icon = copy.icon;
+    const t = setInterval(() => setGameTick((n) => n + 1), 8000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => {
+    const seq = [['list', 2800], ['timer', 4800]];
+    let i = 0; let timer;
+    const tick = () => {
+      const [view, ms] = seq[i % seq.length];
+      setFocusView(view);
+      timer = setTimeout(() => { i += 1; tick(); }, ms);
+    };
+    tick();
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <section id="modes" className="py-24 lg:py-32 landing-band" data-testid="modes-section">
-      <div className="max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-14 items-center">
-        <div>
-          <motion.div {...reveal}>
-            <Eyebrow>Two ways to use Phase</Eyebrow>
-            <H2 className="mt-4">Make it a game. Or keep it calm.</H2>
-            <p className="text-lg font-medium text-[var(--gm-muted)] mt-6 max-w-lg">
-              Same habits, same streak, two very different feels. Pick one when you join and switch whenever you want.
-            </p>
-          </motion.div>
+      <div className="max-w-7xl mx-auto px-5 sm:px-8">
+        <motion.div {...reveal} className="max-w-3xl">
+          <Eyebrow>Two ways to use Phase</Eyebrow>
+          <H2 className="mt-4">Play it loud. Or lock it in.</H2>
+          <p className="text-lg font-medium text-[var(--gm-muted)] mt-6 max-w-xl">
+            Same habits, same streak, two very different feels. You get both the day you join. Switch any time from Settings.
+          </p>
+        </motion.div>
 
-          <div className="mt-9 inline-flex rounded-full bg-[var(--gm-card)] p-1.5 shadow-[var(--gm-shadow-card)]" role="tablist">
-            {['game', 'focus'].map((k) => {
-              const I = MODE_COPY[k].icon;
-              return (
-                <button
-                  key={k}
-                  role="tab"
-                  aria-selected={mode === k}
-                  onClick={() => setMode(k)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${mode === k ? 'bg-[#95DEE6] text-[#183A3F]' : 'text-[var(--gm-muted)] hover:text-[var(--gm-ink)]'}`}
-                  data-testid={`mode-tab-${k}`}
-                >
-                  <I className="w-4 h-4" /> {MODE_COPY[k].title}
-                </button>
-              );
-            })}
-          </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={mode}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.22 }}
-              className="mt-8"
-            >
+        <div className="mt-12 grid lg:grid-cols-2 gap-5">
+          {/* Game Mode */}
+          <ModeCard kind="game">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Icon className="w-6 h-6" />
-                <span className="font-['Archivo'] font-black text-2xl">{copy.line}</span>
+                <div className="w-11 h-11 rounded-xl bg-[#95DEE6] flex items-center justify-center">
+                  <Gamepad2 className="w-5 h-5 text-[#183A3F]" />
+                </div>
+                <div>
+                  <Eyebrow>Mode 01</Eyebrow>
+                  <div className="font-['Archivo'] font-black text-[26px] leading-none mt-1">Game Mode</div>
+                </div>
               </div>
-              <ul className="mt-6 grid sm:grid-cols-2 gap-2.5">
-                {copy.points.map((p) => (
-                  <li key={p} className="rounded-2xl bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-4 text-[15px] font-bold leading-snug">
-                    {p}
+              <span className={`${eyebrow} text-[10px] text-[var(--gm-muted)]`}>For the competitive</span>
+            </div>
+
+            <div className="mt-6 flex justify-center">
+              <PhoneFrame className="!w-[260px] sm:!w-[280px]">
+                <GameModeScreen key={gameTick} />
+              </PhoneFrame>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="font-['Archivo'] font-black text-[28px] sm:text-[32px] leading-[0.95] tracking-[-0.02em]">
+                Make it feel like leveling up.
+              </h3>
+              <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3">
+                XP, gems and 15 ranks for every habit you finish. Weekly league against people at your level. Rewards, titles and a profile that's built to share.
+              </p>
+              <ul className="mt-6 grid sm:grid-cols-2 gap-2">
+                {[
+                  ['Level up every habit', 'XP from Rookie to Eternal'],
+                  ['Weekly league', 'Someone always ahead'],
+                  ['Rewards you earn', 'Gems, loot boxes, titles'],
+                  ['Tough-love reminders', 'A nudge when you slack'],
+                ].map(([t, s]) => (
+                  <li key={t} className="rounded-2xl bg-[var(--gm-bg)] p-3.5">
+                    <div className="text-[14px] font-bold">{t}</div>
+                    <div className="text-[12px] font-medium text-[var(--gm-muted)] mt-0.5">{s}</div>
                   </li>
                 ))}
               </ul>
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          </ModeCard>
+
+          {/* Focus Mode */}
+          <ModeCard kind="focus">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-[#183A3F] flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-[#95DEE6]" />
+                </div>
+                <div>
+                  <span className={`${eyebrow} text-[10px] text-[#3E6C71]`}>Mode 02</span>
+                  <div className="font-['Archivo'] font-black text-[26px] leading-none mt-1 text-[#183A3F]">Focus Mode</div>
+                </div>
+              </div>
+              <span className={`${eyebrow} text-[10px] text-[#3E6C71]`}>For the serious</span>
+            </div>
+
+            <div className="mt-6 flex justify-center">
+              <PhoneFrame className="!w-[260px] sm:!w-[280px]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={focusView}
+                    initial={{ opacity: 0, scale: 0.97 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.02 }}
+                    transition={{ duration: 0.35 }}
+                    className="absolute inset-0"
+                  >
+                    {focusView === 'list' ? <FocusListScreen /> : <FocusTimerScreen />}
+                  </motion.div>
+                </AnimatePresence>
+              </PhoneFrame>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="font-['Archivo'] font-black text-[28px] sm:text-[32px] leading-[0.95] tracking-[-0.02em] text-[#183A3F]">
+                Make the work impossible to fake.
+              </h3>
+              <p className="text-[15px] font-medium text-[#3E6C71] mt-3">
+                Tap Begin and a full-screen timer takes over your phone. Sit the session or the habit fails and you pay for it. The deep-work discipline, measured in real minutes.
+              </p>
+              <ul className="mt-6 grid sm:grid-cols-2 gap-2">
+                {[
+                  ['Full-screen timer', '5 to 60 minutes per session'],
+                  ['Real hours tracked', 'Server-measured, never faked'],
+                  ['Skin in the game', 'Leave early, lose 30 gems'],
+                  ['Nothing to distract', 'No XP, no league, no shop'],
+                ].map(([t, s]) => (
+                  <li key={t} className="rounded-2xl bg-[#183A3F] p-3.5">
+                    <div className="text-[14px] font-bold text-[#95DEE6]">{t}</div>
+                    <div className="text-[12px] font-medium text-[#76B5BC] mt-0.5">{s}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ModeCard>
         </div>
 
-        <div className="flex justify-center">
-          <PhoneFrame>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={mode === 'game' ? 'game' : focusView}
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0"
-              >
-                {mode === 'game' ? <GameModeScreen /> : focusView === 'list' ? <FocusListScreen /> : <FocusTimerScreen />}
-              </motion.div>
-            </AnimatePresence>
-          </PhoneFrame>
-        </div>
+        <motion.div {...reveal} className="mt-5 rounded-2xl bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-5 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-[var(--gm-badge)] flex items-center justify-center flex-shrink-0">
+            <span className="font-['Archivo'] font-black text-sm">⇄</span>
+          </div>
+          <p className="text-[15px] font-bold">
+            You get both. Switch any time from Settings.{' '}
+            <span className="font-medium text-[var(--gm-muted)]">Your habits and your streak come with you.</span>
+          </p>
+        </motion.div>
       </div>
     </section>
   );
