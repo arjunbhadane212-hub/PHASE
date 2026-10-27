@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Loader2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import AuthShell, { AuthTitle, AuthField, AuthError, PrimaryButton, SignupPanel, eyebrow } from '../components/auth/AuthShell';
+import GoogleButton from '../components/auth/GoogleButton';
 
 // Two short steps instead of one long form: account first (email + password),
 // then your name. The confirm-password field is gone — the reveal toggle does
@@ -94,6 +95,14 @@ export default function SignupPage() {
           >
             <AuthTitle title="Create your account" sub="Takes a minute. Free forever." testId="signup-title" />
             <AuthError testId="signup-error">{error}</AuthError>
+
+            <GoogleButton label="Sign up with Google" testId="signup-google-btn" />
+
+            <div className="flex items-center gap-3 my-6" aria-hidden="true">
+              <div className="flex-1 h-px bg-[var(--gm-track)]" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--gm-muted)] font-['JetBrains_Mono']">or email</span>
+              <div className="flex-1 h-px bg-[var(--gm-track)]" />
+            </div>
 
             <form onSubmit={handleContinue} className="space-y-5" data-testid="signup-form">
               <AuthField

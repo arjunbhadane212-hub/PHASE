@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import AuthShell, { AuthTitle, AuthField, AuthError, PrimaryButton, LoginPanel } from '../components/auth/AuthShell';
+import GoogleButton from '../components/auth/GoogleButton';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -39,6 +40,14 @@ export default function LoginPage() {
       <AuthTitle title="Log in" sub="Pick up your streak where you left it." testId="login-title" />
 
       <AuthError testId="login-error">{error}</AuthError>
+
+      <GoogleButton label="Continue with Google" testId="login-google-btn" />
+
+      <div className="flex items-center gap-3 my-6" aria-hidden="true">
+        <div className="flex-1 h-px bg-[var(--gm-track)]" />
+        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--gm-muted)] font-['JetBrains_Mono']">or email</span>
+        <div className="flex-1 h-px bg-[var(--gm-track)]" />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-5" data-testid="login-form">
         <AuthField

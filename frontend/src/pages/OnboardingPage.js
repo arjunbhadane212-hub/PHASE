@@ -2,57 +2,66 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Dumbbell, BookOpen, Brain, Scale, Rocket, Gamepad2, Target, Lock, BarChart3, Bell, Trophy, MessageSquare, Flame, Sparkles, Eye, ArrowLeft, ArrowRight, Check, Gem, Play } from 'lucide-react';
+import { Brain, Rocket, Gamepad2, Target, Lock, BarChart3, Trophy, MessageSquare, Flame, Eye, ArrowLeft, ArrowRight, Check, Gem, Play, Heart, Sparkles, Clock, Calendar, RotateCcw, TrendingDown, ShieldAlert } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 import { PhaseMark } from '../components/brand/PhaseMark';
 
-// Option ids are persisted to `users` — change labels freely, never the ids.
+// Each question is doing a real job — not demographics. In order:
+//   1. Name the pain  → Phase knows what you're really here for.
+//   2. Name the pattern that keeps breaking → Phase understands why past apps failed.
+//   3. Name the stakes → Phase helps you see what you'll gain.
+//   4. Pick the fuel that works for YOU → Phase personalises the pressure.
+// Option ids are persisted to `users` (and read by the admin dashboard), so
+// keep ids short, lowercase and stable across copy changes.
 const questions = [
   {
     id: 'main_goal',
-    prompt: "What are you here to fix?",
+    prompt: "What are you tired of putting off?",
+    sub: "Pick the one that stings a little.",
     options: [
-      { id: 'active', icon: Dumbbell, label: 'Get more active', desc: 'Move your body, every day' },
-      { id: 'learn', icon: BookOpen, label: 'Learn & grow', desc: 'Read, study, pick up skills' },
-      { id: 'mental', icon: Brain, label: 'Build mental discipline', desc: 'Focus more, procrastinate less' },
-      { id: 'balance', icon: Scale, label: 'Balance my life', desc: 'Work, rest and goals, evenly' },
-      { id: 'levelup', icon: Rocket, label: 'Level up everything', desc: 'All of the above, at once' },
-    ]
-  },
-  {
-    id: 'download_reason',
-    prompt: "Why Phase, why now?",
-    options: [
-      { id: 'fun', icon: Gamepad2, label: 'Make it fun', desc: 'Self-improvement that feels like a game' },
-      { id: 'workout', icon: Dumbbell, label: 'Train more', desc: 'Stay on top of fitness goals' },
-      { id: 'discipline', icon: Lock, label: 'Hold myself accountable', desc: 'Real habits, no excuses' },
-      { id: 'track', icon: BarChart3, label: 'See my progress', desc: "Proof of how far I've come" },
-      { id: 'other', icon: MessageSquare, label: 'Something else', desc: 'Tell us in a line' },
+      { id: 'health',     icon: Heart,     label: 'My health',       desc: 'Training, sleep, moving my body again' },
+      { id: 'focus',      icon: Target,    label: 'My focus',        desc: "Real work, done without my phone winning" },
+      { id: 'mind',       icon: Brain,     label: 'My head',         desc: 'Calmer, sharper, kinder to myself' },
+      { id: 'discipline', icon: Lock,      label: 'My discipline',   desc: "Proving I can finish what I start" },
+      { id: 'levelup',    icon: Rocket,    label: 'Honestly, all of it', desc: "I'm done living on default" },
     ],
-    hasOther: true
   },
   {
     id: 'consistency_level',
-    prompt: "Be honest. How consistent are you right now?",
+    prompt: "When has the wall usually hit you?",
+    sub: "Be honest. The honest answer is where Phase starts.",
     options: [
-      { id: 'fire', icon: Flame, label: "I'm on fire", desc: 'Strong habits, want to push them' },
-      { id: 'better', icon: BarChart3, label: 'Getting better', desc: 'Improving, need more structure' },
-      { id: 'hitormiss', icon: Target, label: 'Hit or miss', desc: 'Great days, then I fall off' },
-      { id: 'starting', icon: Sparkles, label: 'Just starting', desc: 'Staying consistent is hard' },
-      { id: 'chaos', icon: Brain, label: 'Total chaos', desc: 'Starting from zero' },
-    ]
+      { id: 'fire',          icon: Flame,         label: "It doesn't",            desc: "I show up. Just want to push harder." },
+      { id: 'month',         icon: Calendar,      label: 'Around a month in',     desc: 'Started hot. Life took over.' },
+      { id: 'week',          icon: TrendingDown,  label: 'End of week two',       desc: "Novelty wears off, I'm out." },
+      { id: 'week1',         icon: Clock,         label: 'Inside the first week', desc: "I quit before it starts hurting." },
+      { id: 'never_started', icon: RotateCcw,     label: 'I never really start',  desc: "Starting is the problem." },
+    ],
+  },
+  {
+    id: 'main_outcome',
+    prompt: "6 months from now, what would mean this worked?",
+    sub: "What do you want to be able to say?",
+    options: [
+      { id: 'proof',         icon: BarChart3, label: '"I kept the streak."',    desc: '100+ days without missing' },
+      { id: 'transformed',   icon: Sparkles,  label: '"I actually changed."',   desc: 'Fitter, calmer, sharper' },
+      { id: 'identity',      icon: Trophy,    label: '"I\'m that person now."', desc: 'The one who shows up' },
+      { id: 'finished',      icon: Rocket,    label: '"I finished what I started."', desc: 'The thing I\'ve been putting off' },
+      { id: 'nothing_hard',  icon: ShieldAlert, label: '"Nothing feels hard anymore."', desc: 'This is just who I am now' },
+    ],
   },
   {
     id: 'accountability_style',
-    prompt: "When you slip, what gets you back?",
+    prompt: "What would make you not quit this time?",
+    sub: "Phase can lean on whichever one works for you.",
     options: [
-      { id: 'progress', icon: BarChart3, label: 'Seeing my progress', desc: 'Charts, numbers, streaks' },
-      { id: 'competition', icon: Trophy, label: 'Competition', desc: 'Someone ahead of me' },
-      { id: 'reminders', icon: Bell, label: 'A nudge', desc: 'Just remind me' },
-      { id: 'rewards', icon: Gem, label: 'Rewards', desc: 'Give me something to earn' },
-      { id: 'callout', icon: MessageSquare, label: 'Getting called out', desc: 'Roast me a little' },
-    ]
+      { id: 'progress',    icon: BarChart3,     label: 'Seeing it actually work', desc: 'Numbers climbing, every week' },
+      { id: 'competition', icon: Trophy,        label: 'Someone just ahead of me', desc: 'A chase keeps me moving' },
+      { id: 'rewards',     icon: Gem,           label: 'Something to earn',        desc: 'Pay me in wins' },
+      { id: 'stakes',      icon: ShieldAlert,   label: 'Real stakes',              desc: 'Make it hurt a little when I slip' },
+      { id: 'callout',     icon: MessageSquare, label: 'Being called out',         desc: "Don't let me get away with it" },
+    ],
   },
 ];
 
@@ -82,7 +91,6 @@ export default function OnboardingPage() {
   // -1 = intro, 0..3 = questions, 4 = mode picker
   const [currentStep, setCurrentStep] = useState(-1);
   const [answers, setAnswers] = useState({});
-  const [otherText, setOtherText] = useState('');
   const [showSplash, setShowSplash] = useState(false);
   const [selectedMode, setSelectedMode] = useState(null);
 
@@ -96,10 +104,8 @@ export default function OnboardingPage() {
       app_mode: mode,
       onboarding_completed: true,
       main_goal: answers.main_goal ?? null,
-      download_reason: answers.download_reason ?? null,
-      download_reason_other:
-        answers.download_reason === 'other' ? (otherText.trim() || null) : null,
       consistency_level: answers.consistency_level ?? null,
+      main_outcome: answers.main_outcome ?? null,
       accountability_style: answers.accountability_style ?? null,
     };
     try {
@@ -117,7 +123,6 @@ export default function OnboardingPage() {
 
   const handleSelect = (optionId) => {
     setAnswers({ ...answers, [question.id]: optionId });
-    if (question.hasOther && optionId === 'other') return; // wait for text
     setTimeout(() => setCurrentStep((s) => s + 1), 260);
   };
 
@@ -183,11 +188,15 @@ export default function OnboardingPage() {
                 <>
                   <span className={`${eyebrow} text-[var(--gm-muted)]`}>Question {currentStep + 1}</span>
                   <h2
-                    className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[30px] sm:text-[38px] leading-[0.98] tracking-[-0.02em] mt-3 mb-7"
+                    className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[30px] sm:text-[38px] leading-[0.98] tracking-[-0.02em] mt-3"
                     data-testid="onboarding-question"
                   >
                     {question.prompt}
                   </h2>
+                  {question.sub && (
+                    <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3 mb-7">{question.sub}</p>
+                  )}
+                  {!question.sub && <div className="mb-7" />}
 
                   <div className="space-y-2.5">
                     {question.options.map((option) => (
@@ -199,31 +208,6 @@ export default function OnboardingPage() {
                       />
                     ))}
                   </div>
-
-                  {question.hasOther && answers[question.id] === 'other' && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4">
-                      <textarea
-                        placeholder="Tell us why..."
-                        value={otherText}
-                        onChange={(e) => setOtherText(e.target.value.slice(0, 150))}
-                        rows={3}
-                        autoFocus
-                        className="phase-input w-full rounded-2xl bg-[var(--gm-card)] p-4 text-[15px] font-medium text-[var(--gm-ink)] placeholder:text-[var(--gm-muted)] placeholder:opacity-60 outline-none border-2 border-transparent focus:border-[#95DEE6] resize-none"
-                        data-testid="onboarding-other-input"
-                      />
-                      <div className="flex items-center justify-between mt-3">
-                        <span className={`${eyebrow} text-[var(--gm-muted)]`}>{otherText.length}/150</span>
-                        <button
-                          onClick={() => otherText.trim() && setCurrentStep((s) => s + 1)}
-                          disabled={!otherText.trim()}
-                          className="h-11 px-5 rounded-full bg-[#95DEE6] text-[#183A3F] text-sm font-bold shadow-[var(--gm-shadow-cyan)] disabled:opacity-40 flex items-center gap-2"
-                          data-testid="onboarding-other-submit"
-                        >
-                          Continue <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
                 </>
               )}
 

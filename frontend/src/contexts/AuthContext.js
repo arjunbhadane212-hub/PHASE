@@ -128,6 +128,25 @@ export function AuthProvider({ children }) {
     return false;
   };
 
+  // OAuth sign-in. The browser is redirected to the provider, then back to
+  // `/auth/callback`, which lets our existing onAuthStateChange pick up the
+  // session and route via LandingOrRedirect. New users land with a profile
+  // created by the handle_new_user trigger (name pulled from the OAuth
+  // payload) and no onboarding, so they're sent to /onboarding.
+  const signInWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        // Land on /dashboard. The ProtectedRoute at that path will bounce new
+        // users to /onboarding (onboarding_completed=false) or let them through.
+        redirectTo: `${window.location.origin}/dashboard`,
+        queryParams: { access_type: 'offline', prompt: 'select_account' },
+      },
+    });
+    if (error) throw error;
+    return data;
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(false);
@@ -155,6 +174,7 @@ export function AuthProvider({ children }) {
       loading,
       login,
       register,
+      signInWithGoogle,
       logout,
       updateUser,
       refreshUser,
