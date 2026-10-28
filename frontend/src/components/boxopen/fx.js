@@ -83,16 +83,21 @@ export function SpeedLines({ color, count = 14, delay = 0, dir = 1, z = 20 }) {
   );
 }
 
-// Giant tonal type rows scrolling in opposite directions (editorial, not glow).
-export function Marquee({ text, color, rows = 3, speed = 24, z = 2 }) {
+// Giant type rows scrolling in opposite directions (editorial, not glow).
+// `outline` draws the letters as a hairline stroke with a hollow centre -- the
+// premium "it's only an outline" look the reveal leans on; otherwise solid/tonal.
+export function Marquee({ text, color, rows = 3, speed = 24, z = 2, outline = false, strokeW = 2 }) {
   const word = `${text} · `.repeat(12);
+  const typeStyle = outline
+    ? { color: 'transparent', WebkitTextStroke: `${strokeW}px ${color}`, textStroke: `${strokeW}px ${color}` }
+    : { color };
   return (
     <div className="absolute inset-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none" style={{ zIndex: z }}>
       {Array.from({ length: rows }).map((_, i) => (
         <motion.div
           key={i}
           className="whitespace-nowrap font-['Archivo',sans-serif] font-black uppercase"
-          style={{ color, fontSize: 'clamp(72px, 21vw, 132px)', lineHeight: 0.92, letterSpacing: '-0.02em' }}
+          style={{ ...typeStyle, fontSize: 'clamp(72px, 21vw, 132px)', lineHeight: 0.92, letterSpacing: '-0.02em' }}
           initial={{ x: i % 2 ? '-50%' : '0%' }}
           animate={{ x: i % 2 ? '0%' : '-50%' }}
           transition={{ duration: speed + i * 3, ease: 'linear', repeat: Infinity }}
