@@ -16,7 +16,7 @@
 // makes a title worth chasing.
 
 import { useMemo, useState } from 'react';
-import { Gem, Check, Lock } from 'lucide-react';
+import { Gem, Check, Lock, Flame, Clock } from 'lucide-react';
 import TitlePlate from './profile/TitlePlate';
 
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
@@ -51,6 +51,43 @@ function unlockPct(item, progress) {
   return Math.max(0, Math.min(1, cur / target));
 }
 
+// The next unearned milestone on an earned ladder, and how far off it is. Drives
+// the two little "X until next title" boxes at the top of the tab.
+function nextMilestone(titles, source, current) {
+  const field = source === 'streak' ? 'days' : 'hours';
+  const cur = current || 0;
+  const next = (titles || [])
+    .filter((t) => t.source_system === source && !t.owned)
+    .map((t) => ({ name: t.name, at: Number(t.metadata?.[field]) }))
+    .filter((t) => t.at > cur)
+    .sort((a, b) => a.at - b.at)[0];
+  return next ? { name: next.name, remaining: next.at - cur } : null;
+}
+
+// One small box: "32 days / until Aflame". Deliberately compact.
+function NextBox({ icon: Icon, label, milestone, unit }) {
+  return (
+    <div className="rounded-xl bg-[color:var(--gm-card)] px-3 py-2 min-w-0" data-testid={`next-${unit === 'h' ? 'hours' : 'streak'}`}>
+      <div className="flex items-center gap-1.5 mb-1">
+        <Icon className="w-3 h-3 text-[color:var(--gm-muted)]" strokeWidth={2.4} />
+        <span className={`${MONO} text-[9px] text-[color:var(--gm-muted)] truncate`}>{label}</span>
+      </div>
+      {milestone ? (
+        <>
+          <p className="font-['Archivo'] font-black text-[color:var(--gm-ink)] text-[15px] leading-none">
+            {unit === 'h'
+              ? `${Math.max(1, Math.ceil(milestone.remaining))}h`
+              : `${milestone.remaining} ${milestone.remaining === 1 ? 'day' : 'days'}`}
+          </p>
+          <p className="text-[10px] text-[color:var(--gm-muted)] truncate mt-0.5">until {milestone.name}</p>
+        </>
+      ) : (
+        <p className="font-['Archivo'] font-bold text-[color:var(--gm-muted)] text-xs mt-1">All earned</p>
+      )}
+    </div>
+  );
+}
+
 const FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'shop', label: 'Buyable' },
@@ -78,9 +115,16 @@ export default function TitlesGrid({ titles, gems, buying, onBuy, equippedKey, o
   }, [titles, filter]);
 
   const ownedCount = (titles || []).filter((t) => t.owned).length;
+  const nextStreak = nextMilestone(titles, 'streak', progress?.streak);
+  const nextHours = nextMilestone(titles, 'hours', progress?.hours);
 
   return (
     <div data-testid="titles-grid">
+      {/* Two small "how far to the next title" boxes — streak days + app time. */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <NextBox icon={Flame} label="NEXT STREAK TITLE" milestone={nextStreak} unit="d" />
+        <NextBox icon={Clock} label="NEXT TIME TITLE" milestone={nextHours} unit="h" />
+      </div>
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
           {FILTERS.map((f) => (
