@@ -1,369 +1,324 @@
 // =============================================================================
-// BoxOpening (v5).
-//   1. CHARGE: tap to pry the parcel open. Each tap lifts the lid, widens the
-//      seam and lets a column of the tier's light out; the final tap blows the
-//      lid off and the contents rise.
-//   2. REVEAL: rewards come out one at a time. EACH RARITY HAS ITS OWN FRAME
-//      (shape + colour + pips + category icon) so you instantly read common vs
-//      rare vs legendary vs mythic. legendary/mythic play a clean cinematic
-//      (fade to black -> light -> glorious labeled plate) and then DOCK down
-//      into the collected row.
-//   3. DONE: collected row + Continue.
-// Palette stays on-system: steel / cyan / lime / purple.
+// BoxOpening (v6) -- cinematic, flat, no glow.
+//
+//   CHARGE   tap 3x. Each hit pushes the camera in, shakes the frame, throws
+//            chips, and draws a jagged crack with a flat accent seam through it.
+//            The last hit holds for a hit-stop, then the box shatters into flat
+//            shards (real gravity) and a hard-cut flash takes the screen.
+//   WALK     items walk out one at a time, WORST FIRST so the best pull is the
+//            finale. Every item plays its own walkout (components/boxopen/Walkout)
+//            scaled to its rarity and rendered with its real art.
+//   SUMMARY  everything you got, best first, then Continue.
+//
+// Visual language: solid fills, hard edges, type, cuts, wipes, shutters, shake.
+// No glow, no blur, no radial / conic gradients, no rings.
 // =============================================================================
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Gem } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
-import { ShopItemIcon } from './ShopIcons';
+import Walkout from './boxopen/Walkout';
+import { tierOf, kindOf, displayName, MiniArt, KIND_LABEL } from './boxopen/Hero';
+import { useShake, FlashFrames, usePrefersCalm, rand } from './boxopen/fx';
 
-const TIER = {
-  common:    { color: '#9BA09C', dim: '#5F625F', label: 'COMMON',    pips: 1, cinematic: false },
-  rare:      { color: '#95DEE6', dim: '#2C6870', label: 'RARE',      pips: 2, cinematic: false },
-  legendary: { color: '#DBF67F', dim: '#59691F', label: 'LEGENDARY', pips: 3, cinematic: true },
-  mythic:    { color: '#A59BCC', dim: '#4B4470', label: 'MYTHIC',    pips: 4, cinematic: true },
-};
-const tierOf = (t) => TIER[t] || TIER.common;
 const STAGE_BG = '#0E1012';
 const CRACKS_NEEDED = 3;
+const FONT_DISPLAY = "'Archivo', sans-serif";
+const FONT_MONO = "'JetBrains Mono', monospace";
 const haptic = (p) => { try { navigator.vibrate?.(p); } catch { /* unsupported */ } };
-const rand = (a, b) => a + Math.random() * (b - a);
 
-// ---------- item art: show the REAL reward where we can (swatch / gradient),
-// otherwise a category outline icon. px = pixel size. ----------
-function ItemArt({ item, color, px = 40 }) {
-  const k = item.item_key || '';
-  const cat = item.category || '';
-  if (k === 'streak_shield' || k === 'streak_revive' || k.startsWith('boost_xp_')) {
-    return <span style={{ color, display: 'inline-flex' }}><ShopItemIcon itemKey={k} className={px >= 36 ? 'w-10 h-10' : 'w-6 h-6'} /></span>;
-  }
-  // real colour swatch
-  if ((cat === 'color_main' || cat === 'color_banner' || cat === 'color') && item.hex) {
-    return <span style={{ width: px, height: px, borderRadius: '50%', background: item.hex, boxShadow: `0 0 0 2px var(--gm-card), 0 0 0 3.5px ${item.hex}` }} />;
-  }
-  // real banner gradient chip
-  if (cat === 'banner' && item.gradient) {
-    return <span style={{ width: px * 1.5, height: px, borderRadius: 8, background: item.gradient, border: `1px solid ${color}` }} />;
-  }
-  const S = (children) => (
-    <svg viewBox="0 0 24 24" width={px} height={px} fill="none" stroke={color} strokeWidth="1.7"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
-  );
-  switch (cat) {
-    case 'title':
-      return S(<><rect x="3" y="7" width="18" height="10" rx="2.5" /><path d="M7 12h10" /></>);
-    case 'anim':
-      return S(<><circle cx="12" cy="12" r="3" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2" /></>);
-    case 'banner':
-      return S(<><path d="M6 3v18l6-4 6 4V3z" /></>);
-    case 'effect':
-      return S(<><circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="7.5" opacity="0.6" /></>);
-    case 'color_main':
-    case 'color_banner':
-    case 'color':
-      return S(<><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" /></>);
-    default:
-      return S(<><path d="M4 9 L12 5 L20 9 L20 18 L12 22 L4 18 Z M4 9 L12 13 L20 9 M12 13 L12 22" /></>);
-  }
-}
+// jagged crack paths in the 120-unit art space, added a layer per tap
+const CRACKS = [
+  ['M62 19 L58 37 L66 51 L60 66 L64 84 L60 105'],
+  ['M60 66 L40 72 L30 87', 'M66 51 L87 47 L99 58'],
+  ['M58 37 L40 33 L26 41', 'M64 84 L81 90 L93 83', 'M60 66 L77 75 L85 93', 'M40 72 L36 59'],
+];
 
-// rarity pip row
-function Pips({ n, color }) {
+// the parcel, triangulated into 8 flat shards for the break
+const SHARDS = [
+  { p: [[60, 15], [102, 39], [60, 39]], tone: 'top' },
+  { p: [[102, 39], [60, 63], [60, 39]], tone: 'right' },
+  { p: [[60, 63], [18, 39], [60, 39]], tone: 'top' },
+  { p: [[18, 39], [60, 15], [60, 39]], tone: 'left' },
+  { p: [[18, 40], [60, 64], [60, 106]], tone: 'left' },
+  { p: [[18, 40], [60, 106], [18, 82]], tone: 'left' },
+  { p: [[60, 64], [102, 40], [102, 82]], tone: 'right' },
+  { p: [[60, 64], [102, 82], [60, 106]], tone: 'right' },
+];
+
+function Cracks({ level, seam, leak }) {
   return (
-    <div className="flex items-center gap-1 mt-1.5">
-      {Array.from({ length: n }).map((_, i) => (
-        <span key={i} style={{ width: 5, height: 5, borderRadius: 9, background: color }} />
-      ))}
-    </div>
+    <svg viewBox="0 0 120 120" className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
+      {CRACKS.slice(0, level).map((set, si) => set.map((d, i) => {
+        const main = si === 0 || i === 0;
+        return (
+          <g key={`${si}-${i}`}>
+            {/* the fissure itself: dark, tapered by a thinner second stroke */}
+            <motion.path d={d} fill="none" stroke="#07090B" strokeWidth={main ? 2.8 : 1.9} strokeLinecap="round" strokeLinejoin="round"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.2, delay: i * 0.05, ease: 'easeOut' }} />
+            {/* light bursting through -- only on the final hit */}
+            {leak && (
+              <motion.path d={d} fill="none" stroke={seam} strokeWidth={main ? 1.4 : 1} strokeLinecap="round" strokeLinejoin="round"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.06 }} />
+            )}
+          </g>
+        );
+      }))}
+    </svg>
   );
 }
 
-// clip-path silhouette per rarity — this is what makes each tier read differently
-const CLIP = {
-  common: 'none',
-  rare: 'none',
-  legendary: 'polygon(16% 0, 84% 0, 100% 16%, 100% 84%, 84% 100%, 16% 100%, 0 84%, 0 16%)', // octagon
-  mythic: 'polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)', // hexagon
-};
-
-// ---------- rarity-framed reward plate ----------
-function RewardVisual({ item, chip = false }) {
-  const tt = tierOf(item.tier);
-  const color = tt.color;
-  const clip = CLIP[item.tier] || 'none';
-  const hex = item.tier === 'mythic';
-  const oct = item.tier === 'legendary';
-  const w = chip ? 92 : 176;
-  return (
-    <div className="relative flex flex-col items-center justify-center"
-      style={{
-        width: w,
-        minHeight: chip ? 92 : (hex ? 200 : 176),
-        padding: chip ? '12px 8px' : (hex ? '30px 16px' : '22px 16px'),
-        background: 'var(--gm-card)',
-        border: `1.5px solid ${item.tier === 'common' ? 'var(--gm-track)' : color}`,
-        borderRadius: (oct || hex) ? 0 : (chip ? 14 : 20),
-        clipPath: chip ? 'none' : clip,
-        boxShadow: 'var(--gm-shadow-card)',
-      }}
-    >
-      {/* rare gets an accent header bar; legendary/mythic get corner ticks */}
-      {item.tier === 'rare' && !chip && (
-        <div className="absolute top-0 left-0 right-0 h-1.5" style={{ background: color }} />
-      )}
-      {!chip && (oct || hex) && (
-        <>
-          <span className="absolute top-2 left-1/2 -translate-x-1/2" style={{ width: 22, height: 2, background: color, opacity: 0.7 }} />
-          <span className="absolute bottom-2 left-1/2 -translate-x-1/2" style={{ width: 22, height: 2, background: color, opacity: 0.7 }} />
-        </>
-      )}
-
-      {!chip && (
-        <span className="font-['JetBrains_Mono'] font-black uppercase text-[8px] tracking-[0.18em] mb-2" style={{ color }}>
-          {tt.label}
-        </span>
-      )}
-
-      <ItemArt item={item} color={color} px={chip ? 24 : 40} />
-
-      <p className={`font-['General_Sans',sans-serif] font-bold text-center leading-tight mt-2 ${chip ? 'text-[10px]' : 'text-sm'}`}
-        style={{ color: 'var(--gm-ink)' }}>
-        {item.name}
-      </p>
-
-      {!chip && <Pips n={tt.pips} color={color} />}
-
-      {item.duplicate && (
-        <p className="mt-1.5 text-[10px] font-['JetBrains_Mono'] font-bold flex items-center gap-0.5" style={{ color }}>
-          DUPE +{item.refund}<Gem className="w-2.5 h-2.5" style={{ color }} strokeWidth={2.4} />
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ---------- cinematic reveal for legendary / mythic ----------
-function Cinematic({ item }) {
-  const tt = tierOf(item.tier);
-  const color = tt.color;
-  const isMythic = item.tier === 'mythic';
+function Shard({ s, t, size }) {
+  const m = useMemo(() => {
+    const cx = s.p.reduce((a, q) => a + q[0], 0) / 3;
+    const cy = s.p.reduce((a, q) => a + q[1], 0) / 3;
+    const ang = Math.atan2(cy - 64, cx - 60) + rand(-0.35, 0.35);
+    const dist = rand(0.6, 1.15) * size;
+    return { cx, cy, dx: Math.cos(ang) * dist, dy: Math.sin(ang) * dist, rot: rand(-280, 280) };
+  }, [s, size]);
+  const clip = `polygon(${s.p.map(([x, y]) => `${(x / 1.2).toFixed(1)}% ${(y / 1.2).toFixed(1)}%`).join(',')})`;
   return (
     <motion.div
-      className="absolute inset-0 z-[60] flex items-center justify-center overflow-hidden"
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: 0.7, ease: 'easeInOut' }}
-      style={{ background: '#000000' }}
-      data-testid="cinematic-reveal"
-    >
-      {/* tight radial halo behind the plate (not a blurry blob) */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ width: 260, height: 260, background: `radial-gradient(circle, ${color}33 0%, transparent 70%)` }}
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: [0, 1, 0.85], scale: [0.5, 1, 1] }}
-        transition={{ duration: 0.9, delay: 0.7, ease: 'easeOut' }}
-      />
-      {/* crisp expanding rings — designed, not noisy */}
-      {[0, 1].map((r) => (
-        <motion.div key={r} className="absolute rounded-full pointer-events-none"
-          style={{ width: 160, height: 160, border: `2px solid ${color}` }}
-          initial={{ opacity: 0, scale: 0.3 }}
-          animate={{ opacity: [0, 0.6, 0], scale: [0.3, 2.1 + r * 0.6, 2.5 + r * 0.6] }}
-          transition={{ duration: 1.5, delay: 0.72 + r * 0.22, ease: 'easeOut' }}
+      className="absolute inset-0"
+      style={{ background: t[s.tone], clipPath: clip, transformOrigin: `${(m.cx / 1.2).toFixed(1)}% ${(m.cy / 1.2).toFixed(1)}%` }}
+      initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
+      animate={{ x: m.dx, y: [0, m.dy - size * 0.25, m.dy + size * 0.9], rotate: m.rot, opacity: [1, 1, 0] }}
+      transition={{
+        duration: 0.95, ease: 'easeOut',
+        y: { duration: 0.95, ease: 'easeOut', times: [0, 0.35, 1] },
+        opacity: { duration: 0.95, times: [0, 0.7, 1] },
+      }}
+    />
+  );
+}
+
+// little chips knocked off by each hit
+function Chips({ burstKey, color, size }) {
+  const chips = useMemo(() => Array.from({ length: 7 }).map(() => ({
+    a: rand(0, Math.PI * 2), d: rand(0.25, 0.6) * size, w: rand(5, 11), tone: Math.random() < 0.45,
+    rot: rand(-300, 300),
+  })), [burstKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!burstKey) return null;
+  return (
+    <>
+      {chips.map((c, i) => (
+        <motion.div
+          key={`${burstKey}-${i}`}
+          className="absolute"
+          style={{ left: '50%', top: '56%', width: c.w, height: c.w, background: c.tone ? color : '#2B2F35', clipPath: 'polygon(50% 0, 100% 100%, 0 100%)' }}
+          initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
+          animate={{ x: Math.cos(c.a) * c.d, y: [0, Math.sin(c.a) * c.d - 36, Math.sin(c.a) * c.d + 70], rotate: c.rot, opacity: [1, 1, 0] }}
+          transition={{ duration: 0.6, ease: 'easeOut', y: { duration: 0.6, times: [0, 0.4, 1] }, opacity: { duration: 0.6, times: [0, 0.65, 1] } }}
         />
       ))}
-      {/* single quick vertical light sweep */}
-      <motion.div className="absolute pointer-events-none"
-        style={{ width: 2, height: '130%', background: `linear-gradient(to bottom, transparent, ${color}, transparent)` }}
-        initial={{ opacity: 0, scaleY: 0 }}
-        animate={{ opacity: [0, 0.9, 0], scaleY: [0, 1, 1] }}
-        transition={{ duration: 0.7, delay: 0.5, ease: 'easeOut' }}
-      />
-      {/* mythic confetti */}
-      {isMythic && Array.from({ length: 20 }).map((_, i) => (
-        <motion.div key={i} className="absolute left-1/2 top-[42%] pointer-events-none"
-          style={{ width: rand(5, 9), height: rand(5, 9), background: color, borderRadius: 2 }}
-          initial={{ x: 0, y: 0, rotate: 0, opacity: 0 }}
-          animate={{ x: rand(-150, 150), y: rand(-30, 240), rotate: rand(-200, 200), opacity: [0, 1, 1, 0] }}
-          transition={{ duration: rand(1.4, 2.3), delay: 1.0 + rand(0, 0.25), ease: 'easeOut' }}
-        />
-      ))}
-
-      {/* content — the item walks in, then DOCKS down on exit */}
-      <motion.div className="relative flex flex-col items-center px-6"
-        initial={{ opacity: 0, y: 26, scale: 0.82 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 150, scale: 0.28 }}
-        transition={{ duration: 0.62, delay: 0.85, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full mb-7"
-          style={{ background: `${color}1a`, border: `1.5px solid ${color}` }}>
-          <span className="font-['JetBrains_Mono'] font-bold uppercase text-[13px]" style={{ color, letterSpacing: '0.26em' }}>
-            {tt.label}
-          </span>
-        </div>
-
-        {/* framed plate (the same rarity silhouette, scaled up) */}
-        <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}>
-          <RewardVisual item={item} />
-        </motion.div>
-
-        <h1 className="mt-6 font-['Archivo',sans-serif] font-black text-center text-3xl sm:text-4xl"
-          style={{ color: '#F4F5F2', letterSpacing: '-0.02em' }}>
-          {item.name}
-        </h1>
-        <p className="mt-2 font-['JetBrains_Mono'] font-bold text-xs uppercase tracking-[0.2em]" style={{ color }}>
-          {item.duplicate ? <>Already owned · +{item.refund} gems</> : <>Unlocked</>}
-        </p>
-      </motion.div>
-    </motion.div>
+    </>
   );
 }
 
 // =============================================================================
 export default function BoxOpening({ boxId, rolledItems, onContinue }) {
-  const [phase, setPhase] = useState('charge'); // charge | reveal | done
-  const [charge, setCharge] = useState(0);
-  const [opened, setOpened] = useState(false);
-  const [shown, setShown] = useState([]);
-  const [pop, setPop] = useState(null);
-  const [cine, setCine] = useState(null);
-  const alive = useRef(true);
-  const timers = useRef([]);
-
+  const calm = usePrefersCalm();
   const t = tierFor(boxId);
 
+  // worst first, so the best pull is the finale
+  const walkItems = useMemo(
+    () => [...(rolledItems || [])].sort((a, b) => tierOf(a.tier).level - tierOf(b.tier).level),
+    [rolledItems],
+  );
+  const summaryItems = useMemo(() => [...walkItems].reverse(), [walkItems]);
+
+  const [phase, setPhase] = useState('charge'); // charge | walk | summary
+  const [charge, setCharge] = useState(0);
+  const [chipKey, setChipKey] = useState(0);
+  const [bursting, setBursting] = useState(false);
+  const [burst, setBurst] = useState(false);
+  const [flash, setFlash] = useState(null);
+  const [idx, setIdx] = useState(0);
+  const { controls, shake } = useShake(calm);
+
+  const alive = useRef(true);
+  const timers = useRef([]);
   useEffect(() => {
     alive.current = true;
     const list = timers.current;
     return () => { alive.current = false; list.forEach(clearTimeout); };
   }, []);
-  const after = (ms, fn) => { const id = setTimeout(() => { if (alive.current) fn(); }, ms); timers.current.push(id); };
+  const at = (ms, fn) => { const id = setTimeout(() => { if (alive.current) fn(); }, ms); timers.current.push(id); };
 
-  const step = useCallback((i) => {
-    if (i >= rolledItems.length) { setPhase('done'); return; }
-    const item = rolledItems[i];
-    if (tierOf(item.tier).cinematic) {
-      haptic([40, 30, 120]); soundEngine.urFlourish?.();
-      setCine(item);
-      after(3500, () => { setShown((p) => [...p, item]); setCine(null); after(420, () => step(i + 1)); });
-    } else {
-      haptic([25]);
-      setPop(item);
-      after(1000, () => { setShown((p) => [...p, item]); setPop(null); after(300, () => step(i + 1)); });
-    }
-  }, [rolledItems]); // eslint-disable-line react-hooks/exhaustive-deps
+  const boxPx = typeof window !== 'undefined' ? Math.min(window.innerWidth * 0.7, 300) : 300;
 
   const onTap = useCallback(() => {
-    if (phase !== 'charge' || opened) return;
+    if (phase !== 'charge' || bursting) return;
     const next = charge + 1;
     setCharge(next);
+    setChipKey((k) => k + 1);
     soundEngine.boxCrack?.();
+    soundEngine.boxHit?.(0.7 + next * 0.3);
+    haptic(next >= CRACKS_NEEDED ? [60, 30, 120] : [30]);
+    shake(next === 1 ? 8 : 14);
     if (next >= CRACKS_NEEDED) {
-      haptic([70, 40, 160]);
-      setOpened(true);
-      after(620, () => { setPhase('reveal'); step(0); });
-    } else {
-      haptic([32]);
+      setBursting(true); // box freezes at full push for the hit-stop
+      at(110, () => {
+        setBurst(true);
+        soundEngine.boxHit?.(1.5);
+        soundEngine.whoosh?.(0.3);
+        shake(28);
+        if (!calm) setFlash([{ color: t.accent, ms: 90 }, { color: STAGE_BG, ms: 60 }]);
+      });
+      at(640, () => setPhase(walkItems.length ? 'walk' : 'summary'));
     }
-  }, [phase, charge, opened, step]);
+  }, [phase, bursting, charge, calm, t.accent, walkItems.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const lidLift = opened ? 1.9 : charge * 0.32;      // lid pries up per tap, blows off on open
-  const lidSpin = opened ? -24 : 0;
-  const beam = opened ? 1 : charge * 0.3;             // light column intensity
-  const promptText = charge === 0 ? 'Tap to open' : charge < CRACKS_NEEDED ? 'Keep going' : '';
+  const nextWalk = useCallback(() => {
+    setIdx((i) => {
+      if (i + 1 < walkItems.length) return i + 1;
+      setPhase('summary');
+      return i;
+    });
+  }, [walkItems.length]);
+
+  const prompt = charge === 0 ? 'TAP TO OPEN' : charge === 1 ? 'AGAIN' : 'ONE MORE';
+  const best = summaryItems[0];
+  const totalRefund = walkItems.reduce((s, it) => s + (it.duplicate ? (it.refund || 0) : 0), 0);
 
   return createPortal(
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-[9999] overflow-hidden"
       style={{ background: STAGE_BG }}
+      role="dialog" aria-modal="true" aria-label="Opening box"
       data-testid="box-opening-screen"
     >
-      {/* CHARGE */}
+      {/* ---------------------------- CHARGE ---------------------------- */}
       {phase === 'charge' && (
-        <div className="flex flex-col items-center">
-          <div className="relative flex items-center justify-center" style={{ width: 'min(76vw, 320px)', height: 'min(76vw, 320px)' }}>
-            {/* rising light column from the lid seam */}
-            <motion.div className="absolute pointer-events-none"
-              style={{ width: opened ? 10 : 5, height: '150%', top: '-40%',
-                background: `linear-gradient(to bottom, transparent, ${t.accent}, transparent)`, filter: 'blur(2px)' }}
-              animate={{ opacity: beam, scaleY: opened ? [1, 1.2] : 1 }}
-              transition={{ duration: opened ? 0.6 : 0.3 }}
-            />
-            {/* the box */}
-            <motion.div
-              onClick={onTap} role="button" tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onTap(); }}
-              className="relative cursor-pointer select-none w-full h-full"
-              animate={opened
-                ? { scale: [1, 1.06, 1.15], opacity: [1, 1, 0] }
-                : { scale: 1, x: charge > 0 ? [0, -7, 7, -4, 4, 0] : 0 }}
-              transition={opened ? { duration: 0.6, ease: 'easeIn' } : { duration: 0.34 }}
-              key={opened ? 'open' : charge}
-              data-testid="opening-box"
-            >
-              <PhaseBoxArt tier={boxId} className="w-full h-full" lidLift={lidLift} lidSpin={lidSpin} />
-            </motion.div>
-          </div>
-          {promptText && !opened && (
-            <motion.p key={promptText} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-              className="mt-10 font-['JetBrains_Mono',monospace] text-[12px] uppercase tracking-[0.28em]"
-              style={{ color: charge > 0 ? t.accent : 'rgba(244,245,242,0.5)' }}
-              data-testid="opening-tap-prompt">
-              {promptText}
-            </motion.p>
-          )}
-        </div>
-      )}
+        <motion.div className="absolute inset-0 flex flex-col items-center justify-center" animate={controls}>
+          <div style={{ transform: `scale(${1 + charge * 0.035})`, transition: 'transform .25s cubic-bezier(.2,.9,.2,1)' }}
+            className="flex flex-col items-center">
+            <div className="relative" style={{ width: boxPx, height: boxPx }}>
+              {/* floor shadow: flat tonal slab, not a glow */}
+              <div className="absolute left-1/2" style={{ bottom: '4%', width: '62%', height: 14, marginLeft: '-31%', background: '#090B0D', borderRadius: 999 }} />
 
-      {/* REVEAL / DONE */}
-      {phase !== 'charge' && (
-        <div className="w-full max-w-md px-6 flex flex-col items-center justify-center">
-          <div className="relative flex items-center justify-center" style={{ minHeight: 230 }}>
-            <AnimatePresence mode="wait">
-              {pop && (
-                <motion.div key={`pop-${shown.length}`}
-                  initial={{ scale: 0, opacity: 0, y: 20 }}
-                  animate={{ scale: [0, 1.1, 1], opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, times: [0, 0.6, 1], ease: 'easeOut' }}>
-                  <RewardVisual item={pop} />
+              {!burst && (
+                <motion.div
+                  onClick={onTap} role="button" tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onTap(); }}
+                  className="absolute inset-0 cursor-pointer select-none"
+                  animate={charge === 0 ? { scale: [1, 1.02, 1] } : { scale: 1 + charge * 0.07 }}
+                  transition={charge === 0 ? { duration: 2.2, repeat: Infinity, ease: 'easeInOut' } : { type: 'spring', stiffness: 420, damping: 16 }}
+                  data-testid="opening-box"
+                >
+                  <PhaseBoxArt tier={boxId} className="w-full h-full" />
+                  <Cracks level={Math.min(charge, CRACKS.length)} seam={t.edge} leak={bursting} />
                 </motion.div>
               )}
-            </AnimatePresence>
-          </div>
 
-          {shown.length > 0 && (
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-6" data-testid="rewards-grid">
-              {shown.map((it, i) => (
-                <motion.div key={i} initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-                  <RewardVisual item={it} chip />
-                </motion.div>
-              ))}
+              {burst && (
+                <div className="absolute inset-0" aria-hidden="true">
+                  {SHARDS.map((s, i) => <Shard key={i} s={s} t={t} size={boxPx} />)}
+                </div>
+              )}
+
+              <Chips burstKey={chipKey} color={t.accent} size={boxPx} />
             </div>
-          )}
 
-          <AnimatePresence>
-            {phase === 'done' && (
-              <motion.button initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }} onClick={onContinue}
-                className="mt-9 px-10 py-3 rounded-2xl font-['General_Sans',sans-serif] font-bold text-sm transition-transform active:scale-[0.97] bg-[#95DEE6] text-[#183A3F]"
-                style={{ letterSpacing: '0.08em' }} data-testid="opening-continue-btn">
-                Continue
-              </motion.button>
+            {/* prompt + hit pips */}
+            {!bursting && (
+              <div className="flex flex-col items-center" style={{ marginTop: 40, gap: 14 }}>
+                <motion.div key={prompt} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 12, letterSpacing: '0.3em', color: charge ? t.accent : 'rgba(244,245,242,0.55)' }}
+                  data-testid="opening-tap-prompt">
+                  {prompt}
+                </motion.div>
+                <div className="flex gap-2">
+                  {Array.from({ length: CRACKS_NEEDED }).map((_, i) => (
+                    <div key={i} style={{ width: 22, height: 4, background: i < charge ? t.accent : '#2E3235' }} />
+                  ))}
+                </div>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ---------------------------- WALK ---------------------------- */}
+      {phase === 'walk' && walkItems[idx] && (
+        <>
+          <Walkout key={idx} item={walkItems[idx]} index={idx} total={walkItems.length} calm={calm} onDone={nextWalk} />
+          <button
+            onClick={(e) => { e.stopPropagation(); setPhase('summary'); }}
+            className="absolute"
+            style={{ top: 14, right: 14, zIndex: 200, fontFamily: FONT_MONO, fontWeight: 700, fontSize: 10, letterSpacing: '0.2em', color: '#9BA09C', background: 'rgba(14,16,18,0.7)', border: '1px solid #2E3235', borderRadius: 999, padding: '6px 12px' }}
+            data-testid="opening-skip-btn"
+          >
+            SKIP
+          </button>
+        </>
+      )}
+
+      {/* ---------------------------- SUMMARY ---------------------------- */}
+      {phase === 'summary' && (
+        <div className="absolute inset-0 overflow-y-auto" data-testid="rewards-grid">
+          <div className="min-h-full flex flex-col items-center justify-center px-5 py-10 mx-auto" style={{ maxWidth: 460 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 11, letterSpacing: '0.28em', color: best ? tierOf(best.tier).color : '#9BA09C' }}>
+              {(t.label || '').toUpperCase()} &middot; {summaryItems.length} {summaryItems.length === 1 ? 'ITEM' : 'ITEMS'}
+            </motion.div>
+            <motion.h2
+              initial={{ y: 18, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3, ease: [0.2, 0.9, 0.2, 1] }}
+              style={{ fontFamily: FONT_DISPLAY, fontWeight: 900, fontSize: 44, lineHeight: 0.95, letterSpacing: '-0.02em', textTransform: 'uppercase', color: '#F4F5F2', margin: '10px 0 22px', textAlign: 'center' }}>
+              {best && tierOf(best.tier).level >= 2 ? `${tierOf(best.tier).label} PULL` : 'YOU GOT'}
+            </motion.h2>
+
+            <div className="w-full flex flex-col" style={{ gap: 10 }}>
+              {summaryItems.map((it, i) => {
+                const T = tierOf(it.tier);
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ x: -26, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.12 + i * 0.09, duration: 0.28, ease: [0.2, 0.9, 0.2, 1] }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#1F2123', borderRadius: 18, padding: 12, borderLeft: `4px solid ${T.color}` }}
+                  >
+                    <MiniArt item={it} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 17, color: '#F4F5F2', textTransform: 'uppercase', letterSpacing: '-0.01em', lineHeight: 1.05, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {displayName(it)}
+                      </div>
+                      <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 10, letterSpacing: '0.2em', color: T.color, marginTop: 5 }}>
+                        {T.label} &middot; {KIND_LABEL[kindOf(it)]}
+                      </div>
+                    </div>
+                    <div style={{ fontFamily: FONT_MONO, fontWeight: 700, fontSize: 10, letterSpacing: '0.14em', color: it.duplicate ? '#F4F5F2' : '#9BA09C', display: 'flex', alignItems: 'center', gap: 4, flex: 'none' }}>
+                      {it.duplicate ? <>+{it.refund}<Gem size={11} strokeWidth={2.4} /></> : 'NEW'}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {totalRefund > 0 && (
+              <div style={{ marginTop: 14, fontFamily: FONT_MONO, fontWeight: 700, fontSize: 11, letterSpacing: '0.18em', color: '#9BA09C', display: 'flex', alignItems: 'center', gap: 5 }}>
+                DUPLICATES REFUNDED +{totalRefund}<Gem size={12} strokeWidth={2.4} />
+              </div>
+            )}
+
+            <motion.button
+              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + summaryItems.length * 0.09, duration: 0.3 }}
+              onClick={onContinue}
+              className="active:scale-[0.97] transition-transform"
+              style={{ marginTop: 26, padding: '14px 44px', borderRadius: 16, background: '#95DEE6', color: '#183A3F', fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: '0.08em' }}
+              data-testid="opening-continue-btn"
+            >
+              Continue
+            </motion.button>
+          </div>
         </div>
       )}
 
-      {/* CINEMATIC overlay */}
-      <AnimatePresence>
-        {cine && <Cinematic key={`cine-${shown.length}`} item={cine} />}
-      </AnimatePresence>
+      {flash && <FlashFrames key="burst-flash" frames={flash} onDone={() => setFlash(null)} />}
     </motion.div>,
-    document.body
+    document.body,
   );
 }

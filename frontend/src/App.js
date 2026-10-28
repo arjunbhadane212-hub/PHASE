@@ -25,6 +25,7 @@ import MyProfilePage from "./pages/MyProfilePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import AdminPage from "./pages/AdminPage";
+import DevBoxOpeningPage from "./pages/DevBoxOpeningPage";
 import RoastNotification, { RoastListener } from "./components/RoastNotification";
 import { TitleUnlockListener } from "./components/profile/TitleUnlockToast";
 
@@ -154,6 +155,9 @@ function AppRoutes() {
       
       {/* Admin */}
       <Route path="/admin" element={<AdminPage />} />
+
+      {/* Box-opening preview with fake pulls (no auth, no gems) */}
+      <Route path="/dev/box-opening" element={<DevBoxOpeningPage />} />
       
       {/* Protected Dashboard routes */}
       <Route path="/profile/:username" element={<PublicProfilePage />} />

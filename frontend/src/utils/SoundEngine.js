@@ -126,6 +126,113 @@ class SoundEngine {
     } catch { /* silent */ }
   }
 
+  // ---- Box-opening sound design (flat, synthesised; no samples) -------------
+
+  // Impact: sub thump + short noise crack. power 0.5..1.5
+  boxHit(power = 1) {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(110, now);
+      o.frequency.exponentialRampToValueAtTime(38, now + 0.22);
+      g.gain.setValueAtTime(0.32 * power, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now); o.stop(now + 0.32);
+      const len = Math.floor(ctx.sampleRate * 0.12);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const f = ctx.createBiquadFilter();
+      f.type = 'highpass'; f.frequency.value = 1800;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.14 * power, now);
+      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      src.connect(f); f.connect(ng); ng.connect(ctx.destination);
+      src.start(now);
+    } catch { /* silent */ }
+  }
+
+  // Air whoosh for wipes / shutters
+  whoosh(dur = 0.32) {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      const len = Math.floor(ctx.sampleRate * dur);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass'; f.Q.value = 0.9;
+      f.frequency.setValueAtTime(500, now);
+      f.frequency.exponentialRampToValueAtTime(3600, now + dur);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.13, now + dur * 0.5);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(now);
+    } catch { /* silent */ }
+  }
+
+  // Tension riser into a legendary / mythic hit
+  riser(dur = 1) {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      const f = ctx.createBiquadFilter();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(70, now);
+      o.frequency.exponentialRampToValueAtTime(880, now + dur);
+      f.type = 'lowpass';
+      f.frequency.setValueAtTime(300, now);
+      f.frequency.exponentialRampToValueAtTime(5000, now + dur);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.09, now + dur * 0.9);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur + 0.04);
+      o.connect(f); f.connect(g); g.connect(ctx.destination);
+      o.start(now); o.stop(now + dur + 0.06);
+    } catch { /* silent */ }
+  }
+
+  // Two low thumps, like a heartbeat — the mythic cold open
+  heartbeat() {
+    if (!this.enabled) return;
+    const ctx = this.getContext();
+    const now = ctx.currentTime;
+    this.playTone(58, now, 0.2, 'sine', 0.3);
+    this.playTone(52, now + 0.28, 0.26, 'sine', 0.34);
+  }
+
+  // The reveal hit. legendary = bright major chord; mythic = sub drop + wide stack
+  stinger(tier) {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      const now = ctx.currentTime;
+      this.boxHit(tier === 'mythic' ? 1.5 : 1.15);
+      if (tier === 'mythic') {
+        this.playTone(41, now, 1.6, 'sine', 0.3);
+        [262, 392, 523, 784, 1047].forEach((fq, i) => this.playTone(fq, now + 0.02 + i * 0.015, 1.5, 'triangle', 0.06));
+      } else {
+        [523, 659, 784, 1047].forEach((fq, i) => this.playTone(fq, now + 0.01 + i * 0.012, 0.9, 'triangle', 0.07));
+        this.playTone(65, now, 0.7, 'sine', 0.22);
+      }
+    } catch { /* silent */ }
+  }
+
   setEnabled(enabled) {
     this.enabled = enabled;
   }
