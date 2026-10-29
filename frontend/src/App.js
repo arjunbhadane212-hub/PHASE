@@ -13,6 +13,7 @@ import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import WelcomePage from "./pages/WelcomePage";
 import DashboardLayout from "./pages/DashboardLayout";
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
@@ -28,6 +29,9 @@ import AdminPage from "./pages/AdminPage";
 import DevBoxOpeningPage from "./pages/DevBoxOpeningPage";
 import RoastNotification, { RoastListener } from "./components/RoastNotification";
 import { TitleUnlockListener } from "./components/profile/TitleUnlockToast";
+import { isInstalledApp } from "./utils/platform";
+import { hasSeenOnboarding } from "./utils/onboardingFlag";
+import { resolveRootRoute, ROUTE_LANDING } from "./utils/appEntry";
 
 // Shown when the admin dashboard has banned this account. The account was
 // already signed out server-side (see AuthContext.loadUser); this just
@@ -127,23 +131,72 @@ function OnboardingRoute({ children }) {
   return children;
 }
 
-// Platform detection: skip landing page for installed PWA / standalone apps
-function LandingOrRedirect() {
-  const isStandalone = window.navigator?.standalone === true
-    || window.matchMedia?.('(display-mode: standalone)')?.matches;
+// The app entry point, shared by "/" (the public URL) and "/app" (the installed
+// app's manifest start_url). It decides — before first paint — between the
+// marketing landing page, the app home, the pre-auth install intro, and the
+// login/signup screen. The decision itself is the pure resolveRootRoute() so it
+// can be unit tested; this component just resolves the live booleans and renders.
+//
+// The landing page is only ever shown to signed-out browser visitors. Once
+// you're in a session it is out of bounds (a Back press onto "/" bounces into
+// the app instead of dumping you on marketing), and the installed app never
+// shows it at all — which also means no landing flash before redirecting, since
+// start_url is "/app" and installed launches never render LandingPage.
+function RootEntry() {
+  const { user, loading } = useAuth();
 
-  if (isStandalone) {
+  // Don't decide (or flash anything) while the session is still resolving.
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#06080F] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  const route = resolveRootRoute({
+    isInstalled: isInstalledApp(),
+    isLoggedIn: !!user && user !== false && user !== 'banned',
+    hasSeenIntro: hasSeenOnboarding(),
+  });
+
+  if (route === ROUTE_LANDING) return <LandingPage />;
+  // replace: so this redirect never leaves an entry to get stuck on with Back.
+  return <Navigate to={route} replace />;
+}
+
+// The pre-auth install intro at "/welcome". Signed-in users never need it, so
+// bounce them into the app; the loading spinner keeps it from flashing first.
+function WelcomeRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#06080F] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (user && user !== false && user !== 'banned') {
     return <Navigate to="/dashboard" replace />;
   }
-  return <LandingPage />;
+
+  return children;
 }
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public routes - PWA standalone skips landing */}
-      <Route path="/" element={<LandingOrRedirect />} />
-      
+      {/* Entry point. "/" may show the marketing landing; "/app" is the
+          installed app's manifest start_url and never does. Both share the
+          same decision. */}
+      <Route path="/" element={<RootEntry />} />
+      <Route path="/app" element={<RootEntry />} />
+
+      {/* Pre-auth install intro (first launch of the installed app) */}
+      <Route path="/welcome" element={<WelcomeRoute><WelcomePage /></WelcomeRoute>} />
+
       {/* Auth routes */}
       <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
       <Route path="/signup" element={<AuthRoute><SignupPage /></AuthRoute>} />
