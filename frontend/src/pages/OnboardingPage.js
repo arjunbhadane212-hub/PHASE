@@ -8,6 +8,12 @@ import { Progress } from '../components/ui/progress';
 import { Zap, Dumbbell, BookOpen, Brain, Scale, Rocket, Gamepad2, Target, Lock, BarChart3, Bell, Trophy, MessageSquare, Flame, Sparkles, Eye, Crosshair } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
+import { identifyUser, getVariant, track } from '../lib/analytics';
+
+// A/B test: 'control' = all 5 questions, 'short' = the 3 essentials only.
+// Flag key + variant names must match the multivariate flag in PostHog.
+const EXPERIMENT_FLAG = 'onboarding-length';
+const SHORT_STEP_IDS = ['main_goal', 'consistency_level', 'app_mode'];
 
 const questions = [
   {
@@ -89,9 +95,26 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const [selectedMode, setSelectedMode] = useState(null);
+  const [variant, setVariant] = useState(null); // null while the flag loads
 
-  const question = questions[currentStep];
-  const progress = ((currentStep + 1) / questions.length) * 100;
+  // Resolve the experiment variant once per visit, then log the start event.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    let cancelled = false;
+    identifyUser(user.id);
+    getVariant(EXPERIMENT_FLAG).then((v) => {
+      if (cancelled) return;
+      setVariant(v);
+      track('onboarding_started', { onboarding_variant: v });
+    });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const activeQuestions = variant === 'short'
+    ? questions.filter((q) => SHORT_STEP_IDS.includes(q.id))
+    : questions;
+  const question = activeQuestions[currentStep];
+  const progress = ((currentStep + 1) / activeQuestions.length) * 100;
 
   const completeOnboarding = async (mode) => {
     // Persist every survey answer collected across the earlier steps, not just
@@ -114,6 +137,7 @@ export default function OnboardingPage() {
         .eq('id', user.id);
       if (error) throw error;
       updateUser(payload);
+      track('onboarding_completed', { onboarding_variant: variant, app_mode: mode });
     } catch (e) {
       console.error('Failed to save onboarding', e);
       toast.error('Could not save your preferences. Please try again.');
@@ -129,8 +153,14 @@ export default function OnboardingPage() {
       return; // Wait for text input
     }
 
+    track('onboarding_step_completed', {
+      onboarding_variant: variant,
+      step_id: question.id,
+      step_index: currentStep,
+    });
+
     // Move to next or finish
-    if (currentStep < questions.length - 1) {
+    if (currentStep < activeQuestions.length - 1) {
       setTimeout(() => setCurrentStep(currentStep + 1), 300);
     } else {
       // Final step - persist selected mode and mark onboarding complete
@@ -148,6 +178,11 @@ export default function OnboardingPage() {
     if (!otherText.trim()) return;
     setCurrentStep(currentStep + 1);
   };
+
+  // Hold a blank screen (not a flash of the wrong variant) until the flag resolves
+  if (variant === null) {
+    return <div className="min-h-screen bg-[#06080F]" data-testid="onboarding-loading" />;
+  }
 
   // Splash screen
   if (showSplash) {
@@ -203,7 +238,7 @@ export default function OnboardingPage() {
                     duration: 2,
                     delay: Math.random() * 0.5
                   }}
-                  className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-purple-500"
+                  className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-blue-500"
                 />
               ))}
               
@@ -213,7 +248,7 @@ export default function OnboardingPage() {
                 transition={{ delay: 0.2, type: 'spring', bounce: 0.5 }}
                 className="mb-6 relative"
               >
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center mx-auto glow-purple">
+                <div className="w-20 h-20 rounded-2xl bg-blue-500 flex items-center justify-center mx-auto glow-purple">
                   <Gamepad2 className="w-10 h-10 text-white" />
                 </div>
               </motion.div>
@@ -221,7 +256,7 @@ export default function OnboardingPage() {
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-3xl font-bold font-['Satoshi'] gradient-text"
+                className="text-3xl font-bold font-['Satoshi'] text-blue-400"
               >
                 Game Mode Activated
               </motion.h1>
@@ -246,10 +281,10 @@ export default function OnboardingPage() {
       <div className="p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-sm text-zinc-500">Step {currentStep + 1} of {questions.length}</span>
+            <span className="text-sm text-zinc-500">Step {currentStep + 1} of {activeQuestions.length}</span>
           </div>
           <Progress value={progress} className="h-1 bg-zinc-800" data-testid="onboarding-progress" />
         </div>
@@ -295,7 +330,7 @@ export default function OnboardingPage() {
                         onClick={() => handleSelect(option.id)}
                         className={`relative overflow-hidden rounded-2xl border p-6 text-left transition-all ${
                           isSelected 
-                            ? 'border-purple-500 bg-purple-500/10' 
+                            ? 'border-blue-500 bg-blue-500/10' 
                             : 'border-white/10 bg-zinc-900/50 hover:border-white/20'
                         }`}
                         data-testid={`onboarding-mode-${option.id}`}
@@ -310,7 +345,7 @@ export default function OnboardingPage() {
                           <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
                             option.id === 'focus' 
                               ? 'bg-zinc-800' 
-                              : 'bg-gradient-to-br from-purple-500 to-purple-700 glow-purple-sm'
+                              : 'bg-blue-500 glow-purple-sm'
                           }`}>
                             <Icon className="w-7 h-7 text-white" />
                           </div>
@@ -319,7 +354,7 @@ export default function OnboardingPage() {
                             {option.label}
                           </h3>
                           <p className={`text-sm font-medium mb-3 ${
-                            option.id === 'focus' ? 'text-zinc-400' : 'text-purple-400'
+                            option.id === 'focus' ? 'text-zinc-400' : 'text-blue-400'
                           }`}>
                             {option.tagline}
                           </p>
@@ -340,13 +375,13 @@ export default function OnboardingPage() {
                       onClick={() => handleSelect(option.id)}
                       className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
                         isSelected 
-                          ? 'border-purple-500 bg-purple-500/10' 
+                          ? 'border-blue-500 bg-blue-500/10' 
                           : 'border-white/10 bg-zinc-900/50 hover:border-white/20'
                       }`}
                       data-testid={`onboarding-option-${option.id}`}
                     >
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                        isSelected ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'
+                        isSelected ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-400'
                       }`}>
                         <Icon className="w-6 h-6" />
                       </div>
@@ -379,7 +414,7 @@ export default function OnboardingPage() {
                     <Button
                       onClick={handleOtherSubmit}
                       disabled={!otherText.trim()}
-                      className="bg-purple-600 hover:bg-purple-700"
+                      className="bg-blue-600 hover:bg-blue-700"
                       data-testid="onboarding-other-submit"
                     >
                       Continue

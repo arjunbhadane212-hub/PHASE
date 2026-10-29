@@ -15,6 +15,7 @@ import StreakCard from '../components/StreakCard';
 import XpPopAnimation from '../components/XpPopAnimation';
 import FocusSession from '../components/FocusSession';
 import { supabase } from '../lib/supabaseClient';
+import { track } from '../lib/analytics';
 import { toast } from 'sonner';
 import { soundEngine } from '../utils/SoundEngine';
 
@@ -248,7 +249,7 @@ export default function HomePage() {
             {isGameMode && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 glass-card cursor-default" data-testid="gems-display">
-                  <Gem className={`w-4 h-4 ${isGameMode ? 'text-blue-400 animate-gem-shimmer' : 'text-purple-400'}`} />
+                  <Gem className={`w-4 h-4 ${isGameMode ? 'text-blue-400 animate-gem-shimmer' : 'text-blue-400'}`} />
                   <span className="text-sm font-bold text-blue-300">{user?.gems ?? 0}</span>
                 </div>
                 {streakShields > 0 && (
@@ -349,7 +350,7 @@ export default function HomePage() {
         {/* Habits sections */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
           </div>
         ) : habits.length === 0 ? (
           <div className="text-center py-20" data-testid="no-habits">
@@ -407,7 +408,7 @@ export default function HomePage() {
             <Button
               className={`fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg hover-scale ${
                 isGameMode 
-                  ? 'bg-purple-600 hover:bg-purple-700' 
+                  ? 'bg-blue-600 hover:bg-blue-700' 
                   : 'bg-zinc-700 hover:bg-zinc-600'
               }`}
               data-testid="add-habit-fab"
@@ -449,7 +450,7 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSe
   return (
     <div data-testid={`habits-${title.toLowerCase()}`}>
       <div className="flex items-center gap-2 mb-4">
-        <Icon className={`w-4 h-4 ${isGameMode ? 'text-purple-400' : 'text-zinc-400'}`} />
+        <Icon className={`w-4 h-4 ${isGameMode ? 'text-blue-400' : 'text-zinc-400'}`} />
         <h3 className="font-semibold text-white">{title}</h3>
         <span className="text-sm text-zinc-500">
           ({habits.filter(h => h.completed_today).length}/{habits.length})
@@ -505,10 +506,10 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
       className={`relative p-4 rounded-2xl border transition-all duration-200 overflow-hidden ${
         habit.completed_today
           ? isGameMode 
-            ? 'bg-purple-500/[0.06] border-purple-500/15' 
+            ? 'bg-blue-500/[0.06] border-blue-500/15' 
             : 'bg-zinc-800/50 border-zinc-700/50'
           : isGameMode
-            ? 'glass-card hover:border-purple-500/20'
+            ? 'glass-card hover:border-blue-500/20'
             : 'glass-card hover:border-zinc-600'
       }`}
       data-testid={`habit-card-${habit.habit_id}`}
@@ -529,7 +530,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
                 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6 }}
-                className="absolute w-2 h-2 rounded-full bg-purple-400"
+                className="absolute w-2 h-2 rounded-full bg-blue-400"
               />
             ))}
           </>
@@ -563,7 +564,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
             className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
               habit.completed_today
                 ? isGameMode
-                  ? 'bg-purple-500 border-purple-500'
+                  ? 'bg-blue-500 border-blue-500'
                   : 'bg-zinc-600 border-zinc-600'
                 : 'border-zinc-600 hover:border-zinc-400'
             }`}
@@ -594,7 +595,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
               <span className="text-xs text-zinc-500 capitalize">{habit.difficulty} &middot; {habit.session_duration || 15}min</span>
             )}
             {isGameMode && (
-              <span className="text-xs text-purple-400 flex items-center gap-1">
+              <span className="text-xs text-blue-400 flex items-center gap-1">
                 <Gem className="w-3 h-3" /> +{gemReward}
               </span>
             )}
@@ -676,6 +677,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
       });
       if (error) throw error;
 
+      track('habit_created', { difficulty: formData.difficulty });
       toast.success('Habit created!');
       onOpenChange(false);
       setFormData({
@@ -700,7 +702,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
       {!trigger && (
         <DialogTrigger asChild>
           <Button
-            className={`${isGameMode ? 'bg-purple-600 hover:bg-purple-700 glow-purple-sm' : 'bg-zinc-700 hover:bg-zinc-600'}`}
+            className={`${isGameMode ? 'bg-blue-600 hover:bg-blue-700 glow-purple-sm' : 'bg-zinc-700 hover:bg-zinc-600'}`}
             data-testid="add-first-habit-btn"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -805,7 +807,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
             <Button
               type="submit"
               disabled={loading || !formData.habit_name.trim()}
-              className={`w-full ${isGameMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-zinc-700 hover:bg-zinc-600'}`}
+              className={`w-full ${isGameMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-zinc-700 hover:bg-zinc-600'}`}
               data-testid="create-habit-btn"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Habit'}
