@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useMode } from '../contexts/ModeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Home, BarChart3, Trophy, Crown, ShoppingBag, Settings, User } from 'lucide-react';
 import ProfilePanel from './MyProfilePage';
 import PeriodResultModal from '../components/PeriodResultModal';
@@ -45,8 +47,34 @@ function MobileNavItem({ item, isGameMode }) {
 
 export default function DashboardLayout() {
   const { isGameMode } = useMode();
+  const { refreshUser } = useAuth();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profileOpen, setProfileOpen] = useState(false);
+  const proHandled = useRef(false);
+
+  // Back from Stripe Checkout (?pro=success | ?pro=cancelled). The webhook that
+  // flips users.is_pro can land a moment after the redirect, so poll the
+  // profile briefly instead of assuming it already has. A cancelled checkout
+  // charged nothing and needs no message.
+  const proReturn = searchParams.get('pro');
+  useEffect(() => {
+    if (!proReturn || proHandled.current) return;
+    proHandled.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete('pro');
+    setSearchParams(next, { replace: true });
+    if (proReturn !== 'success') return;
+    (async () => {
+      const id = toast.loading('Activating Phase Pro...');
+      for (let i = 0; i < 12; i++) {
+        const u = await refreshUser().catch(() => null);
+        if (u?.is_pro) { toast.success('Welcome to Phase Pro.', { id }); return; }
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      toast.info('Payment received. Pro will switch on in a moment.', { id });
+    })();
+  }, [proReturn]); // eslint-disable-line react-hooks/exhaustive-deps
   const currentMode = isGameMode ? 'game' : 'focus';
   const navItems = allNavItems.filter(item => item.modes.includes(currentMode));
 

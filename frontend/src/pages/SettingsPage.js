@@ -12,6 +12,7 @@ import { Separator } from '../components/ui/separator';
 import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Check, ExternalLink, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
 import { rankInfo } from '../data/levels';
+import { PLANS, SAVE_PCT, money, startCheckout, openBillingPortal } from '../lib/billing';
 import { AURA_ORDER, getAura, hexA } from '../data/focusAuras';
 import { SOUND_ORDER, getSound } from '../data/focusSounds';
 
@@ -32,6 +33,59 @@ function formatFocusHours(mins) {
 const SECTION_LABEL = "font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
 const DIALOG = 'bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0';
+
+// Free members can upgrade here any time (the onboarding offer is skippable);
+// Pro members manage or cancel through Stripe's customer portal.
+function PlanSection({ user }) {
+  const [busy, setBusy] = useState(false);
+  const isPro = !!user?.is_pro;
+
+  const handle = async () => {
+    setBusy(true);
+    try {
+      if (isPro) {
+        await openBillingPortal();
+      } else {
+        const r = await startCheckout('yearly');
+        if (r.alreadyPro) toast.message("You're already on Phase Pro.");
+      }
+    } catch (e) {
+      if (e.code === 'payments_not_configured') toast.message("Payments aren't switched on yet.");
+      else if (e.code === 'no_subscription') toast.message('No billing account on file, so there is nothing to manage.');
+      else toast.error("Couldn't open billing. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="mb-6 sm:mb-8" data-testid="plan-section">
+      <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Plan</h2>
+      <div className={`${CARD} p-3 sm:p-4 flex items-center gap-3 sm:gap-4`}>
+        <div className="flex-1 min-w-0">
+          <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] text-sm sm:text-base">
+            {isPro ? 'Phase Pro' : 'Free plan'}
+          </p>
+          <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">
+            {isPro
+              ? 'Update your card or cancel any time.'
+              : `Pro is ${money(PLANS.yearly.price)} a year (save ${SAVE_PCT}%), or ${money(PLANS.monthly.price)} a month.`}
+          </p>
+        </div>
+        <button
+          onClick={handle}
+          disabled={busy}
+          className={`h-10 px-4 rounded-full text-sm font-bold flex-shrink-0 transition disabled:opacity-50 ${
+            isPro ? 'bg-[var(--gm-badge)] text-[var(--gm-ink)] hover:opacity-90' : 'bg-[#95DEE6] text-[#183A3F] shadow-[var(--gm-shadow-cyan)] hover:opacity-90'
+          }`}
+          data-testid="plan-action-btn"
+        >
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : isPro ? 'Manage billing' : 'Upgrade'}
+        </button>
+      </div>
+    </section>
+  );
+}
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -99,6 +153,9 @@ export default function SettingsPage() {
             />
           </div>
         </section>
+
+        {/* Plan */}
+        <PlanSection user={user} />
 
         {/* Progress */}
         <ProgressSection isGameMode={isGameMode} />
