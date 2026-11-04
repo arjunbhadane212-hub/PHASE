@@ -22,14 +22,26 @@ export function formatApiErrorDetail(detail) {
   return String(detail);
 }
 
-async function fetchProfile(userId) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  if (error) throw error;
-  return data;
+// Fetch the user's profile row, retrying briefly. Right after signup (and the
+// first OAuth login) the row is created by the handle_new_user DB trigger,
+// which can land a beat after the auth session does — a single-shot read then
+// 404s and the caller treats the account as profile-less. A profile-less user
+// has no `onboarding_completed`, which reads as falsy and wrongly bounces an
+// established account back into onboarding, so it is worth a couple of retries.
+async function fetchProfile(userId, { retries = 3 } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (!error && data) return data;
+    lastError = error;
+    // Short, growing backoff to ride out trigger lag / a transient blip.
+    await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
+  }
+  throw lastError ?? new Error('Profile not found');
 }
 
 function mergeAuthUser(authUser, profile) {
@@ -45,6 +57,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null); // null = checking, false = not auth, object = auth
   const [loading, setLoading] = useState(true);
   const hasChecked = useRef(false);
+  // Mirror of `user` so loadUser can read the previous value without being
+  // re-created on every change (keeps the onAuthStateChange subscription stable).
+  const userRef = useRef(null);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const loadUser = useCallback(async (authUser) => {
     if (!authUser) {
@@ -73,7 +89,18 @@ export function AuthProvider({ children }) {
 
       merged = mergeAuthUser(authUser, profile);
     } catch {
-      merged = mergeAuthUser(authUser, null);
+      // Profile fetch failed even after retries (network blip, or an
+      // onAuthStateChange token-refresh re-run while offline). Do NOT fabricate
+      // a profile-less user — that drops `onboarding_completed` and bounces an
+      // established session into onboarding. Keep the last known profile for
+      // this same account if we have one; only fall back to a bare user when we
+      // genuinely have nothing for this id.
+      const prev = userRef.current;
+      if (prev && typeof prev === 'object' && prev.id === authUser.id) {
+        merged = prev;
+      } else {
+        merged = mergeAuthUser(authUser, null);
+      }
     }
     setUser(merged);
     return merged;

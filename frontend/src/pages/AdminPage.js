@@ -28,7 +28,7 @@ export default function AdminPage() {
     setLoading(true);
     try {
       await callAdmin('admin_authenticate', secret);
-      localStorage.setItem('admin_secret', secret);
+      sessionStorage.setItem('admin_secret', secret);
       setAuthed(true);
     } catch (err) {
       toast.error(err.message || 'Invalid admin password');
@@ -36,11 +36,12 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem('admin_secret');
+    localStorage.removeItem('admin_secret'); // legacy plaintext copy
+    const saved = sessionStorage.getItem('admin_secret');
     if (saved) {
       callAdmin('admin_authenticate', saved)
         .then(() => { setSecret(saved); setAuthed(true); })
-        .catch(() => localStorage.removeItem('admin_secret'));
+        .catch(() => sessionStorage.removeItem('admin_secret'));
     }
   }, []);
 

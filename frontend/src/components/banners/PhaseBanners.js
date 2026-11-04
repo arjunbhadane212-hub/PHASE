@@ -161,7 +161,7 @@ export const BANNER_META = [
 export function PhaseBanner({ bannerKey }) {
   const raw = useId();
   const uid = 'b' + raw.replace(/:/g, '');
-  const gen = ART[bannerKey] || ART.default;
+  const gen = Object.prototype.hasOwnProperty.call(ART, bannerKey) ? ART[bannerKey] : ART.default;
   const html = useMemo(() => gen(uid), [gen, uid]);
   return <div style={{ width: '100%', height: '100%' }} dangerouslySetInnerHTML={{ __html: html }} />;
 }

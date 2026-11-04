@@ -23,10 +23,11 @@ export default function LoginPage() {
       const user = await login(email, password);
       toast.success('Welcome back!');
 
+      // replace: so you can't Back into the login form once you're in.
       if (!user.onboarding_completed) {
-        navigate('/onboarding');
+        navigate('/onboarding', { replace: true });
       } else {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (e) {
       setError(e?.message || 'Login failed. Please try again.');

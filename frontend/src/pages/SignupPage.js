@@ -62,7 +62,7 @@ export default function SignupPage() {
     try {
       await register(formData.firstName, formData.lastName, formData.email, formData.password);
       toast.success('Account created!');
-      navigate('/onboarding');
+      navigate('/onboarding', { replace: true });
     } catch (e) {
       setError(e?.message || 'Registration failed. Please try again.');
       // Most failures (email taken, weak password) belong to step one.
