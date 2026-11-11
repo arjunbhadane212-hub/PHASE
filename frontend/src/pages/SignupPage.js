@@ -11,7 +11,10 @@ import GoogleButton from '../components/auth/GoogleButton';
 // then your name. The confirm-password field is gone — the reveal toggle does
 // that job without doubling the typing.
 
-const validateName = (name) => name.replace(/\s/g, '').match(/^[a-zA-Z]+$/);
+// Any script's letters (José, Muñoz, Zoë, 李), plus the joiners real names use:
+// spaces, hyphens, apostrophes and periods (Jean-Luc, O'Brien, St. John).
+// The old /^[a-zA-Z]+$/ rejected every accented name — most of Latin America.
+const validateName = (name) => /^\p{L}[\p{L}\p{M}' \u2019.\-]*$/u.test(name.trim()) && name.trim().length <= 50;
 
 const passwordChecksFor = (password) => [
   { key: 'length', label: '8+ characters', ok: password.length >= 8 },
@@ -51,8 +54,8 @@ export default function SignupPage() {
     setError('');
 
     const errors = {};
-    if (!validateName(formData.firstName)) errors.firstName = 'Letters only';
-    if (!validateName(formData.lastName)) errors.lastName = 'Letters only';
+    if (!validateName(formData.firstName)) errors.firstName = 'Use letters (accents, hyphens and apostrophes are fine)';
+    if (!validateName(formData.lastName)) errors.lastName = 'Use letters (accents, hyphens and apostrophes are fine)';
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
