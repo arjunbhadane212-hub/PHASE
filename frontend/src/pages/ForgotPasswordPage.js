@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
             <Zap className="w-6 h-6 text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight font-['Satoshi'] text-white">HabitRPG</span>
+          <span className="font-bold text-xl tracking-tight font-['Satoshi'] text-white">Phase</span>
         </Link>
 
         <h1 className="text-3xl font-bold font-['Satoshi'] text-white mb-2" data-testid="forgot-title">

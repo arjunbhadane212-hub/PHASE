@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Separator } from '../components/ui/separator';
-import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Check, ExternalLink, Sun, Moon } from 'lucide-react';
+import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Check, ExternalLink, Sun, Moon, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { rankInfo } from '../data/levels';
 import { PLANS, SAVE_PCT, money, startCheckout, openBillingPortal } from '../lib/billing';
@@ -97,6 +97,9 @@ export default function SettingsPage() {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteText, setDeleteText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -104,6 +107,23 @@ export default function SettingsPage() {
       navigate('/');
     } catch (e) {
       toast.error('Failed to log out');
+    }
+  };
+
+  // Permanent self-service deletion (Google Play + App Store requirement).
+  // Server side: public.delete_my_account() removes the auth user and every
+  // row they own. Active Pro subscriptions must be cancelled first.
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc('delete_my_account');
+      if (error) throw error;
+      try { await logout(); } catch { /* session is already gone */ }
+      toast.success('Your account has been deleted');
+      navigate('/', { replace: true });
+    } catch (e) {
+      toast.error(e?.message || 'Could not delete your account. Please contact support.');
+      setDeleting(false);
     }
   };
 
@@ -346,6 +366,50 @@ export default function SettingsPage() {
                 data-testid="confirm-logout-btn"
               >
                 Log Out
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete account */}
+        <Dialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o) setDeleteText(''); }}>
+          <DialogTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-start mt-2 text-[color:var(--gm-muted)] hover:text-[#B91C1C] hover:bg-[#B91C1C]/10"
+              data-testid="delete-account-btn"
+            >
+              <Trash2 className="w-5 h-5 mr-3" />
+              Delete account
+            </Button>
+          </DialogTrigger>
+          <DialogContent className={DIALOG}>
+            <DialogHeader>
+              <DialogTitle className="font-['Archivo'] font-extrabold">Delete your account?</DialogTitle>
+            </DialogHeader>
+            <p className="text-[color:var(--gm-muted)] text-sm">
+              This permanently deletes your account, habits, streaks, XP, gems and items. It can't be undone.
+              {user?.is_pro ? ' Cancel your Pro subscription in Plan → Manage billing first.' : ''}
+            </p>
+            <Label htmlFor="delete-confirm" className="text-sm mt-3">Type DELETE to confirm</Label>
+            <Input
+              id="delete-confirm"
+              value={deleteText}
+              onChange={(e) => setDeleteText(e.target.value)}
+              autoComplete="off"
+              data-testid="delete-confirm-input"
+            />
+            <DialogFooter className="mt-4">
+              <Button variant="ghost" onClick={() => setDeleteOpen(false)} className="text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteAccount}
+                disabled={deleteText !== 'DELETE' || deleting}
+                className="bg-[#B91C1C] text-white hover:bg-[#B91C1C]/90"
+                data-testid="confirm-delete-account-btn"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete forever'}
               </Button>
             </DialogFooter>
           </DialogContent>

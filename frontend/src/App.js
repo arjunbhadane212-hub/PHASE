@@ -27,6 +27,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import AdminPage from "./pages/AdminPage";
 import DevBoxOpeningPage from "./pages/DevBoxOpeningPage";
+import { PrivacyPage, TermsPage, HelpPage } from "./pages/LegalPage";
 import RoastNotification, { RoastListener } from "./components/RoastNotification";
 import { TitleUnlockListener } from "./components/profile/TitleUnlockToast";
 import { isInstalledApp } from "./utils/platform";
@@ -210,7 +211,15 @@ function AppRoutes() {
       <Route path="/admin" element={<AdminPage />} />
 
       {/* Box-opening preview with fake pulls (no auth, no gems) */}
-      <Route path="/dev/box-opening" element={<DevBoxOpeningPage />} />
+      {process.env.NODE_ENV !== "production" && (
+        <Route path="/dev/box-opening" element={<DevBoxOpeningPage />} />
+      )}
+
+      {/* Legal + help (linked from signup and Settings; required by the app stores) */}
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/help" element={<HelpPage />} />
+      <Route path="/faq" element={<HelpPage />} />
       
       {/* Protected Dashboard routes */}
       <Route path="/profile/:username" element={<PublicProfilePage />} />
