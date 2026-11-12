@@ -120,6 +120,23 @@ const GLYPHS = {
   g_antihero:   ['M8 14h32L24 40z', 'M14 24h20'],
   g_impact:     ['M24 4l5 14 14-5-9 11 9 11-14-5-5 14-5-14-14 5 9-11-9-11 14 5z'],
   g_axe:        ['M18 40L34 8', 'M12 18c6-8 16-10 22-8-2 8-8 14-16 15z'],
+  /* ── shop · rotation drop (Nov 2026) ── straight-cut marks, same grid */
+  g_anvil:      ['M10 18h28l-7 7v8H17v-8z', 'M16 38h16'],
+  g_dusk:       ['M8 32h32', 'M15 32l9-11 9 11', 'M24 10v5'],
+  g_snow:       ['M24 8v32', 'M10 16l28 16', 'M38 16L10 32'],
+  g_still:      ['M8 18h32', 'M12 26h24', 'M18 34h12'],
+  g_eye:        ['M6 24l9-9h18l9 9-9 9H15z', 'M24 20l4 4-4 4-4-4z'],
+  g_razor:      ['M8 34L34 8l6 6-26 26z', 'M12 40h24'],
+  g_wolf:       ['M12 10l6 8h12l6-8v18L24 40 12 28z', 'M20 26h8'],
+  g_tide:       ['M6 30l6-6 6 6 6-6 6 6 6-6 6 6', 'M6 20l6-6 6 6 6-6 6 6 6-6 6 6'],
+  g_split:      ['M24 6v36', 'M12 18L24 6l12 12', 'M16 30l8-8 8 8'],
+  g_vault:      ['M10 10h28v28H10z', 'M24 18l6 6-6 6-6-6z', 'M10 24h8', 'M30 24h8'],
+  g_sun:        ['M24 16l8 8-8 8-8-8z', 'M24 5v6', 'M24 37v6', 'M5 24h6', 'M37 24h6', 'M11 11l4 4', 'M37 37l-4-4', 'M37 11l-4 4', 'M11 37l4-4'],
+  g_thorn:      ['M10 32l6-15 8 8 8-8 6 15z', 'M10 39h28', 'M24 7v6'],
+  g_blade:      ['M24 4l5 8v18H19V12z', 'M13 30h22', 'M24 30v12'],
+  g_voidcrown:  ['M9 33l2-19 8 8 5-12 5 12 8-8 2 19z', 'M24 24l3 3-3 3-3-3z'],
+  g_lastlight:  ['M24 5l11 19-11 19-11-19z', 'M24 14v20'],
+  g_titan:      ['M24 41L8 22l6-10h8l2 4 2-4h8l6 10z', 'M17 23h14'],
 };
 
 /* ── Title → glyph + accent ──────────────────────────────────────────────────
@@ -196,11 +213,28 @@ export const TITLE_VISUALS = {
   title_anti_hero:   { glyph: 'g_antihero', accent: 'rose'   },
   title_cataclysm:   { glyph: 'g_impact',   accent: 'cyan'   },
   title_executioner: { glyph: 'g_axe',      accent: 'slate'  },
+  /* shop · rotation drop (Nov 2026) */
+  title_ironvow:     { glyph: 'g_anvil',     accent: 'slate'  },
+  title_duskrunner:  { glyph: 'g_dusk',      accent: 'peach'  },
+  title_coldforged:  { glyph: 'g_snow',      accent: 'ice'    },
+  title_stillwater:  { glyph: 'g_still',     accent: 'mist'   },
+  title_nightwatch:  { glyph: 'g_eye',       accent: 'indigo' },
+  title_razorline:   { glyph: 'g_razor',     accent: 'rose'   },
+  title_wolfblood:   { glyph: 'g_wolf',      accent: 'sand'   },
+  title_tidebreaker: { glyph: 'g_tide',      accent: 'teal'   },
+  title_skyrender:   { glyph: 'g_split',     accent: 'cyan'   },
+  title_blackvault:  { glyph: 'g_vault',     accent: 'slate'  },
+  title_suncaller:   { glyph: 'g_sun',       accent: 'sand'   },
+  title_thornking:   { glyph: 'g_thorn',     accent: 'sage'   },
+  title_kingslayer:  { glyph: 'g_blade',     accent: 'rose'   },
+  title_voidmonarch: { glyph: 'g_voidcrown', accent: 'purple' },
+  title_last_light:  { glyph: 'g_lastlight', accent: 'lime'   },
+  title_titanheart:  { glyph: 'g_titan',     accent: 'peach'  },
 };
 
 /* One renderer for all 56. `size` is the rendered box; the geometry is authored
    in a 48x48 space exactly like ShopIcons.js. */
-export function TitleGlyph({ titleKey, size = 16, className = '', strokeWidth = 2.4 }) {
+export function TitleGlyph({ titleKey, size = 16, className = '', strokeWidth = 3.6 }) {
   const paths = GLYPHS[TITLE_VISUALS[titleKey]?.glyph] || GLYPHS.g_dot;
   return (
     <svg viewBox="0 0 48 48" width={size} height={size} className={className}

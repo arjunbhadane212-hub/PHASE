@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
-import { Gem, Flame, Shield, Clock, Check, Loader2, Play, Square, Volume2 } from 'lucide-react';
+import { Gem, Flame, Shield, Clock, Check, Loader2, Play, Square, Volume2 } from '../components/icons';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
@@ -288,7 +288,7 @@ export default function FocusShopPage() {
                       style={{
                         background: aura.bg,
                         boxShadow: [
-                          aura.style === 'glow' ? `0 0 14px 2px ${hexA(aura.accent, 0.45)}` : null,
+                          aura.style === 'glow' ? `inset 0 0 0 3px ${hexA(aura.accent, 0.6)}` : null,
                           `inset 0 0 0 1px ${hexA(aura.ink, 0.18)}`,
                         ].filter(Boolean).join(', '),
                       }}
@@ -296,7 +296,7 @@ export default function FocusShopPage() {
                       {isEquipped && <Check className="w-5 h-5" style={{ color: aura.ink }} strokeWidth={3} />}
                     </span>
                     <p className="mt-2.5 text-[13px] font-['General_Sans'] font-bold text-[color:var(--gm-ink)] leading-tight">{aura.name}</p>
-                    <p className={`${MONO} text-[9px] text-[color:var(--gm-muted)] mt-0.5`}>{aura.style === 'glow' ? 'Dark · glow' : 'Solid'}</p>
+                    <p className={`${MONO} text-[9px] text-[color:var(--gm-muted)] mt-0.5`}>{aura.style === 'glow' ? 'Dark · ring' : 'Solid'}</p>
                     <div className="mt-3 h-8 flex items-center">
                       {isEquipped ? (
                         <span className={`${MONO} text-[10px] font-bold text-[#95DEE6]`}>Equipped</span>

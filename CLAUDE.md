@@ -256,7 +256,7 @@ Phase Pro Annual: $49.99/year (~$4.17/mo — primary push, "Save 40%")
 
 ## Roast Notifications
 
-- Max **2 per day**, toggleable in Settings
+- Max **2 per day**, toggleable in Settings. Ambient roasts only fire for a user with nothing done yet today, from 13:00 local (check_roast).
 - **Never repeat consecutively** (no same roast twice in a row)
 - **Game Mode tone:** loud, competitive, trash-talk
 - **Focus Mode tone:** quiet, personal, disappointed
@@ -406,12 +406,33 @@ Purple still exists in:
 
 ---
 
-## Icon System
+## Icon System (UNIFIED — Nov 2026)
 
-- Custom outline icon set
-- Consistent **2px line weight** across all icons
-- No emoji used as UI icons
-- Apply consistently across all screens
+- **Import icons ONLY from `components/icons`** — never from `lucide-react` directly.
+  Game/nav concepts (gem, flame, XP, shield, box, crown, clock, nav…) are
+  Phase-drawn in `components/icons/paths.js`; plain UI affordances (chevrons,
+  close, check) re-export lucide on the same grid.
+- "Facet" rule: 24px grid, **2px stroke**, round caps/joins, straight-cut
+  shapes, at most ONE inner cut line. XP / Loot box / Settings share the hexagon.
+- League emblems: `data/tierEmblemArt.js` (flat two-tone crests, rank by
+  structure). Title glyphs render at the equivalent weight (≈3.6 on 48 grid).
+- No emoji as UI icons. Preview every icon at `/dev/icons` (dev builds only).
+
+## Shop, quests, rewards, push (Nov 2026) — see docs/RETENTION_AND_SHOP.md
+
+- Shop **rotates daily at 00:00 UTC** (`get_shop_rotation`, enforced in
+  `purchase_shop_item`): titles 4 · banners 3 · animations 2 · effects 3 +
+  featured + 30%-off deal. Boxes and Essentials always stocked. Earned titles
+  are never sold.
+- **Daily quests** (`get_daily_quests` / `claim_daily_quest`) replace the old
+  placeholder quest cards. Never reintroduce placeholder/fake data in the UI.
+- Level-up pays `25*level+25` gems **once ever** per level; streak milestones
+  pay once ever (`user_rewards`). Never pay rewards on re-completion.
+- Every money/XP RPC takes `FOR UPDATE` on the user row and writes relative
+  deltas. Day boundaries use `resolve_local_date()` (users.timezone).
+- Phone push: Web Push via Edge Function `push-dispatch` + pg_cron every 15
+  min; copy in `push_copy` (never repeat the last 12 lines; max 2/day;
+  08:00–22:00 local).
 
 ---
 

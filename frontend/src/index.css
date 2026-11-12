@@ -4,8 +4,7 @@
    Satoshi is kept here too: it is still used by ~15 un-migrated v1 screens, and
    dropping it would send all of them to a serif fallback. It will be retired
    per-screen as each is migrated to Typography v2. Inter dropped (v1 only). */
-@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=satoshi@400,500,700,900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,600&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -54,7 +53,7 @@
      with the Settings light/dark toggle. NOTE: the cyan streak card (#95DEE6),
      lime completed rows (#DBF67F) and purple accent (#A59BCC) are intentionally
      NOT tokenized here — they are identical in both themes. */
-  --gm-bg: #06080F;        /* page background */
+  --gm-bg: #0E1012;        /* page background (v2 spec) */
   --gm-card: #1F2123;      /* stat tiles, quest cards, uncompleted rows, chips */
   --gm-badge: #2E3235;     /* quest icon badge (non-complete) */
   --gm-track: #2E3235;     /* weekly ring track, card hover border */
@@ -66,9 +65,9 @@
      hero, CTA, FAB and nav shadow on the Home screen. Values pulled from the
      approved Focus Mode Home redesign mockup. */
   --gm-shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -10px rgba(0,0,0,0.55);
-  --gm-shadow-hero: 0 1px 2px rgba(0,0,0,0.3), 0 10px 28px -10px rgba(24,58,63,0.55);
-  --gm-shadow-lime: 0 1px 2px rgba(0,0,0,0.3), 0 10px 24px -10px rgba(219,246,127,0.35);
-  --gm-shadow-cyan: 0 6px 16px -5px rgba(24,58,63,0.5);
+  --gm-shadow-hero: 0 1px 2px rgba(0,0,0,0.3), 0 8px 22px -12px rgba(0,0,0,0.55);
+  --gm-shadow-lime: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -10px rgba(0,0,0,0.55);
+  --gm-shadow-cyan: 0 4px 12px -6px rgba(0,0,0,0.5);
   --gm-shadow-fab: 0 10px 24px -6px rgba(0,0,0,0.6);
   --gm-shadow-nav: 0 12px 30px -10px rgba(0,0,0,0.65);
 }
@@ -99,9 +98,9 @@
 
   /* Elevation system — LIGHT overrides (softer, tinted for a light ground). */
   --gm-shadow-card: 0 1px 2px rgba(15,18,16,0.05), 0 6px 18px -10px rgba(15,18,16,0.13);
-  --gm-shadow-hero: 0 1px 2px rgba(15,18,16,0.05), 0 10px 26px -10px rgba(24,58,63,0.28);
-  --gm-shadow-lime: 0 1px 2px rgba(15,18,16,0.05), 0 10px 22px -10px rgba(219,246,127,0.5);
-  --gm-shadow-cyan: 0 6px 16px -5px rgba(24,58,63,0.28);
+  --gm-shadow-hero: 0 1px 2px rgba(15,18,16,0.05), 0 8px 20px -12px rgba(15,18,16,0.18);
+  --gm-shadow-lime: 0 1px 2px rgba(15,18,16,0.05), 0 6px 18px -10px rgba(15,18,16,0.13);
+  --gm-shadow-cyan: 0 4px 12px -6px rgba(15,18,16,0.2);
   --gm-shadow-fab: 0 10px 22px -6px rgba(15,18,16,0.35);
   --gm-shadow-nav: 0 12px 26px -10px rgba(15,18,16,0.16);
 }
@@ -632,7 +631,7 @@ input:focus, textarea:focus, select:focus {
 @keyframes mr-rot { to { transform: rotate(360deg); } }
 @keyframes mr-pulse { 0%,100%{ transform: scale(.82); opacity:.95 } 50%{ transform: scale(1.06); opacity:.2 } }
 @keyframes mr-op { 0%,100%{ opacity:1 } 50%{ opacity:.28 } }
-@keyframes mr-shift { 0%,100%{ stroke:#95DEE6 } 50%{ stroke:#DBF67F } }
+@keyframes mr-shift { 0%,100%{ stroke:currentColor } 50%{ stroke:#EAFCFF } }
 @keyframes mr-draw { 0%{ stroke-dashoffset:126 } 45%,55%{ stroke-dashoffset:0 } 100%{ stroke-dashoffset:-126 } }
 @media (prefers-reduced-motion: reduce) { .mr-ring { animation: none !important; } }
 

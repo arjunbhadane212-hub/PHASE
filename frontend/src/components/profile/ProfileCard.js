@@ -2,7 +2,7 @@
 // Discord-style popout. Everything it renders comes from get_public_profile —
 // there are no placeholder badges, and every number is live at fetch time.
 
-import { CalendarCheck, Sparkles, ArrowUpRight, Clock } from 'lucide-react';
+import { CalendarCheck, Sparkles, ArrowUpRight, Clock } from '../icons';
 import { PhaseBanner } from '../banners/PhaseBanners';
 import TierEmblem from '../TierEmblem';
 import { FlameGlyph, XpGlyph } from './Sigil';

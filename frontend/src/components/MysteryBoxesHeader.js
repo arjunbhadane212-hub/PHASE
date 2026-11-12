@@ -1,4 +1,4 @@
-import { Gem, ChevronRight } from 'lucide-react';
+import { Gem, ChevronRight } from './icons';
 import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
 import { tierOdds } from '../data/boxDrops';
 

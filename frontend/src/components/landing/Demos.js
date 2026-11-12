@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useInView, useReducedMotion } from 'framer-motion';
-import { Check, Gem, Shield, Play, Flame, Bell } from 'lucide-react';
+import { Check, Gem, Shield, Play, Flame, Bell } from '../icons';
 import { RANKS } from '../../data/levels';
 import PhaseBoxArt from '../PhaseBoxArt';
 import TitlePlate from '../profile/TitlePlate';

@@ -5,10 +5,11 @@
 // position:relative box (an avatar, a shop tile, an inventory preview). Pass
 // either an explicit `variant` or the shop `itemKey` (resolved via the map).
 
-import { VARIANTS, CYAN, motionVariantFor } from '../../data/motionVariants';
+import { VARIANTS, motionVariantFor, motionColorFor } from '../../data/motionVariants';
 
 export default function MotionRing({ variant, itemKey, className = '', style }) {
   const spec = VARIANTS[variant] || VARIANTS[motionVariantFor(itemKey)] || VARIANTS.pulse;
+  const primary = motionColorFor(itemKey);
   return (
     <svg
       viewBox="0 0 44 44" aria-hidden="true" focusable="false" className={className}
@@ -16,9 +17,10 @@ export default function MotionRing({ variant, itemKey, className = '', style }) 
     >
       {spec.map((c, i) => (
         <circle
-          key={i} cx="22" cy="22" r={c.r} fill="none" stroke={c.stroke || CYAN}
+          key={i} cx="22" cy="22" r={c.r} fill="none" stroke={i === 0 ? primary : (c.stroke || primary)}
           strokeWidth={c.sw || 2.5} strokeLinecap="round"
           strokeDasharray={c.dash || undefined} className={`mr-ring ${c.cls}`}
+          style={{ color: i === 0 ? primary : (c.stroke || primary) }}
         />
       ))}
     </svg>

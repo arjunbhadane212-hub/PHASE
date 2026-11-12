@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useInView, useReducedMotion, animate } from 'framer-motion';
-import { Menu, X, ArrowRight, Check, Minus, Gamepad2, Eye, Dumbbell, Brain, Target, Sun } from 'lucide-react';
+import { Menu, X, ArrowRight, Check, Minus, Gamepad2, Eye, Dumbbell, Brain, Target, Sun } from '../components/icons';
 import { useAuth } from '../contexts/AuthContext';
 import PhaseWordmark from '../components/brand/PhaseMark';
 import {

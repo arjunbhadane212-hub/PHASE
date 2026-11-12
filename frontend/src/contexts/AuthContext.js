@@ -1,5 +1,24 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { registerServiceWorker, syncPushSubscription, disablePush } from '../lib/push';
+
+// The device's local calendar day (YYYY-MM-DD).
+function localDateStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Once per session: tell the server our timezone (drives streak day boundaries
+// and when reminders fire) and refresh this device's push subscription.
+let deviceSynced = false;
+async function syncDevice(profile) {
+  if (deviceSynced) return;
+  deviceSynced = true;
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz && profile?.timezone !== tz) await supabase.rpc('set_my_timezone', { p_tz: tz });
+  } catch { /* non-fatal */ }
+  registerServiceWorker().then(() => syncPushSubscription()).catch(() => {});
+}
 
 const AuthContext = createContext(null);
 
@@ -72,7 +91,7 @@ export function AuthProvider({ children }) {
     // Streak Shields to bridge missed days. Idempotent + cheap; safe to await
     // before reading the profile so the fetched row reflects the result.
     try {
-      await supabase.rpc('evaluate_streak');
+      await supabase.rpc('evaluate_streak', { p_client_date: localDateStr() });
     } catch { /* non-fatal — never block sign-in on this */ }
     let merged;
     try {
@@ -88,6 +107,7 @@ export function AuthProvider({ children }) {
       }
 
       merged = mergeAuthUser(authUser, profile);
+      syncDevice(profile);
     } catch {
       // Profile fetch failed even after retries (network blip, or an
       // onAuthStateChange token-refresh re-run while offline). Do NOT fabricate
@@ -161,6 +181,20 @@ export function AuthProvider({ children }) {
   // created by the handle_new_user trigger (name pulled from the OAuth
   // payload) and no onboarding, so they're sent to /onboarding.
   const signInWithGoogle = async () => {
+    // Pre-flight: if Google isn't switched on for this project, Supabase would
+    // bounce the user to a raw JSON error page. Say so here instead.
+    try {
+      const res = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/auth/v1/settings`, {
+        headers: { apikey: process.env.REACT_APP_SUPABASE_ANON_KEY },
+      });
+      const settings = await res.json();
+      if (settings?.external && settings.external.google === false) {
+        throw new Error('Google sign-in is being set up. Use email for now — you can link Google later with the same email.');
+      }
+    } catch (e) {
+      if (e?.message?.startsWith('Google sign-in')) throw e;
+      /* network hiccup on the pre-check: let the real redirect try */
+    }
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -175,6 +209,9 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    // A shared phone must stop getting the previous account's reminders.
+    await disablePush().catch(() => {});
+    deviceSynced = false;
     await supabase.auth.signOut();
     setUser(false);
   };

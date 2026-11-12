@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Users, BarChart3, Gem, Zap, Flame, Search, Edit2, Ban, ShieldCheck, ChevronDown, ChevronUp, Lock, ArrowLeft, Trophy } from 'lucide-react';
+import { Users, BarChart3, Gem, Zap, Flame, Search, Edit2, Ban, ShieldCheck, ChevronDown, ChevronUp, Lock, ArrowLeft, Trophy } from '../components/icons';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from 'sonner';

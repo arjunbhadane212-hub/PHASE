@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Volume2, VolumeX } from 'lucide-react';
+import { Check, Volume2, VolumeX } from './icons';
 import { fireRoast } from './RoastNotification';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
@@ -569,9 +569,8 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         @media (prefers-reduced-motion: reduce) { .focus-aura-glow { animation: none; opacity: 0.45; } }
       `}</style>
 
-      {/* Aura glow — only the 'glow'-style aura (Violet Focus) gets this soft
-          pulsing halo behind the timer; 'wash' auras are a full-bleed color
-          field and don't need it. transform+opacity only, GPU-cheap. */}
+      {/* 'glow'-style aura (Violet Focus): a flat ring that slowly breathes
+          behind the timer — motion, not a blurred halo. */}
       {aura.style === 'glow' && (
         <div
           className="focus-aura-glow pointer-events-none"
@@ -580,7 +579,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
             width: 'min(90vmin, 720px)', height: 'min(90vmin, 720px)',
             marginLeft: 'calc(min(90vmin, 720px) / -2)', marginTop: 'calc(min(90vmin, 720px) / -2)',
             borderRadius: '9999px',
-            background: `radial-gradient(circle, ${hexA(aura.accent, 0.28)} 0%, ${hexA(aura.accent, 0)} 70%)`,
+            border: `2px solid ${hexA(aura.accent, 0.35)}`,
           }}
         />
       )}

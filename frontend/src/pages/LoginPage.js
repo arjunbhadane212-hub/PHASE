@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowRight } from '../components/icons';
 import { toast } from 'sonner';
 import AuthShell, { AuthTitle, AuthField, AuthError, PrimaryButton, LoginPanel } from '../components/auth/AuthShell';
 import GoogleButton from '../components/auth/GoogleButton';

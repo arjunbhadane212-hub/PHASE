@@ -9,7 +9,11 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Progress } from '../components/ui/progress';
-import { Plus, Check, Sunrise, Sun, Moon, Flame, Sparkles, Loader2, Gem, Heart, Shield, Zap, X, Award, Play, Clock } from 'lucide-react';
+import { Plus, Check, Sunrise, Sun, Moon, Flame, Loader2, Gem, Shield, Zap, X, Play, ReviveIcon, SparkleIcon } from '../components/icons';
+import DailyQuests from '../components/home/DailyQuests';
+import StreakCelebration from '../components/home/StreakCelebration';
+import PushPrimer from '../components/home/PushPrimer';
+import { shouldShowPrimer } from '../lib/push';
 import StreakCard from '../components/StreakCard';
 import XpPopAnimation from '../components/XpPopAnimation';
 import FocusSession from '../components/FocusSession';
@@ -28,15 +32,10 @@ function localDateStr(d = new Date()) {
   return `${y}-${m}-${day}`;
 }
 
-// PLACEHOLDER — quest/challenge cards are UI-only mockup data.
-// Real quest data model, backend logic, and friend-comparison wiring
-// do not exist yet and are NOT part of this task. See project notes
-// for "quest system" as a future spec.
-const PLACEHOLDER_quests = [
-  { id: 'q1', state: 'complete', icon: 'check', title: '7-day sprint', sub: 'Complete' },
-  { id: 'q2', state: 'progress', icon: 'clock', title: 'No-skip week', sub: '3 of 7 days' },
-  { id: 'q3', state: 'locked', icon: 'zap', title: 'Beat Rival', sub: '+120 XP to win' },
-];
+// XP per difficulty — mirrors complete_habit (habits.xp_value is client-editable
+// and never read by the server, so the UI must not show it either).
+const XP_FOR = { easy: 10, medium: 25, hard: 50 };
+const levelRewardGems = (lvl) => 25 * lvl + 25; // mirrors level_reward_gems()
 
 export default function HomePage() {
   const { user, refreshUser } = useAuth();
@@ -62,6 +61,10 @@ export default function HomePage() {
   const [focusSession, setFocusSession] = useState(null); // { habit, duration }
   const [weeklyXpEarned, setWeeklyXpEarned] = useState(0);
   const [todayXpEarned, setTodayXpEarned] = useState(0);
+  const [streakCel, setStreakCel] = useState(null);       // { before, after, milestone }
+  const [pendingLevelUp, setPendingLevelUp] = useState(null);
+  const [showPrimer, setShowPrimer] = useState(false);
+  const [questKey, setQuestKey] = useState(0);
 
   const fetchHabits = useCallback(async () => {
     if (!user?.id) return;
@@ -170,15 +173,26 @@ export default function HomePage() {
       // and toast them (marks them read, so the app-load catch-up won't repeat).
       if (data?.newly_unlocked?.length) drainTitleUnlocks();
 
+      setQuestKey((k) => k + 1);
+      const levelUp = isGameMode && data.level_up
+        ? { level: data.rank, level_name: data.rank_name, level_up_gems: data.level_up_gems, next_level_gems: data.next_level_gems }
+        : null;
       if (isGameMode) {
         soundEngine.habitComplete();
         xpIdRef.current += 1;
         setXpEvents(prev => [...prev, { id: xpIdRef.current, amount: data.xp_earned, boost: false }]);
-        if (data.level_up) {
-          setLevelUpData({ level: data.rank, level_name: data.rank_name, level_up_gems: data.level_up_gems });
-        }
       } else if (data.gems_earned > 0) {
-        toast.success(`+${data.gems_earned} gems`, { icon: '💎', duration: 2000 });
+        toast.success(`+${data.gems_earned} gems`, { duration: 2000 });
+      }
+      // First completion of the day → the streak moment, then (if any) the
+      // level-up, then the reminder opt-in. One screen at a time.
+      if (data.streak_extended) {
+        setStreakCel({ before: data.streak_before || 0, after: data.current_streak, milestone: data.streak_milestone });
+        if (levelUp) setPendingLevelUp(levelUp);
+      } else if (levelUp) {
+        setLevelUpData(levelUp);
+      } else if (data.streak_milestone?.gems) {
+        toast.success(`${data.streak_milestone.days}-day milestone · +${data.streak_milestone.gems} gems`);
       }
     } catch (e) {
       toast.error(e?.message || 'Failed to complete habit');
@@ -197,6 +211,7 @@ export default function HomePage() {
       // Pull reverted XP / gems / streak back into the user object
       await refreshUser();
       await fetchGameStatus();
+      setQuestKey((k) => k + 1);
       toast.info('Habit unchecked');
     } catch (e) {
       toast.error(e?.message || 'Failed to uncomplete habit');
@@ -248,7 +263,7 @@ export default function HomePage() {
   // NOTE: `habits` is the set scheduled for TODAY (fetchHabits filters by weekday),
   // not literally every active habit — see Step 2 summary. weeklyXpEarned comes
   // from daily_logs (Monday-start week), matching StreakCard's pip window.
-  const weeklyXpGoal = habits.reduce((s, h) => s + (h.xp_value || 0), 0) * 7;
+  const weeklyXpGoal = habits.reduce((s, h) => s + (XP_FOR[h.difficulty] || 0), 0) * 7;
   const weeklyRingPct = weeklyXpGoal > 0 ? Math.min((weeklyXpEarned / weeklyXpGoal) * 100, 100) : 0;
 
   return (
@@ -266,15 +281,15 @@ export default function HomePage() {
             className="fixed top-20 left-1/2 z-50 max-w-md w-[90%]"
             data-testid="roast-notification"
           >
-            <div className="glass-card bg-gradient-to-r from-orange-900/60 to-red-900/60 text-white p-4 border-orange-500/20">
+            <div className="rounded-2xl bg-[var(--gm-card)] text-[var(--gm-ink)] p-4 shadow-[var(--gm-shadow-card)]">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <Flame className="w-5 h-5 text-orange-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#95DEE6] text-[#183A3F] flex items-center justify-center flex-shrink-0">
+                  <Flame className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-sm">{currentRoast.text || currentRoast}</p>
                 </div>
-                <button onClick={dismissRoast} className="text-white/50 hover:text-white transition-colors">
+                <button onClick={dismissRoast} className="text-[var(--gm-muted)] hover:text-[var(--gm-ink)] transition-colors" aria-label="Dismiss">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -283,11 +298,23 @@ export default function HomePage() {
         )}
       </AnimatePresence>
 
-      {/* Level up celebration - MASSIVE */}
+      {/* Streak extended → level up → reminder opt-in, one at a time */}
+      <AnimatePresence>
+        {streakCel && (
+          <StreakCelebration {...streakCel} isGameMode={isGameMode} onDone={() => {
+            setStreakCel(null);
+            if (pendingLevelUp) { setLevelUpData(pendingLevelUp); setPendingLevelUp(null); }
+            else if (shouldShowPrimer()) setShowPrimer(true);
+          }} />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {levelUpData && isGameMode && (
-          <LevelUpCelebration data={levelUpData} onDismiss={() => setLevelUpData(null)} />
+          <LevelUpCelebration data={levelUpData} onDismiss={() => { setLevelUpData(null); if (shouldShowPrimer()) setShowPrimer(true); }} />
         )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showPrimer && <PushPrimer streak={user?.current_streak || 0} onClose={() => setShowPrimer(false)} />}
       </AnimatePresence>
 
       <div className="max-w-4xl mx-auto">
@@ -303,7 +330,7 @@ export default function HomePage() {
                 </div>
                 {streakShields > 0 && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--gm-card)]" data-testid="shields-display">
-                    <Shield className="w-4 h-4 text-cyan-600" />
+                    <Shield className="w-4 h-4 text-[var(--gm-ink)]" />
                     <span className="text-sm font-bold text-[var(--gm-ink)]">{streakShields}</span>
                   </div>
                 )}
@@ -337,7 +364,7 @@ export default function HomePage() {
                       <circle cx="34" cy="34" r="28" fill="none" stroke="var(--gm-track)" strokeWidth="6" />
                       <circle
                         cx="34" cy="34" r="28" fill="none"
-                        stroke="#3B82F6" strokeWidth="6" strokeLinecap="round"
+                        stroke="#DBF67F" strokeWidth="6" strokeLinecap="round"
                         strokeDasharray={2 * Math.PI * 28}
                         strokeDashoffset={(2 * Math.PI * 28) * (1 - weeklyRingPct / 100)}
                         style={{ transition: 'stroke-dashoffset 700ms ease-out' }}
@@ -360,8 +387,13 @@ export default function HomePage() {
                     LV.{currentLevel}
                   </div>
                   <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[var(--gm-muted)] mt-2 truncate" style={{ letterSpacing: '0.08em' }}>
-                    {levelName} Rank
+                    {levelName}
                   </div>
+                  {currentLevel < 15 && (
+                    <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-[var(--gm-ink)]" data-testid="next-level-reward">
+                      LV.{currentLevel + 1} <Gem className="w-3 h-3 text-[#95DEE6]" /> +{levelRewardGems(currentLevel + 1)}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -369,9 +401,9 @@ export default function HomePage() {
               {(boostMultiplier > 0 || (user?.current_streak === 0 && streakRevives > 0)) && (
                 <div className="flex flex-wrap items-center gap-2 mt-3">
                   {boostMultiplier > 0 && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/15 border border-amber-600/25" data-testid="boost-active">
-                      <Zap className="w-3.5 h-3.5 text-amber-600" />
-                      <span className="text-xs font-semibold text-amber-600">{boostMultiplier}x BOOST</span>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#DBF67F] text-[#2A3B0B]" data-testid="boost-active">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span className="text-xs font-bold">{boostMultiplier}× XP active</span>
                     </div>
                   )}
                   {user?.current_streak === 0 && streakRevives > 0 && (
@@ -379,11 +411,11 @@ export default function HomePage() {
                       size="sm"
                       onClick={handleUseStreakRevive}
                       disabled={reviveBusy}
-                      className="bg-red-500/10 text-red-600 border border-red-600/25 hover:bg-red-500/20 text-xs rounded-xl"
+                      className="bg-[#95DEE6] text-[#183A3F] hover:opacity-90 text-xs font-bold rounded-full"
                       data-testid="use-streak-revive-btn"
                     >
-                      <Heart className="w-3 h-3 mr-1" />
-                      Revive Streak
+                      <ReviveIcon className="w-3.5 h-3.5 mr-1" />
+                      Revive {user?.previous_streak ? `${user.previous_streak}-day streak` : 'streak'}
                     </Button>
                   )}
                 </div>
@@ -396,7 +428,9 @@ export default function HomePage() {
             <StreakCard
               streak={user?.current_streak || 0}
               shieldsActive={streakShields}
+              doneToday={habits.some(h => h.completed_today)}
               isGameMode={isGameMode}
+              refreshKey={questKey}
             />
           </div>
 
@@ -429,36 +463,10 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Quest / challenge cards — PLACEHOLDER UI only (see PLACEHOLDER_quests).
-            No real quest data model, backend, or friend wiring exists yet.
-            Game Mode only — quests/XP are a Game Mode concept. */}
-        {isGameMode && (
-        <div className="flex gap-3 overflow-x-auto pb-1 mb-6 sm:mb-8 -mx-1 px-1" data-testid="quest-row">
-          {PLACEHOLDER_quests.map((q) => {
-            const done = q.state === 'complete';
-            const QIcon = q.icon === 'check' ? Check : q.icon === 'clock' ? Clock : Zap;
-            return (
-              <div
-                key={q.id}
-                className={`flex-shrink-0 min-w-[150px] rounded-2xl p-4 ${done ? 'bg-[#DBF67F]' : 'bg-[var(--gm-card)]'}`}
-                data-testid={`quest-card-${q.id}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${done ? 'bg-[#2A3B0B]' : 'bg-[var(--gm-badge)]'}`}
-                >
-                  <QIcon className={`w-4 h-4 ${done ? 'text-[#DBF67F]' : 'text-[var(--gm-muted)]'}`} strokeWidth={2} />
-                </div>
-                <div className={`font-['General_Sans',sans-serif] font-bold text-sm mt-3 ${done ? 'text-[#0F1210]' : 'text-[var(--gm-ink)]'}`}>
-                  {q.title}
-                </div>
-                <div className={`text-xs mt-0.5 ${done ? 'text-[#0F1210]/70' : 'text-[var(--gm-muted)]'}`}>
-                  {q.sub}
-                </div>
-              </div>
-            );
-          })}
+        {/* Daily quests — real, server-computed, claimable */}
+        <div className="mb-6 sm:mb-8">
+          <DailyQuests refreshKey={questKey} />
         </div>
-        )}
 
         {/* Habits sections */}
         {loading ? (
@@ -468,7 +476,7 @@ export default function HomePage() {
         ) : habits.length === 0 ? (
           <div className="text-center py-20" data-testid="no-habits">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-[var(--gm-card)]">
-              <Sparkles className="w-8 h-8 text-[var(--gm-muted)]" />
+              <SparkleIcon className="w-8 h-8 text-[var(--gm-muted)]" />
             </div>
             <h3 className="text-xl font-extrabold font-['Archivo',sans-serif] mb-2 text-[var(--gm-ink)]">No habits yet</h3>
             <p className="mb-6 text-[var(--gm-muted)]">{isGameMode ? 'Add your first habit to start earning XP and gems' : 'Add your first habit to start tracking'}</p>
@@ -631,12 +639,6 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
 
   // Difficulty accent for the XP reward — mid-tone shades that stay legible on
   // the Game-Mode row in BOTH themes (dark #1F2123 and light #F2F3F0 card).
-  const difficultyColorsHome = {
-    easy: 'text-green-600',
-    medium: 'text-amber-600',
-    hard: 'text-red-600'
-  };
-
   const gemReward = { easy: 5, medium: 10, hard: 20 }[habit.difficulty] || 5;
 
   return (
@@ -729,8 +731,8 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
               <span className="text-xs text-red-400 font-medium">Failed today</span>
             )}
             {isGameMode ? (
-              <span className={`text-xs ${habit.completed_today ? 'text-[#0F1210] font-bold' : `${difficultyColorsHome[habit.difficulty]} font-semibold`}`}>
-                +{habit.xp_value} XP
+              <span className={`text-xs ${habit.completed_today ? 'text-[#0F1210] font-bold' : 'text-[var(--gm-ink)] font-semibold'}`}>
+                +{XP_FOR[habit.difficulty] || 0} XP <span className={`font-normal capitalize ${habit.completed_today ? 'text-[#0F1210]/70' : 'text-[var(--gm-muted)]'}`}>· {habit.difficulty}</span>
               </span>
             ) : (
               <span className={`text-xs capitalize ${habit.completed_today ? 'text-[#0F1210] font-bold' : 'text-[var(--gm-muted)]'}`}>{habit.difficulty} &middot; {habit.session_duration || 15}min</span>

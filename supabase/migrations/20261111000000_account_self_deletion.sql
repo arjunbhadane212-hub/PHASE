@@ -1,5 +1,5 @@
 -- Self-service account deletion (required by Google Play and the App Store).
--- NOT YET APPLIED to production — needs owner approval.
+-- Applied to production 2026-11-11 (app-overhaul).
 --
 -- Why: xp_events is append-only (forbid_mutation trigger) and xp_events,
 -- leaderboard_memberships and abuse_signals reference public.users WITHOUT

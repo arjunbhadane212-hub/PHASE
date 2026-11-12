@@ -5,7 +5,7 @@
 //   anim/fx -> the flat MotionRing on a neutral avatar
 //   boost   -> its shop icon on a solid tier tile
 import { useEffect, useRef } from 'react';
-import { User, Gem } from 'lucide-react';
+import { User, Gem } from '../icons';
 import TitleGlyph, { accentFor } from '../../data/titleGlyphs';
 import { PhaseBanner, BANNER_META } from '../banners/PhaseBanners';
 import MotionRing from '../profile/MotionRing';
@@ -129,7 +129,7 @@ export function MiniArt({ item }) {
     const a = accentFor(item.item_key);
     return (
       <div style={{ width: 54, height: 54, borderRadius: 14, background: a.surface, color: a.ink, display: 'grid', placeItems: 'center', flex: 'none' }}>
-        <TitleGlyph titleKey={item.item_key} size={30} strokeWidth={2.4} />
+        <TitleGlyph titleKey={item.item_key} size={30} strokeWidth={3.6} />
       </div>
     );
   }

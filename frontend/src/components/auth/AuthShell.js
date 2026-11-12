@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Check, Eye, EyeOff, Flame, Dumbbell, Brain, Target, Sun, Shield } from 'lucide-react';
+import { Check, Eye, EyeOff, Flame, Dumbbell, Brain, Target, Sun, Shield } from '../icons';
 import PhaseWordmark from '../brand/PhaseMark';
 
 // Shared v2 shell for Log in / Sign up. Calm by design: one column of form on

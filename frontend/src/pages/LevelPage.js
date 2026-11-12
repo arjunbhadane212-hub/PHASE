@@ -2,7 +2,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Target, Star, Swords, Shield, Flame, Trophy, Crown, Zap, Award, Gem,
   Rocket, Sparkles, Orbit, Atom, Sun, Lock, Check, ChevronsUp,
-} from 'lucide-react';
+} from '../components/icons';
 import { RANKS, rankInfo, levelForXp, MAX_LEVEL, PRESTIGE_LEVEL } from '../data/levels';
 
 // 2px-outline icon per rank. Prestige tiers (11-15) escalate toward cosmic.
@@ -104,10 +104,7 @@ export default function LevelPage() {
           </div>
           <div className="relative h-3.5 rounded-full overflow-hidden" style={{ background: 'var(--gm-track)' }}>
             <div className="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
-              style={{ width: `${xpProgress}%`, background: accent, boxShadow: `0 0 14px rgba(${accentRgb},0.65)` }}>
-              <span className="lv-sweep absolute top-0 bottom-0 w-1/3"
-                style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%)' }} />
-            </div>
+              style={{ width: `${xpProgress}%`, background: accent }} />
           </div>
           <p className="font-['General_Sans'] text-sm text-[color:var(--gm-muted)] mt-2.5">
             {isMaxLevel ? (
@@ -223,9 +220,17 @@ export default function LevelPage() {
                       <p className="font-['General_Sans'] text-[12px] mt-1.5 leading-snug text-[color:var(--gm-muted)]">
                         {revealed ? level.tagline : 'Locked beyond Apex — keep climbing to reveal.'}
                       </p>
-                      <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.04em] text-[color:var(--gm-muted)] mt-2 opacity-80">
-                        {level.min_xp.toLocaleString()} — {level.max_xp === 999999 ? 'MAX' : level.max_xp.toLocaleString()} XP
-                      </p>
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.04em] text-[color:var(--gm-muted)] opacity-80">
+                          {level.min_xp.toLocaleString()} — {level.max_xp === 999999 ? 'MAX' : level.max_xp.toLocaleString()} XP
+                        </p>
+                        {level.level > 1 && (
+                          <span className={`inline-flex items-center gap-1 font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.04em] ${isLocked ? 'text-[color:var(--gm-ink)]' : 'text-[color:var(--gm-muted)]'}`}
+                            data-testid={`level-reward-${level.level}`}>
+                            {isLocked ? null : <Check className="w-3 h-3" />}<Gem className="w-3 h-3 text-[#95DEE6]" /> +{25 * level.level + 25}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {revealed ? (
                       <Emblem level={level.level} color={level.color} size="sm" solid={isCurrent} />

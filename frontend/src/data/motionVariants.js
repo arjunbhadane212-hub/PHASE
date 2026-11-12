@@ -8,6 +8,9 @@
 
 export const CYAN = '#95DEE6';
 export const LIME = '#DBF67F';
+export const WHITE = '#EAFCFF';
+export const PURPLE = '#A59BCC';
+export const PEACH = '#F0C9A8';
 const C = 125.7; // circumference at r=20, for the "draw" dash
 
 export const VARIANTS = {
@@ -25,22 +28,29 @@ export const VARIANTS = {
   breathe: [{ r: 20, cls: 'mr-op', stroke: LIME }],
 };
 
-// shop key -> variant. Each of the 9 anim + (16 + 6 new) effect keys gets one.
+// shop key -> [variant, primary colour]. Every key gets a DISTINCT pair, so two
+// items can never look identical in the same shop rotation (before, 22 effects
+// shared 12 looks — e.g. fx_pulse and fx_ripple were the same ring).
 const MAP = {
   // animations
-  anim_plasma: 'pulse', anim_shadow_flame: 'shift', anim_cosmic: 'nested',
-  anim_golden_aura: 'breathe', anim_lightning_storm: 'comet', anim_ethereal_glow: 'draw',
-  anim_supernova: 'dual', anim_inferno: 'half', anim_divine_light: 'segment',
-  // effects (existing)
-  fx_pulse: 'pulse', fx_aurora: 'shift', fx_neon_ring: 'spin', fx_electric: 'comet',
-  fx_fire_ring: 'half', fx_ice_ring: 'dashed', fx_matrix_rain: 'segment', fx_ripple: 'pulse',
-  fx_galaxy_spin: 'spin', fx_rainbow: 'shift', fx_vortex: 'nested', fx_void_pulse: 'breathe',
-  flame_ring: 'half', frost_ring: 'dashed', galaxy_spiral: 'dual', lightning_arc: 'comet',
-  // effects (new, Oct 2026)
-  fx_draw_ring: 'draw', fx_quad_ticks: 'quad', fx_dual_orbit: 'dual',
-  fx_segment_ring: 'segment', fx_half_arc: 'half', fx_breathe_ring: 'breathe',
+  anim_plasma: ['pulse', CYAN], anim_shadow_flame: ['shift', CYAN], anim_cosmic: ['nested', CYAN],
+  anim_golden_aura: ['breathe', LIME], anim_lightning_storm: ['comet', LIME], anim_ethereal_glow: ['draw', WHITE],
+  anim_supernova: ['dual', CYAN], anim_inferno: ['half', PEACH], anim_divine_light: ['segment', WHITE],
+  anim_orbit_lock: ['quad', LIME], anim_tick_storm: ['dashed', PEACH], anim_dashline: ['spin', WHITE],
+  anim_twin_arc: ['dual', PURPLE], anim_overdrive: ['comet', PURPLE],
+  // effects
+  fx_pulse: ['pulse', LIME], fx_aurora: ['shift', LIME], fx_neon_ring: ['spin', CYAN], fx_electric: ['comet', CYAN],
+  fx_fire_ring: ['half', LIME], fx_ice_ring: ['dashed', CYAN], fx_matrix_rain: ['segment', LIME], fx_ripple: ['pulse', PURPLE],
+  fx_galaxy_spin: ['spin', PURPLE], fx_rainbow: ['shift', PEACH], fx_vortex: ['nested', PURPLE], fx_void_pulse: ['breathe', PURPLE],
+  flame_ring: ['half', CYAN], frost_ring: ['dashed', WHITE], galaxy_spiral: ['dual', LIME], lightning_arc: ['comet', WHITE],
+  fx_draw_ring: ['draw', CYAN], fx_quad_ticks: ['quad', CYAN], fx_dual_orbit: ['dual', PEACH],
+  fx_segment_ring: ['segment', CYAN], fx_half_arc: ['half', WHITE], fx_breathe_ring: ['breathe', CYAN],
 };
 
 export function motionVariantFor(key) {
-  return MAP[key] || 'pulse';
+  return (MAP[key] && MAP[key][0]) || 'pulse';
+}
+
+export function motionColorFor(key) {
+  return (MAP[key] && MAP[key][1]) || CYAN;
 }

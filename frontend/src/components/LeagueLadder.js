@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { Check } from 'lucide-react';
+import { Check } from './icons';
 import TierEmblem from './TierEmblem';
 import { LEADERBOARD_TIERS } from '../data/leaderboardTiers';
 

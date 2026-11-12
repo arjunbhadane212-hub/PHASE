@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { AlertTriangle, RotateCw } from 'lucide-react';
+import { AlertTriangle, RotateCw } from './icons';
 
 /**
  * Top-level safety net. Catches render/runtime errors from any child screen so
@@ -39,35 +39,22 @@ export default class ErrorBoundary extends Component {
     if (!this.state.hasError) return this.props.children;
 
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-6"
-        style={{ backgroundColor: 'var(--color-bg, #0A0E14)' }}
-        data-testid="error-boundary-fallback"
-      >
+      <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--gm-bg)]" data-testid="error-boundary-fallback">
         <div className="w-full max-w-md text-center">
-          <div className="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center bg-blue-500/10 border border-blue-500/20">
-            <AlertTriangle className="w-7 h-7 text-blue-400" strokeWidth={2} />
+          <div className="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center bg-[var(--gm-card)]">
+            <AlertTriangle className="w-7 h-7 text-[var(--gm-ink)]" strokeWidth={2} />
           </div>
-          <h1 className="text-xl font-bold font-['Satoshi'] text-white mb-2">
-            Something went wrong
-          </h1>
-          <p className="text-sm text-zinc-400 mb-6">
-            This screen hit an unexpected error. The rest of the app is still fine —
-            try again or head back home.
+          <h1 className="text-2xl font-black font-['Archivo'] text-[var(--gm-ink)] mb-2">Something went wrong</h1>
+          <p className="text-sm text-[var(--gm-muted)] mb-6">
+            This screen hit an unexpected error. Your streak and progress are safe — try again or head back home.
           </p>
           <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={this.handleReload}
-              className="inline-flex items-center gap-2 px-4 h-11 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
-              data-testid="error-boundary-retry"
-            >
-              <RotateCw className="w-4 h-4" />
-              Try again
+            <button onClick={this.handleReload}
+              className="inline-flex items-center gap-2 px-5 h-11 rounded-full bg-[#95DEE6] text-[#183A3F] text-sm font-bold"
+              data-testid="error-boundary-retry">
+              <RotateCw className="w-4 h-4" /> Try again
             </button>
-            <a
-              href="/dashboard"
-              className="inline-flex items-center px-4 h-11 rounded-xl border border-white/10 text-zinc-300 hover:bg-white/[0.04] text-sm font-medium transition-colors"
-            >
+            <a href="/dashboard" className="inline-flex items-center px-5 h-11 rounded-full bg-[var(--gm-card)] text-[var(--gm-ink)] text-sm font-bold">
               Go home
             </a>
           </div>

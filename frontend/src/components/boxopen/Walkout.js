@@ -14,7 +14,7 @@
 // Flat only: solid fills, hard edges, type, outlines. No glow / blur / radial.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gem } from 'lucide-react';
+import { Gem } from '../icons';
 import { soundEngine } from '../../utils/SoundEngine';
 import { Hero, tierOf, kindOf, displayName, KIND_LABEL } from './Hero';
 import { Marquee, SpeedLines, Confetti, useShake } from './fx';

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Loader2, Lock, ArrowRight } from 'lucide-react';
+import { Check, Loader2, Lock, ArrowRight } from '../icons';
 import { eyebrow, optionFor, PRO_FEATURES, MODES } from './data';
 import { PLANS, SAVE_PCT, money } from '../../lib/billing';
 

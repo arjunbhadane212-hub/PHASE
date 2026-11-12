@@ -9,7 +9,8 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Separator } from '../components/ui/separator';
-import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Check, ExternalLink, Sun, Moon, Trash2 } from 'lucide-react';
+import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Check, ExternalLink, Sun, Moon, Trash2 } from '../components/icons';
+import { pushSupport, permission as pushPermission, currentSubscription, enablePush, disablePush, sendTestPush } from '../lib/push';
 import { toast } from 'sonner';
 import { rankInfo } from '../data/levels';
 import { PLANS, SAVE_PCT, money, startCheckout, openBillingPortal } from '../lib/billing';
@@ -595,82 +596,128 @@ function ChangePasswordDialog({ open, onOpenChange }) {
 }
 
 function NotificationSettings({ user, isGameMode }) {
-  const [settings, setSettings] = useState(user?.notification_settings || {
-    push_enabled: true,
-    reminders_enabled: true,
-    roast_enabled: true
-  });
-  const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState(() => ({
+    push_enabled: true, reminders_enabled: true, roast_enabled: true, ...(user?.notification_settings || {}),
+  }));
+  const [device, setDevice] = useState('checking'); // on | off | blocked | needs-install | unsupported | checking
+  const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
 
-  const handleToggle = async (key) => {
-    const newSettings = { ...settings, [key]: !settings[key] };
-    setSettings(newSettings);
-    setLoading(true);
+  const refreshDevice = useCallback(async () => {
+    const support = pushSupport();
+    if (support !== 'supported') { setDevice(support); return; }
+    if (pushPermission() === 'denied') { setDevice('blocked'); return; }
+    const sub = await currentSubscription().catch(() => null);
+    setDevice(sub && pushPermission() === 'granted' ? 'on' : 'off');
+  }, []);
+  useEffect(() => { refreshDevice(); }, [refreshDevice]);
+
+  const save = async (next) => {
+    const prev = settings;
+    setSettings(next);
+    const { error } = await supabase.from('users').update({ notification_settings: next }).eq('id', user.id);
+    if (error) { setSettings(prev); toast.error(error.message || 'Failed to update settings'); return false; }
+    return true;
+  };
+
+  const toggleDevice = async () => {
+    setBusy(true);
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ notification_settings: newSettings })
-        .eq('id', user.id);
-      if (error) throw error;
+      if (device === 'on') {
+        await disablePush();
+        toast.success('Notifications off on this device');
+      } else {
+        await enablePush();
+        if (!settings.push_enabled) await save({ ...settings, push_enabled: true });
+        toast.success('Notifications on. Send a test to check it.');
+      }
     } catch (e) {
-      // Revert on error
-      setSettings(settings);
-      toast.error(e?.message || 'Failed to update settings');
+      toast.error(e?.message || 'Could not change notifications');
     } finally {
-      setLoading(false);
+      setBusy(false);
+      refreshDevice();
     }
   };
 
+  const test = async () => {
+    setTesting(true);
+    try {
+      const r = await sendTestPush();
+      toast.success(r?.delivered ? 'Sent. It should arrive in a few seconds.' : 'Sent.');
+    } catch (e) {
+      toast.error(e?.message || 'Could not send a test');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const deviceCopy = {
+    on: 'On for this device',
+    off: 'Off on this device',
+    blocked: 'Blocked — allow notifications for Phase in your browser or phone settings',
+    'needs-install': 'On iPhone: Share → Add to Home Screen, then open Phase from your Home Screen',
+    unsupported: 'This browser can’t receive notifications',
+    checking: 'Checking…',
+  }[device];
+
   return (
-    <div className="rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]">
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Bell className="w-5 h-5 text-[color:var(--gm-ink)]" />
-          <div>
-            <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Push Notifications</p>
-            <p className="text-sm text-[color:var(--gm-muted)]">Receive notifications on your device</p>
+    <div className="rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]" data-testid="notification-settings">
+      <div className="p-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Bell className="w-5 h-5 text-[color:var(--gm-ink)] flex-none" />
+          <div className="min-w-0">
+            <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Phone notifications</p>
+            <p className="text-sm text-[color:var(--gm-muted)]" data-testid="push-device-status">{deviceCopy}</p>
           </div>
         </div>
         <Switch
-          checked={settings.push_enabled}
-          onCheckedChange={() => handleToggle('push_enabled')}
-          className="data-[state=checked]:bg-[#95DEE6]"
+          checked={device === 'on'}
+          disabled={busy || !['on', 'off'].includes(device)}
+          onCheckedChange={toggleDevice}
+          className="data-[state=checked]:bg-[#95DEE6] flex-none"
           data-testid="push-toggle"
         />
       </div>
 
-      {settings.push_enabled && (
+      {device === 'on' && (
         <>
           <Separator className="bg-[color:var(--gm-track)]" />
-          <div className="p-4 flex items-center justify-between">
+          <div className="p-4 flex items-center justify-between gap-3">
             <div>
-              <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Reminders</p>
-              <p className="text-sm text-[color:var(--gm-muted)]">Habit reminders throughout the day</p>
+              <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Streak reminders</p>
+              <p className="text-sm text-[color:var(--gm-muted)]">Around when you usually check in, and before your streak ends. Max 2 a day, 8am–10pm.</p>
             </div>
             <Switch
-              checked={settings.reminders_enabled}
-              onCheckedChange={() => handleToggle('reminders_enabled')}
-              className="data-[state=checked]:bg-[#95DEE6]"
+              checked={settings.reminders_enabled !== false}
+              onCheckedChange={() => save({ ...settings, reminders_enabled: !(settings.reminders_enabled !== false) })}
+              className="data-[state=checked]:bg-[#95DEE6] flex-none"
               data-testid="reminders-toggle"
             />
           </div>
-
-          {/* Roast Mode - both modes */}
           <Separator className="bg-[color:var(--gm-track)]" />
-          <div className="p-4 flex items-center justify-between">
-            <div>
-              <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Roast Mode</p>
-              <p className="text-sm text-[color:var(--gm-muted)]">{isGameMode ? 'Competitive trash talk when you slack' : 'Quiet nudges when you miss sessions'}</p>
-            </div>
-            <Switch
-              checked={settings.roast_enabled}
-              onCheckedChange={() => handleToggle('roast_enabled')}
-              className="data-[state=checked]:bg-[#95DEE6]"
-              data-testid="roast-toggle"
-            />
+          <div className="p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-[color:var(--gm-muted)]">Not sure it works? Send one now.</p>
+            <button type="button" onClick={test} disabled={testing}
+              className="h-9 px-4 rounded-full bg-[#95DEE6] text-[#183A3F] text-sm font-bold flex-none disabled:opacity-50" data-testid="push-test">
+              {testing ? 'Sending…' : 'Send test'}
+            </button>
           </div>
         </>
       )}
+
+      <Separator className="bg-[color:var(--gm-track)]" />
+      <div className="p-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Roast Mode</p>
+          <p className="text-sm text-[color:var(--gm-muted)]">{isGameMode ? 'In-app trash talk when you slack' : 'Quiet in-app nudges when you miss sessions'}</p>
+        </div>
+        <Switch
+          checked={settings.roast_enabled !== false}
+          onCheckedChange={() => save({ ...settings, roast_enabled: !(settings.roast_enabled !== false) })}
+          className="data-[state=checked]:bg-[#95DEE6] flex-none"
+          data-testid="roast-toggle"
+        />
+      </div>
     </div>
   );
 }

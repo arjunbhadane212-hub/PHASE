@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2 } from '../components/icons';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 import { PhaseMark } from '../components/brand/PhaseMark';

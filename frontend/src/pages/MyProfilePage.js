@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Inventory from '../components/Inventory';
 import { useMode } from '../contexts/ModeContext';
 import { Link } from 'react-router-dom';
-import { Calendar, Shield, ExternalLink, Gem, X } from 'lucide-react';
+import { Calendar, Shield, ExternalLink, Gem, X } from '../components/icons';
 import { PhaseBanner } from '../components/banners/PhaseBanners';
 import { FlameGlyph, XpGlyph } from '../components/profile/Sigil';
 import { TitleBadge } from '../components/profile/FlexBadge';
@@ -57,7 +57,7 @@ export default function ProfilePanel({ open, onClose }) {
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 z-[9990] bg-black/60 backdrop-blur-[2px]" onClick={onClose} data-testid="profile-overlay" />
+      <div className="fixed inset-0 z-[9990] bg-black/60" onClick={onClose} data-testid="profile-overlay" />
 
       {/* Panel */}
       <div
@@ -73,7 +73,7 @@ export default function ProfilePanel({ open, onClose }) {
         </div>
 
         {/* Close */}
-        <button onClick={onClose} className="absolute top-3 right-3 z-20 p-2 rounded-xl bg-black/40 backdrop-blur-sm text-white/70 hover:text-white transition-colors" data-testid="profile-close">
+        <button onClick={onClose} className="absolute top-3 right-3 z-20 p-2 rounded-full bg-[var(--gm-card)] text-[var(--gm-muted)] hover:text-[var(--gm-ink)] transition-colors" data-testid="profile-close">
           <X className="w-5 h-5" />
         </button>
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { Loader2, ArrowRight, ArrowLeft, Check } from '../components/icons';
 import { toast } from 'sonner';
 import AuthShell, { AuthTitle, AuthField, AuthError, PrimaryButton, SignupPanel, eyebrow } from '../components/auth/AuthShell';
 import GoogleButton from '../components/auth/GoogleButton';

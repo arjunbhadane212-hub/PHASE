@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
-import { BarChart3, PieChart as PieChartIcon, TrendingUp, AreaChartIcon, Columns3, Gem, Zap, CheckSquare, Loader2 } from 'lucide-react';
+import { BarChart3, PieChart as PieChartIcon, TrendingUp, AreaChartIcon, Columns3, Gem, Zap, CheckSquare, Loader2 } from '../components/icons';
 import { supabase } from '../lib/supabaseClient';
 import { themedChartColors } from '../lib/chartColors';
 

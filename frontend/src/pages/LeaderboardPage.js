@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Users, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { Clock, Users, ChevronRight, ChevronUp, ChevronDown } from '../components/icons';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';

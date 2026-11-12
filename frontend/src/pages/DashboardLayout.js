@@ -3,19 +3,19 @@ import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'reac
 import { toast } from 'sonner';
 import { useMode } from '../contexts/ModeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, BarChart3, Trophy, Crown, ShoppingBag, Settings, User } from 'lucide-react';
+import { HomeIcon, ProgressIcon, LevelIcon, CrownIcon, ShopIcon, SettingsIcon, UserIcon } from '../components/icons';
 import ProfilePanel from './MyProfilePage';
 import PeriodResultModal from '../components/PeriodResultModal';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const allNavItems = [
-  { to: '/dashboard', icon: Home, label: 'Home', end: true, modes: ['focus', 'game'] },
-  { to: '/dashboard/progress', icon: BarChart3, label: 'Progress', modes: ['focus', 'game'] },
-  { to: '/dashboard/level', icon: Trophy, label: 'Level', modes: ['game'] },
-  { to: '/dashboard/leaderboard', icon: Crown, label: 'League', modes: ['game'] },
-  { to: '/dashboard/shop', icon: ShoppingBag, label: 'Shop', modes: ['game'] },
-  { to: '/dashboard/focus-shop', icon: ShoppingBag, label: 'Shop', modes: ['focus'] },
-  { to: '/dashboard/settings', icon: Settings, label: 'Settings', modes: ['focus', 'game'] },
+  { to: '/dashboard', icon: HomeIcon, label: 'Home', end: true, modes: ['focus', 'game'] },
+  { to: '/dashboard/progress', icon: ProgressIcon, label: 'Progress', modes: ['focus', 'game'] },
+  { to: '/dashboard/level', icon: LevelIcon, label: 'Level', modes: ['game'] },
+  { to: '/dashboard/leaderboard', icon: CrownIcon, label: 'League', modes: ['game'] },
+  { to: '/dashboard/shop', icon: ShopIcon, label: 'Shop', modes: ['game'] },
+  { to: '/dashboard/focus-shop', icon: ShopIcon, label: 'Shop', modes: ['focus'] },
+  { to: '/dashboard/settings', icon: SettingsIcon, label: 'Settings', modes: ['focus', 'game'] },
 ];
 
 function MobileNavItem({ item, isGameMode }) {
@@ -39,7 +39,7 @@ function MobileNavItem({ item, isGameMode }) {
       data-testid={`nav-${item.label.toLowerCase()}`}
       style={{ pointerEvents: 'auto' }}
     >
-      <Icon className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />
+      <Icon className="w-5 h-5" strokeWidth={2} />
       <span className="text-[9px] font-medium">{item.label}</span>
     </button>
   );
@@ -90,7 +90,7 @@ export default function DashboardLayout() {
             className="w-16 py-3 rounded-xl transition-all duration-200 flex flex-col items-center gap-1.5 text-[var(--gm-muted)] hover:text-[var(--gm-ink)] hover:bg-[var(--gm-card)] mb-2"
             data-testid="nav-desktop-profile"
           >
-            <User className="w-5 h-5" strokeWidth={1.8} />
+            <UserIcon className="w-5 h-5" strokeWidth={2} />
             <span className="text-[10px] font-medium">Profile</span>
           </button>
         )}
@@ -111,7 +111,7 @@ export default function DashboardLayout() {
             `}
             data-testid={`nav-desktop-${item.label.toLowerCase()}`}
           >
-            <item.icon className="w-5 h-5" strokeWidth={1.8} />
+            <item.icon className="w-5 h-5" strokeWidth={2} />
             <span className="text-[10px] font-medium">{item.label}</span>
           </NavLink>
         ))}
@@ -136,7 +136,7 @@ export default function DashboardLayout() {
                 data-testid="nav-profile"
                 style={{ pointerEvents: 'auto' }}
               >
-                <User className="w-5 h-5" strokeWidth={1.5} />
+                <UserIcon className="w-5 h-5" strokeWidth={2} />
                 <span className="text-[9px] font-medium">Profile</span>
               </button>
             )}

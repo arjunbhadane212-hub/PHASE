@@ -14,6 +14,7 @@
 // toasted exactly once, never twice, even across tabs.
 
 import { useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 import TitlePlate from './TitlePlate';
 import { normalizeRarity } from '../../data/profileIdentity';
@@ -73,7 +74,9 @@ export async function drainTitleUnlocks() {
 // Mount once in the authenticated app. On load it surfaces any title the user
 // earned but never saw (missed toast, or a session that closed before it drew).
 export function TitleUnlockListener() {
-  useEffect(() => { drainTitleUnlocks(); }, []);
+  const { user } = useAuth();
+  const userId = user && typeof user === 'object' ? user.id : null;
+  useEffect(() => { if (userId) drainTitleUnlocks(); }, [userId]);
   return null;
 }
 

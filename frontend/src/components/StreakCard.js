@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Shield } from 'lucide-react';
+import { ShieldIcon, FlameIcon, GemIcon } from './icons';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
-// Client's LOCAL calendar day (YYYY-MM-DD) — matches how complete_habit keys
-// completions, so the pip bar lines up with the day the user actually logged.
+// The streak hero. It has two faces on purpose (loss aversion, the core of
+// every streak app):
+//   done today      solid cyan card, lit flame — "safe".
+//   not done yet    dark card, cyan number, a live countdown to local
+//                   midnight — "this ends tonight unless you act".
+// Plus the next milestone and what it pays, so the streak always has a
+// concrete next target. Milestones/rewards mirror streak_milestone_gems().
+
+const MILESTONES = [[3, 25], [7, 50], [14, 75], [30, 150], [50, 200], [100, 400], [200, 600], [365, 1000]];
+
 function localDateStr(d = new Date()) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// Weekly window definition (used here AND in HomePage's weekly XP tile in Step 2):
-// CALENDAR WEEK, Monday-start. The 7 pips map Mon->Sun; a pip is filled when that
-// weekday had at least one non-failed completion. Future days this week stay empty.
 function mondayStartWeek(now = new Date()) {
-  const diffToMonday = (now.getDay() + 6) % 7; // 0=Sun..6=Sat -> days since Monday
+  const diffToMonday = (now.getDay() + 6) % 7;
   const monday = new Date(now);
   monday.setDate(now.getDate() - diffToMonday);
   const days = [];
@@ -28,89 +30,92 @@ function mondayStartWeek(now = new Date()) {
   return { mondayStr: days[0], days };
 }
 
-// isGameMode is kept in the signature (HomePage passes it) but no longer drives
-// styling in v2; disable the unused-var rule so the Vercel CI build (CI=true) passes.
-// eslint-disable-next-line no-unused-vars
-export default function StreakCard({ streak = 0, shieldsActive = 0, isGameMode = false }) {
+function untilMidnight(now) {
+  const m = new Date(now); m.setHours(24, 0, 0, 0);
+  const mins = Math.max(0, Math.round((m - now) / 60000));
+  const h = Math.floor(mins / 60);
+  return h > 0 ? `${h}h ${mins % 60}m` : `${mins}m`;
+}
+
+export default function StreakCard({ streak = 0, shieldsActive = 0, doneToday = false, isGameMode = true, refreshKey = 0 }) {
   const { user } = useAuth();
   const [weekPips, setWeekPips] = useState([false, false, false, false, false, false, false]);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     async function loadWeek() {
       if (!user?.id) return;
       const { mondayStr, days } = mondayStartWeek();
-      // Read-only SELECT — no writes, no schema/RPC changes.
-      const { data, error } = await supabase
-        .from('habit_completions')
-        .select('completed_date, status')
-        .eq('user_id', user.id)
-        .gte('completed_date', mondayStr);
-      if (cancelled) return;
-      if (error) {
-        console.error('Failed to load weekly completions for streak pips', error);
-        return;
-      }
-      // A 'failed' row (abandoned session) locks the day but is not a success.
-      const doneDates = new Set(
-        (data || []).filter(c => c.status !== 'failed').map(c => c.completed_date)
-      );
-      setWeekPips(days.map(d => doneDates.has(d)));
+      const { data, error } = await supabase.from('habit_completions')
+        .select('completed_date, status').eq('user_id', user.id).gte('completed_date', mondayStr);
+      if (cancelled || error) return;
+      const doneDates = new Set((data || []).filter((c) => c.status !== 'failed').map((c) => c.completed_date));
+      setWeekPips(days.map((d) => doneDates.has(d)));
     }
     loadWeek();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, refreshKey]);
+
+  const next = MILESTONES.find(([d]) => d > streak);
+  const lit = doneToday;
+  const atRisk = !doneToday && streak > 0;
+  const todayIdx = (now.getDay() + 6) % 7;
+
+  const ink = lit ? '#183A3F' : 'var(--gm-ink)';
+  const sub = lit ? '#3E6C71' : 'var(--gm-muted)';
+
+  let status;
+  if (lit) status = streak === 1 ? 'Day one done. Come back tomorrow.' : 'Done for today. Your streak is safe.';
+  else if (atRisk) status = shieldsActive > 0
+    ? `Ends in ${untilMidnight(now)} — a shield will cover it, but don't waste it`
+    : `Ends in ${untilMidnight(now)}. One habit keeps it.`;
+  else status = isGameMode ? 'Complete one habit to start a streak.' : 'Finish one session to start a streak.';
 
   return (
-    <div
-      className="w-full rounded-[22px] bg-[#95DEE6] p-5 sm:p-6 shadow-[var(--gm-shadow-hero)]"
-      data-testid="streak-card"
-    >
+    <div className={`w-full rounded-[22px] p-5 sm:p-6 ${lit ? 'bg-[#95DEE6]' : 'bg-[var(--gm-card)]'} shadow-[var(--gm-shadow-card)]`}
+      data-testid="streak-card" data-state={lit ? 'done' : atRisk ? 'at-risk' : 'none'}>
       <div className="flex items-start justify-between gap-3">
-        {/* Eyebrow — muted mid-tone teal (verified) */}
-        <span
-          className="font-['JetBrains_Mono',monospace] font-bold uppercase text-[10px] sm:text-[11px] text-[#76B5BC]"
-          style={{ letterSpacing: '0.08em' }}
-        >
-          Day Streak · This Week
+        <span className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] sm:text-[11px] tracking-[0.08em]" style={{ color: lit ? '#3E6C71' : 'var(--gm-muted)' }}>
+          Day streak
         </span>
-
-        {/* Shield badge — dark teal pill, legible on the cyan card */}
         {shieldsActive > 0 && (
-          <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#183A3F]"
-            data-testid="streak-shield-badge"
-          >
-            <Shield className="w-3.5 h-3.5 text-[#95DEE6]" strokeWidth={2} />
-            <span className="text-xs font-semibold text-[#95DEE6]">{shieldsActive}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: lit ? '#183A3F' : 'var(--gm-badge)', color: lit ? '#95DEE6' : 'var(--gm-ink)' }} data-testid="streak-shield-badge">
+            <ShieldIcon size={14} />
+            <span className="text-xs font-bold">{shieldsActive}</span>
           </div>
         )}
       </div>
 
-      {/* Hero number — darkest teal ink (verified) */}
-      <div
-        className="font-['Archivo',sans-serif] font-black text-[#183A3F] mt-2 text-[44px] sm:text-[52px]"
-        style={{ lineHeight: '0.88', letterSpacing: '-0.02em' }}
-        data-testid="streak-count"
-      >
-        {streak}
+      <div className="flex items-end gap-2 mt-2">
+        <span className="font-['Archivo'] font-black text-[48px] sm:text-[56px] leading-[0.88] tracking-[-0.02em] tabular-nums" style={{ color: lit ? '#183A3F' : (atRisk ? '#95DEE6' : 'var(--gm-ink)') }} data-testid="streak-count">
+          {streak}
+        </span>
+        <FlameIcon size={30} variant={lit ? 'solid' : 'outline'} color={lit ? '#183A3F' : (atRisk ? '#95DEE6' : 'var(--gm-muted)')} className="mb-1" />
       </div>
 
-      {/* Sub-label — mid-weight deep teal (verified) */}
-      <div className="font-['General_Sans',sans-serif] font-bold text-[#3E6C71] text-sm sm:text-base mt-1">
-        Days Strong
-      </div>
+      <p className="font-['General_Sans'] font-bold text-sm mt-2" style={{ color: atRisk ? 'var(--gm-ink)' : sub }} data-testid="streak-status">{status}</p>
 
-      {/* Weekly progress pip bar (Mon -> Sun) */}
       <div className="flex gap-1.5 mt-4" data-testid="streak-week-pips">
         {weekPips.map((filled, i) => (
-          <div
-            key={i}
-            className="flex-1 h-2 rounded-full"
-            style={{ backgroundColor: filled ? '#183A3F' : '#83C6CD' }}
-          />
+          <div key={i} className="flex-1 h-2 rounded-full" style={{
+            backgroundColor: filled ? (lit ? '#183A3F' : '#95DEE6') : (lit ? '#83C6CD' : 'var(--gm-track)'),
+            outline: i === todayIdx && !filled ? `1.5px solid ${lit ? '#183A3F' : '#95DEE6'}` : 'none', outlineOffset: 1,
+          }} />
         ))}
       </div>
+
+      {next && (
+        <div className="flex items-center justify-between gap-2 mt-3 text-xs font-bold" style={{ color: sub }} data-testid="streak-next-milestone">
+          <span>{next[0] - streak} {next[0] - streak === 1 ? 'day' : 'days'} to the {next[0]}-day milestone</span>
+          <span className="inline-flex items-center gap-1" style={{ color: ink }}><GemIcon size={12} /> +{next[1]}</span>
+        </div>
+      )}
     </div>
   );
 }

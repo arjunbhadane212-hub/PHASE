@@ -15,7 +15,7 @@
 // still read their live values, they simply express them through the label and
 // the emblem rather than through brightness.
 
-import { Trophy, Globe2, Crown, ChevronsUp, ChevronsDown, Minus } from 'lucide-react';
+import { Trophy, Globe2, Crown, ChevronsUp, ChevronsDown, Minus } from '../icons';
 import TierEmblem from '../TierEmblem';
 import { FlameGlyph } from './Sigil';
 import TitlePlate from './TitlePlate';

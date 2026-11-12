@@ -53,7 +53,7 @@ export default function TitlePlate({ titleKey, name, tier = 'common', size = 'md
   // Standalone glyph (common/rare), padded from the left edge.
   const glyph = (color) => (
     <span style={{ color, display: 'inline-flex', flex: 'none', paddingLeft: px(10) }}>
-      <TitleGlyph titleKey={titleKey} size={px(BASE.glyph)} strokeWidth={2.2} />
+      <TitleGlyph titleKey={titleKey} size={px(BASE.glyph)} strokeWidth={3.4} />
     </span>
   );
 
@@ -66,7 +66,7 @@ export default function TitlePlate({ titleKey, name, tier = 'common', size = 'md
       marginLeft: full ? 0 : px(4), flex: 'none', display: 'grid', placeItems: 'center',
       borderRadius: full ? 0 : px(6), background: surface, color: ink,
     }}>
-      <TitleGlyph titleKey={titleKey} size={px(BASE.glyph)} strokeWidth={2.4} />
+      <TitleGlyph titleKey={titleKey} size={px(BASE.glyph)} strokeWidth={3.8} />
     </span>
   );
 

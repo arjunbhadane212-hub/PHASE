@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, X, Zap } from 'lucide-react';
+import { Flame, X, Zap } from './icons';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function RoastNotification() {
   const [roasts, setRoasts] = useState([]);
   const [dismissed, setDismissed] = useState(new Set());
+  const { user } = useAuth();
+  const userId = user && typeof user === 'object' ? user.id : null;
 
+  // Signed-in only. The server decides whether a roast is deserved (nothing
+  // done yet today, afternoon or later, max 2/day) — see check_roast().
   useEffect(() => {
+    if (!userId) return undefined;
     const check = async () => {
       try {
         const { data } = await supabase.rpc('check_roast');
@@ -16,10 +22,10 @@ export default function RoastNotification() {
         }
       } catch { /* ignore */ }
     };
-    check();
-    const interval = setInterval(check, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    const first = setTimeout(check, 20_000);
+    const interval = setInterval(check, 15 * 60 * 1000);
+    return () => { clearTimeout(first); clearInterval(interval); };
+  }, [userId]);
 
   const dismiss = (id) => setDismissed(prev => new Set(prev).add(id));
   const visible = roasts.filter(r => !dismissed.has(r.id));

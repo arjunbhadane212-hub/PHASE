@@ -27,6 +27,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import AdminPage from "./pages/AdminPage";
 import DevBoxOpeningPage from "./pages/DevBoxOpeningPage";
+import DevIconsPage from "./pages/DevIconsPage";
 import { PrivacyPage, TermsPage, HelpPage } from "./pages/LegalPage";
 import RoastNotification, { RoastListener } from "./components/RoastNotification";
 import { TitleUnlockListener } from "./components/profile/TitleUnlockToast";
@@ -39,12 +40,12 @@ import { resolveRootRoute, ROUTE_LANDING } from "./utils/appEntry";
 // explains why instead of silently bouncing to the login form.
 function SuspendedScreen() {
   return (
-    <div className="min-h-screen bg-[#06080F] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm p-6 rounded-2xl bg-[#0C1220] border border-red-900/50 text-center">
-        <h1 className="text-lg font-bold text-white font-['Satoshi'] mb-2">Account Suspended</h1>
-        <p className="text-sm text-zinc-400 mb-6">This account has been suspended. If you think this is a mistake, contact support.</p>
-        <a href="/login" className="inline-block w-full py-2 rounded-lg bg-[#1B6AE4] hover:bg-[#1B6AE4]/90 text-white text-sm font-medium">
-          Back to Login
+    <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center p-4">
+      <div className="w-full max-w-sm p-6 rounded-2xl bg-[var(--gm-card)] text-center">
+        <h1 className="text-lg font-black text-[var(--gm-ink)] font-['Archivo'] mb-2">Account suspended</h1>
+        <p className="text-sm text-[var(--gm-muted)] mb-6">This account has been suspended. If you think this is a mistake, contact support.</p>
+        <a href="/login" className="inline-block w-full py-2.5 rounded-full bg-[#95DEE6] text-[#183A3F] text-sm font-bold">
+          Back to login
         </a>
       </div>
     </div>
@@ -57,8 +58,8 @@ function ProtectedRoute({ children }) {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#06080F] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -85,8 +86,8 @@ function AuthRoute({ children }) {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#06080F] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -111,8 +112,8 @@ function OnboardingRoute({ children }) {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#06080F] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -149,8 +150,8 @@ function RootEntry() {
   // Don't decide (or flash anything) while the session is still resolving.
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#06080F] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -173,8 +174,8 @@ function WelcomeRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#06080F] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#3B82F6] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -213,6 +214,9 @@ function AppRoutes() {
       {/* Box-opening preview with fake pulls (no auth, no gems) */}
       {process.env.NODE_ENV !== "production" && (
         <Route path="/dev/box-opening" element={<DevBoxOpeningPage />} />
+      )}
+      {process.env.NODE_ENV !== "production" && (
+        <Route path="/dev/icons" element={<DevIconsPage />} />
       )}
 
       {/* Legal + help (linked from signup and Settings; required by the app stores) */}

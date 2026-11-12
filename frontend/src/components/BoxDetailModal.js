@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronDown, Gem, Star, Lock } from 'lucide-react';
+import { X, ChevronDown, Gem, Star, Lock } from './icons';
 import { groupPoolByTier, TIER_META, tierOdds } from '../data/boxDrops';
 import PhaseBoxArt from './PhaseBoxArt';
 

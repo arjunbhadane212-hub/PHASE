@@ -15,7 +15,7 @@
 // re-reads, so the shelf and the server never drift apart.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Check, Gem } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, Gem } from './icons';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';

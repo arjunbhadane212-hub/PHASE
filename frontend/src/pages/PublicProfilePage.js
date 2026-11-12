@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from '../components/icons';
 import { supabase } from '../lib/supabaseClient';
 import ProfileCard from '../components/profile/ProfileCard';
 
@@ -47,9 +47,9 @@ export default function PublicProfilePage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#06080F]" data-testid="public-profile-page">
+    <div className="min-h-screen bg-[var(--gm-bg)]" data-testid="public-profile-page">
       <div className="absolute top-4 left-4 z-20">
-        <Link to="/" className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-lg" data-testid="profile-back-link">
+        <Link to="/" className="flex items-center gap-1.5 text-sm font-bold text-[var(--gm-ink)] bg-[var(--gm-card)] px-3 py-1.5 rounded-full" data-testid="profile-back-link">
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
       </div>

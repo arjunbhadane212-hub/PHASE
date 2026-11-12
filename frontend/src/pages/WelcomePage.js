@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Flame, Target, Trophy, ArrowRight } from 'lucide-react';
+import { Flame, Target, Trophy, ArrowRight } from '../components/icons';
 import { PhaseMark } from '../components/brand/PhaseMark';
 import { markOnboardingSeen } from '../utils/onboardingFlag';
 

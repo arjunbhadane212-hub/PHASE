@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from '../components/icons';
 import { APP_NAME, SUPPORT_EMAIL, OPERATOR_NAME, OPERATOR_COUNTRY, LEGAL_LAST_UPDATED } from '../config/legal';
 
 const H2 = "text-lg font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] mt-8 mb-2";

@@ -19,8 +19,15 @@ import { useId, useMemo } from 'react';
 
 const C = { cyan: '#95DEE6', cyanDim: '#5FB8C4', lime: '#DBF67F', white: '#EAFCFF' };
 
+// Flat pass (Nov 2026): the soft-bloom vignettes and Gaussian "glow" filters
+// read as generic AI art, so they are stripped here, once, for every banner.
+// What remains is line work + flat colour; legendary/mythic keep their
+// structural gradients (aurora curtains, eclipse corona) because those ARE the art.
+const deglow = (inner) => inner
+  .replace(/ filter="url\(#[^)"]*gl\)"/g, '')
+  .replace(/<rect width="375" height="160" fill="url\(#[^)"]*bl\)"\/>/g, '');
 const svg = (inner) =>
-  `<svg viewBox="0 0 375 160" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block">${inner}</svg>`;
+  `<svg viewBox="0 0 375 160" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block">${deglow(inner)}</svg>`;
 const bg = (h) => `<rect width="375" height="160" fill="${h || '#06090B'}"/>`;
 const glow = (u, dev) =>
   `<filter id="${u}gl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="${dev || 3}"/></filter>`;
@@ -66,7 +73,7 @@ function topo(u) {
 }
 function fracture(u) {
   const p = ['M0 0 L95 55 L155 95 L205 160', 'M95 55 L150 20', 'M155 95 L225 78', 'M155 95 L172 140'];
-  let g = p.map((d) => `<path d="${d}" fill="none" stroke="${C.cyan}" stroke-opacity=".9" stroke-width="7" stroke-linecap="round" filter="url(#${u}gl)"/>`).join('');
+  let g = p.map((d) => `<path d="${d}" fill="none" stroke="${C.cyan}" stroke-opacity=".35" stroke-width="4" stroke-linecap="round"/>`).join('');
   let cr = p.map((d) => `<path d="${d}" fill="none" stroke="${C.white}" stroke-opacity=".9" stroke-width="1.8" stroke-linecap="round"/>`).join('');
   return svg(`<defs>${glow(u, 4)}${bloom(u, 30, 20, C.cyan, .3)}</defs>${bg('#06090C')}<rect width="375" height="160" fill="url(#${u}bl)"/>${g}${cr}<circle cx="155" cy="95" r="3.5" fill="${C.lime}" filter="url(#${u}gl)"/>`);
 }
@@ -105,6 +112,36 @@ function warpgate(u) {
   let rings = ''; for (let i = 7; i >= 1; i--) { const rr = i * 23; rings += `<circle cx="187" cy="80" r="${rr}" fill="none" stroke="${i <= 2 ? C.lime : C.cyan}" stroke-opacity="${0.2 + (8 - i) * 0.08}" stroke-width="${0.8 + (8 - i) * 0.25}"/>`; }
   return svg(`<defs>${glow(u, 5)}<radialGradient id="${u}w" cx="50%" cy="50%" r="52%"><stop offset="0%" stop-color="${C.white}" stop-opacity=".9"/><stop offset="30%" stop-color="${C.cyan}" stop-opacity=".3"/><stop offset="100%" stop-color="${C.cyan}" stop-opacity="0"/></radialGradient></defs>${bg('#04070A')}${stars(u, 40, 31, 0.3)}<rect width="375" height="160" fill="url(#${u}w)"/><g>${rings}<animateTransform attributeName="transform" type="scale" additive="sum" values="1;1.04;1" dur="5s" repeatCount="indefinite"/></g><circle cx="187" cy="80" r="9" fill="${C.white}" filter="url(#${u}gl)"/>`);
 }
+// ── NEW (Nov 2026 rotation drop) — flat line + colour, no glow ────────────
+function chevron() {
+  let c = ''; for (let i = 0; i < 9; i++) { const x = -40 + i * 52; c += `<path d="M${x} 160 L${x + 40} 80 L${x} 0" fill="none" stroke="${i % 4 === 1 ? C.lime : C.cyan}" stroke-opacity="${i % 4 === 1 ? 0.7 : 0.22}" stroke-width="${i % 4 === 1 ? 3 : 1.6}" stroke-linejoin="round"/>`; }
+  return svg(`${bg('#070B0D')}${c}`);
+}
+function skyline() {
+  const h = [40, 72, 56, 98, 64, 120, 84, 58, 104, 70, 90, 48, 80, 62];
+  const b = h.map((v, i) => `<rect x="${i * 27}" y="${160 - v}" width="22" height="${v}" fill="${i === 5 ? C.cyan : '#141A1D'}" fill-opacity="${i === 5 ? 0.85 : 1}"/>${i === 5 ? '' : `<rect x="${i * 27 + 4}" y="${168 - v}" width="4" height="4" fill="${C.cyan}" fill-opacity=".35"/>`}`).join('');
+  return svg(`${bg('#06090B')}<line x1="0" y1="159" x2="375" y2="159" stroke="${C.cyan}" stroke-opacity=".4"/>${b}`);
+}
+function summit() {
+  const ridge = (y, op, col) => `<path d="M0 ${y + 40} L70 ${y} L120 ${y + 26} L190 ${y - 24} L250 ${y + 18} L300 ${y - 6} L375 ${y + 30}" fill="none" stroke="${col}" stroke-opacity="${op}" stroke-width="2" stroke-linejoin="round"/>`;
+  return svg(`${bg('#06090C')}${ridge(110, .2, C.cyan)}${ridge(86, .35, C.cyan)}${ridge(62, .9, C.lime)}<path d="M190 38 L196 50 L184 50 Z" fill="${C.lime}"/>`);
+}
+function tidal() {
+  let w = ''; for (let r = 0; r < 7; r++) { for (let i = 0; i < 26; i++) { const x = i * 15 + (r % 2) * 7, y = 26 + r * 19 + Math.sin(i / 2.2 + r) * 6; w += `<rect x="${x}" y="${y.toFixed(1)}" width="3" height="3" fill="${r === 3 ? C.lime : C.cyan}" fill-opacity="${r === 3 ? 0.9 : 0.18 + r * 0.05}"/>`; } }
+  return svg(`${bg('#06090C')}${w}`);
+}
+function monolith() {
+  let bars = ''; for (let i = 0; i < 15; i++) { const x = 12 + i * 24; bars += `<rect x="${x}" y="20" width="${i === 7 ? 18 : 4}" height="120" fill="${i === 7 ? C.lime : C.cyan}" fill-opacity="${i === 7 ? 0.95 : 0.14}"/>`; }
+  return svg(`${bg('#050708')}${bars}<rect x="0" y="140" width="375" height="1.5" fill="${C.cyan}" fill-opacity=".5"/>`);
+}
+function solstice() {
+  let r = ''; for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2, x2 = 187 + Math.cos(a) * 300, y2 = 150 + Math.sin(a) * 300; r += `<line x1="187" y1="150" x2="${x2.toFixed(0)}" y2="${y2.toFixed(0)}" stroke="${i % 3 === 0 ? C.lime : C.cyan}" stroke-opacity="${i % 3 === 0 ? 0.5 : 0.16}" stroke-width="${i % 3 === 0 ? 2 : 1}"/>`; }
+  return svg(`${bg('#06090B')}${r}<path d="M127 150 A60 60 0 0 1 247 150 Z" fill="${C.lime}"/><path d="M147 150 A40 40 0 0 1 227 150 Z" fill="#06090B"/>`);
+}
+function singularity() {
+  let rings = ''; for (let i = 1; i <= 9; i++) { rings += `<ellipse cx="187" cy="80" rx="${i * 26}" ry="${i * 9}" fill="none" stroke="${i === 3 ? C.lime : C.cyan}" stroke-opacity="${i === 3 ? 0.9 : 0.5 - i * 0.04}" stroke-width="${i === 3 ? 2.4 : 1.2}" transform="rotate(-12 187 80)"/>`; }
+  return svg(`${bg('#040607')}${stars('s', 50, 41, 0.25)}${rings}<circle cx="187" cy="80" r="22" fill="#040607" stroke="${C.white}" stroke-width="2"/>`);
+}
 function defaultArt(u) {
   return svg(`<defs>${bloom(u, 50, 40, C.cyan, .12)}</defs>${bg('#070B0D')}<rect width="375" height="160" fill="url(#${u}bl)"/><text x="340" y="150" fill="${C.cyan}" fill-opacity=".1" font-size="11" font-weight="700" letter-spacing="3" text-anchor="end" font-family="inherit">PHASE</text>`);
 }
@@ -126,6 +163,14 @@ const ART = {
   // new showpieces (Oct 2026)
   banner_meridian: meridian,
   banner_warpgate: warpgate,
+  // rotation drop (Nov 2026)
+  banner_chevron: chevron,
+  banner_skyline: skyline,
+  banner_summit: summit,
+  banner_tidal: tidal,
+  banner_monolith: monolith,
+  banner_solstice: solstice,
+  banner_singularity: singularity,
   // legacy internal-name aliases (kept so old callers still resolve)
   starter_circuit: circuit,
   starter_grid: grid,
@@ -153,6 +198,13 @@ export const BANNER_META = [
   { key: 'banner_meridian', name: 'Meridian', rarity: 'legendary' },
   { key: 'banner_void_walker', name: 'Eclipse', rarity: 'mythic' },
   { key: 'banner_warpgate', name: 'Warpgate', rarity: 'mythic' },
+  { key: 'banner_chevron', name: 'Chevron', rarity: 'common' },
+  { key: 'banner_skyline', name: 'Skyline', rarity: 'common' },
+  { key: 'banner_summit', name: 'Summit', rarity: 'rare' },
+  { key: 'banner_tidal', name: 'Tidal', rarity: 'rare' },
+  { key: 'banner_monolith', name: 'Monolith', rarity: 'legendary' },
+  { key: 'banner_solstice', name: 'Solstice', rarity: 'legendary' },
+  { key: 'banner_singularity', name: 'Singularity', rarity: 'mythic' },
 ];
 
 // Render helper — resolve by key, fall back to the neutral default. Fills its

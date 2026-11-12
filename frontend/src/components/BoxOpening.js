@@ -14,7 +14,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { Gem } from 'lucide-react';
+import { Gem } from './icons';
 import { soundEngine } from '../utils/SoundEngine';
 import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
 import Walkout from './boxopen/Walkout';

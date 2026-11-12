@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Check, Gem, Gamepad2, Eye, Play } from 'lucide-react';
+import { Check, Gem, Gamepad2, Eye, Play } from '../icons';
 import { eyebrow } from './data';
 
 // Mode picker card + its two live previews, and the post-onboarding splash.

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X } from '../icons';
 import { supabase } from '../../lib/supabaseClient';
 import ProfileCard from './ProfileCard';
 

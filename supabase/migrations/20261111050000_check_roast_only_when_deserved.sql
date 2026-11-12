@@ -1,0 +1,8 @@
+-- check_roast: ambient roasts (no event) used to fire on every app open, up to
+-- 2/day, even for a user who had already finished every habit — so the best
+-- users got trash-talked on launch. Now an ambient roast needs: at least one
+-- habit, nothing completed yet today (user-local day), and local time >= 13:00.
+-- Event roasts (focus abandon / tab switch) are unchanged. The daily cap is a
+-- rolling 20h window instead of the UTC calendar day.
+-- (Full function body applied via MCP as migration `check_roast_only_when_deserved`;
+--  see pg_get_functiondef('public.check_roast(text)') for the live source.)
