@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Check, Eye, EyeOff, Flame, Dumbbell, Brain, Target, Sun, Shield } from '../icons';
+import { Check, Eye, EyeOff, Flame, Dumbbell, Brain, Target, Sun, Shield, AlertTriangle } from '../icons';
 import PhaseWordmark from '../brand/PhaseMark';
 
 // Shared v2 shell for Log in / Sign up. Calm by design: one column of form on
@@ -10,7 +10,7 @@ import PhaseWordmark from '../brand/PhaseMark';
 // slice of what Phase does.
 
 export const eyebrow =
-  "font-['JetBrains_Mono'] font-bold uppercase text-[10px] sm:text-[11px] tracking-[0.08em]";
+  "font-label font-bold uppercase text-[12px] sm:text-[13px] tracking-[0.08em]";
 
 export default function AuthShell({ children, panel }) {
   return (
@@ -22,7 +22,7 @@ export default function AuthShell({ children, panel }) {
         </div>
       </div>
       <div className="hidden lg:block flex-1 p-4 max-w-[720px]">
-        <div className="h-full rounded-[28px] bg-[#95DEE6] overflow-hidden relative flex flex-col justify-between p-10 xl:p-12">
+        <div className="h-full rounded-[28px] bg-[#D4F36B] overflow-hidden relative flex flex-col justify-between p-10 xl:p-12">
           {panel}
         </div>
       </div>
@@ -34,12 +34,12 @@ export function AuthTitle({ title, sub, testId }) {
   return (
     <div className="mb-8">
       <h1
-        className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[34px] sm:text-[40px] leading-[0.95] tracking-[-0.02em]"
+        className="font-display font-black text-[var(--gm-ink)] text-[34px] sm:text-[40px] leading-[0.95] tracking-[-0.02em]"
         data-testid={testId}
       >
         {title}
       </h1>
-      {sub && <p className="mt-3 text-[15px] text-[var(--gm-muted)] font-medium">{sub}</p>}
+      {sub && <p className="mt-3 text-[17px] text-[var(--gm-muted)] font-medium">{sub}</p>}
     </div>
   );
 }
@@ -62,8 +62,9 @@ export function AuthField({ id, label, type = 'text', value, onChange, placehold
           placeholder={placeholder}
           autoComplete={autoComplete}
           autoFocus={autoFocus}
-          required
-          className={`phase-input w-full h-[52px] rounded-2xl bg-[var(--gm-card)] px-4 ${isPassword ? 'pr-12' : ''} text-[15px] font-medium text-[var(--gm-ink)] placeholder:text-[var(--gm-muted)] placeholder:opacity-60 outline-none border-2 transition-colors ${
+          aria-invalid={error ? true : undefined}
+          aria-describedby={typeof error === 'string' && error ? `${id}-error` : undefined}
+          className={`phase-input w-full h-[52px] rounded-2xl bg-[var(--gm-card)] px-4 ${isPassword ? 'pr-12' : ''} text-[17px] font-medium text-[var(--gm-ink)] placeholder:text-[var(--gm-muted)] placeholder:opacity-60 outline-none border-2 transition-colors duration-300 ${
             error ? 'phase-input-error border-[#B91C1C]' : 'border-transparent'
           }`}
           data-testid={testId}
@@ -80,19 +81,56 @@ export function AuthField({ id, label, type = 'text', value, onChange, placehold
           </button>
         )}
       </div>
-      {error && <p className="text-xs font-medium text-[#F07C7C]">{error}</p>}
+      <AnimatePresence initial={false}>
+        {typeof error === 'string' && error && (
+          <motion.p key={error} id={`${id}-error`} role="alert"
+            initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="flex items-start gap-1.5 text-[14px] font-bold leading-snug" style={{ color: 'var(--ph-error-text)' }}
+            data-testid={`${id}-field-error`}>
+            <AlertTriangle className="w-4 h-4 mt-[2px] flex-none" variant="solid" />
+            <span>{error}</span>
+          </motion.p>
+        )}
+      </AnimatePresence>
       {children}
     </div>
   );
 }
 
+// UI v3 error banner: a soft red block with a solid red icon disc, a bold
+// one-line "what happened" and a plain "what to do". Accepts a string or
+// { title, detail } (see lib/authErrors). Slides in with a small shake so the
+// user notices it changed, and announces itself to screen readers.
 export function AuthError({ children, testId }) {
-  if (!children) return null;
+  const err = !children ? null : typeof children === 'string' ? { title: children } : children;
+  const reduce = useReducedMotion();
   return (
-    <div className="mb-6 flex items-start gap-3 rounded-2xl bg-[var(--gm-card)] p-4" data-testid={testId}>
-      <span className="mt-1.5 w-2 h-2 rounded-full bg-[#B91C1C] flex-shrink-0" />
-      <p className="text-sm font-medium text-[var(--gm-ink)]">{children}</p>
-    </div>
+    <AnimatePresence initial={false}>
+      {err?.title && (
+        <motion.div
+          key={`${err.title}|${err.detail || ''}`}
+          role="alert"
+          aria-live="assertive"
+          initial={{ opacity: 0, y: -10, height: 0 }}
+          animate={{ opacity: 1, y: 0, height: 'auto', x: reduce ? 0 : [0, -8, 7, -4, 3, 0] }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], x: { duration: 0.45, delay: 0.1 } }}
+          className="overflow-hidden"
+          data-testid={testId}
+        >
+          <div className="mb-6 flex items-start gap-3 rounded-[22px] p-4" style={{ background: 'var(--ph-error-soft)', color: 'var(--ph-error-ink)' }}>
+            <span className="w-9 h-9 rounded-full flex items-center justify-center flex-none" style={{ background: 'var(--ph-error)', color: '#FFFFFF' }}>
+              <AlertTriangle className="w-[18px] h-[18px]" variant="solid" />
+            </span>
+            <div className="min-w-0 pt-0.5">
+              <p className="text-[16px] font-extrabold leading-tight" data-testid={testId ? `${testId}-title` : undefined}>{err.title}</p>
+              {err.detail && <p className="text-[14px] font-semibold leading-snug mt-1 opacity-80">{err.detail}</p>}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -100,7 +138,7 @@ export function PrimaryButton({ children, className = '', ...props }) {
   return (
     <button
       {...props}
-      className={`w-full h-[52px] rounded-full bg-[#95DEE6] text-[#183A3F] text-[15px] font-bold shadow-[var(--gm-shadow-cyan)] hover:opacity-90 active:scale-[0.99] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+      className={`w-full h-[52px] rounded-full bg-[#D4F36B] text-[#2B3A06] text-[17px] font-bold shadow-[var(--gm-shadow-cyan)] hover:opacity-90 active:scale-[0.99] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
     >
       {children}
     </button>
@@ -111,15 +149,15 @@ export function PrimaryButton({ children, className = '', ...props }) {
 
 // Every panel uses the same cyan-on-dark palette so they feel like one family,
 // not five different cards. Panel = one hero line + one animating artefact.
-const INK = '#183A3F';
-const INK_DEEP = '#09181C';
-const CYAN = '#95DEE6';
-const CYAN_SOFT = '#C7F0F5';
-const CYAN_MID = '#3E6C71';
-const CYAN_DIM = '#76B5BC';
+const INK = '#2B3A06';
+const INK_DEEP = '#2B3A06';
+const CYAN = '#D4F36B';
+const CYAN_SOFT = '#EEF8C8';
+const CYAN_MID = '#4F6115';
+const CYAN_DIM = '#A9C93C';
 const CYAN_DEEP = '#2C5A60';
-const LIME = '#DBF67F';
-const LIME_INK = '#2A3B0B';
+const LIME = '#D4F36B';
+const LIME_INK = '#2B3A06';
 
 function PanelFrame({ eyebrowText, title, sub, children }) {
   return (
@@ -129,7 +167,7 @@ function PanelFrame({ eyebrowText, title, sub, children }) {
       </span>
       <div>
         <div
-          className="font-['Archivo'] font-black text-[56px] xl:text-[76px] leading-[0.88] tracking-[-0.02em]"
+          className="font-display font-black text-[56px] xl:text-[76px] leading-[0.88] tracking-[-0.02em]"
           style={{ color: INK }}
         >
           {title}
@@ -137,7 +175,7 @@ function PanelFrame({ eyebrowText, title, sub, children }) {
         <div className="mt-8 max-w-[440px]">{children}</div>
       </div>
       {sub && (
-        <p className="text-[15px] font-medium max-w-[380px]" style={{ color: CYAN_MID }}>
+        <p className="text-[17px] font-medium max-w-[380px]" style={{ color: CYAN_MID }}>
           {sub}
         </p>
       )}
@@ -179,7 +217,7 @@ function LoginChain() {
           <div>
             <span className={eyebrow} style={{ color: CYAN_DIM }}>Day streak</span>
             <div
-              className="font-['Archivo'] font-black text-[52px] leading-[0.88] tracking-[-0.02em] mt-2 tabular-nums"
+              className="font-display font-black text-[52px] leading-[0.88] tracking-[-0.02em] mt-2 tabular-nums"
               style={{ color: CYAN }}
             >
               {streak}
@@ -230,7 +268,7 @@ function LoginFlame() {
         <div className="flex-1 min-w-0">
           <div className={eyebrow} style={{ color: CYAN_DIM }}>Progress to Burning</div>
           <div
-            className="font-['Archivo'] font-black text-[32px] leading-none mt-2 tabular-nums"
+            className="font-display font-black text-[32px] leading-none mt-2 tabular-nums"
             style={{ color: CYAN }}
           >
             63 / 75
@@ -268,7 +306,7 @@ function LoginChart() {
           <div>
             <span className={eyebrow} style={{ color: CYAN_DIM }}>Consistency</span>
             <div
-              className="font-['Archivo'] font-black text-[52px] leading-[0.88] tracking-[-0.02em] mt-2 tabular-nums"
+              className="font-display font-black text-[52px] leading-[0.88] tracking-[-0.02em] mt-2 tabular-nums"
               style={{ color: CYAN }}
             >
               {cur}%
@@ -276,7 +314,7 @@ function LoginChart() {
           </div>
           <div className="text-right">
             <span className={eyebrow} style={{ color: CYAN_DIM }}>8-week high</span>
-            <div className="font-['JetBrains_Mono'] text-[12px] font-bold mt-2" style={{ color: LIME }}>
+            <div className="font-label text-[14px] font-bold mt-2" style={{ color: LIME }}>
               +53 pts
             </div>
           </div>
@@ -313,7 +351,7 @@ function LoginRank() {
       <div className="rounded-[22px] p-6" style={{ background: INK }}>
         <div className="flex items-start gap-5">
           <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center font-['Archivo'] font-black text-[32px] leading-none flex-shrink-0"
+            className="w-20 h-20 rounded-2xl flex items-center justify-center font-display font-black text-[32px] leading-none flex-shrink-0"
             style={{ background: CYAN, color: INK_DEEP }}
           >
             06
@@ -321,12 +359,12 @@ function LoginRank() {
           <div className="flex-1 min-w-0">
             <span className={eyebrow} style={{ color: CYAN_DIM }}>Expert rank</span>
             <div
-              className="font-['Archivo'] font-black text-[26px] leading-none mt-2 uppercase tracking-[-0.01em]"
+              className="font-display font-black text-[26px] leading-none mt-2 uppercase tracking-[-0.01em]"
               style={{ color: CYAN }}
             >
               Expert
             </div>
-            <div className="text-[12px] font-medium mt-1" style={{ color: CYAN_DIM }}>
+            <div className="text-[14px] font-medium mt-1" style={{ color: CYAN_DIM }}>
               Consistency is now your edge.
             </div>
           </div>
@@ -340,8 +378,8 @@ function LoginRank() {
           />
         </div>
         <div className="flex justify-between mt-2">
-          <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: CYAN_DIM }}>1,560 XP</span>
-          <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: CYAN_DIM }}>2,100 XP</span>
+          <span className="font-label text-[12px] font-bold" style={{ color: CYAN_DIM }}>1,560 XP</span>
+          <span className="font-label text-[12px] font-bold" style={{ color: CYAN_DIM }}>2,100 XP</span>
         </div>
       </div>
     </PanelFrame>
@@ -376,7 +414,7 @@ function LoginFocus() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span
-              className="font-['Archivo'] font-black text-[24px] leading-none tabular-nums tracking-[-0.02em]"
+              className="font-display font-black text-[27px] leading-none tabular-nums tracking-[-0.02em]"
               style={{ color: CYAN }}
             >
               {mm}:{ss}
@@ -389,12 +427,12 @@ function LoginFocus() {
         <div>
           <span className={eyebrow} style={{ color: CYAN_DIM }}>In progress</span>
           <div
-            className="font-['Archivo'] font-black text-[22px] leading-tight mt-2"
+            className="font-display font-black text-[25px] leading-tight mt-2"
             style={{ color: CYAN }}
           >
             Thesis draft
           </div>
-          <div className="text-[12px] font-medium mt-2" style={{ color: CYAN_DIM }}>
+          <div className="text-[14px] font-medium mt-2" style={{ color: CYAN_DIM }}>
             25-minute session · 2 of 4 today
           </div>
         </div>
@@ -428,7 +466,7 @@ function SignupPayout() {
       <span className={eyebrow} style={{ color: CYAN_MID }}>Day 1</span>
       <div>
         <div
-          className="font-['Archivo'] font-black text-[56px] xl:text-[76px] leading-[0.88] tracking-[-0.02em]"
+          className="font-display font-black text-[56px] xl:text-[76px] leading-[0.88] tracking-[-0.02em]"
           style={{ color: INK }}
         >
           Every habit<br />pays out.
@@ -450,14 +488,14 @@ function SignupPayout() {
                   {isDone && <Check className="w-4 h-4" style={{ color: LIME }} strokeWidth={3} />}
                 </div>
                 <span className="flex-1 text-sm font-bold" style={{ color: isDone ? LIME_INK : CYAN_SOFT }}>{h.name}</span>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold" style={{ color: isDone ? LIME_INK : CYAN_DIM }}>+{h.xp} XP</span>
+                <span className="font-label text-xs font-bold" style={{ color: isDone ? LIME_INK : CYAN_DIM }}>+{h.xp} XP</span>
               </motion.div>
             );
           })}
         </div>
       </div>
       <div className="flex items-end justify-between">
-        <p className="text-[15px] font-medium max-w-[300px]" style={{ color: CYAN_MID }}>
+        <p className="text-[17px] font-medium max-w-[300px]" style={{ color: CYAN_MID }}>
           Free forever. No ads. Your first streak starts the day you join.
         </p>
         <div className="text-right">
@@ -468,7 +506,7 @@ function SignupPayout() {
               initial={{ y: 12, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -12, opacity: 0 }}
-              className="font-['Archivo'] font-black text-[44px] leading-[0.88] tracking-[-0.02em] tabular-nums"
+              className="font-display font-black text-[44px] leading-[0.88] tracking-[-0.02em] tabular-nums"
               style={{ color: INK }}
             >
               {xp}
@@ -496,12 +534,12 @@ function SignupStartSmall() {
           <div>
             <span className={eyebrow} style={{ color: CYAN_DIM }}>Meditate 10 minutes</span>
             <div
-              className="font-['Archivo'] font-black text-[52px] leading-[0.88] tracking-[-0.02em] mt-2 tabular-nums"
+              className="font-display font-black text-[52px] leading-[0.88] tracking-[-0.02em] mt-2 tabular-nums"
               style={{ color: CYAN }}
             >
               {day}
             </div>
-            <div className="text-[12px] font-bold mt-1" style={{ color: CYAN_DIM }}>Days in a row</div>
+            <div className="text-[14px] font-bold mt-1" style={{ color: CYAN_DIM }}>Days in a row</div>
           </div>
           <div className="flex gap-1 flex-col">
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
@@ -513,7 +551,7 @@ function SignupStartSmall() {
               >
                 {i < day && <Check className="w-3 h-3" style={{ color: INK }} strokeWidth={3} />}
                 {i >= day && (
-                  <span className="font-['JetBrains_Mono'] text-[9px] font-bold" style={{ color: CYAN_DIM }}>{d}</span>
+                  <span className="font-label text-[11px] font-bold" style={{ color: CYAN_DIM }}>{d}</span>
                 )}
               </motion.div>
             ))}
@@ -551,7 +589,7 @@ function SignupAreas() {
             <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CYAN_DEEP }}>
               <Icon className="w-5 h-5" style={{ color: CYAN }} />
             </div>
-            <span className="font-['Archivo'] font-black text-[22px] leading-none" style={{ color: CYAN }}>{name}</span>
+            <span className="font-display font-black text-[25px] leading-none" style={{ color: CYAN }}>{name}</span>
           </motion.div>
         ))}
       </div>
@@ -572,16 +610,16 @@ function SignupScience() {
           <div>
             <span className={eyebrow} style={{ color: CYAN_DIM }}>Average time to automatic</span>
             <div
-              className="font-['Archivo'] font-black text-[80px] leading-[0.88] tracking-[-0.03em] mt-2 tabular-nums"
+              className="font-display font-black text-[80px] leading-[0.88] tracking-[-0.03em] mt-2 tabular-nums"
               style={{ color: CYAN }}
             >
               66
             </div>
-            <div className="text-[13px] font-bold mt-1" style={{ color: CYAN_DIM }}>Days</div>
+            <div className="text-[15px] font-bold mt-1" style={{ color: CYAN_DIM }}>Days</div>
           </div>
           <div className="flex flex-col items-end gap-1">
             <span className={eyebrow} style={{ color: CYAN_DIM }}>You, with Phase</span>
-            <span className="font-['Archivo'] font-black text-[18px]" style={{ color: LIME }}>on track</span>
+            <span className="font-display font-black text-[21px]" style={{ color: LIME }}>on track</span>
           </div>
         </div>
       </div>
@@ -601,12 +639,12 @@ function SignupFree() {
         <div className="rounded-[18px] p-5" style={{ background: INK }}>
           <span className={eyebrow} style={{ color: CYAN_DIM }}>Free</span>
           <div
-            className="font-['Archivo'] font-black text-[42px] leading-[0.88] tracking-[-0.02em] mt-2"
+            className="font-display font-black text-[42px] leading-[0.88] tracking-[-0.02em] mt-2"
             style={{ color: CYAN }}
           >
             $0
           </div>
-          <div className="text-[11px] font-bold mt-1" style={{ color: CYAN_DIM }}>Forever</div>
+          <div className="text-[13px] font-bold mt-1" style={{ color: CYAN_DIM }}>Forever</div>
         </div>
         <div className="rounded-[18px] p-5" style={{ background: INK_DEEP }}>
           <div className="flex items-start justify-between">
@@ -614,17 +652,17 @@ function SignupFree() {
             <span className={eyebrow} style={{ color: LIME }}>−40%</span>
           </div>
           <div
-            className="font-['Archivo'] font-black text-[42px] leading-[0.88] tracking-[-0.02em] mt-2"
+            className="font-display font-black text-[42px] leading-[0.88] tracking-[-0.02em] mt-2"
             style={{ color: CYAN }}
           >
             $4.17
           </div>
-          <div className="text-[11px] font-bold mt-1" style={{ color: CYAN_DIM }}>Per month, yearly</div>
+          <div className="text-[13px] font-bold mt-1" style={{ color: CYAN_DIM }}>Per month, yearly</div>
         </div>
       </div>
       <div className="mt-3 flex items-center gap-2.5 rounded-[14px] p-3" style={{ background: INK }}>
         <Shield className="w-4 h-4 flex-shrink-0" style={{ color: CYAN }} />
-        <span className="text-[12px] font-bold" style={{ color: CYAN_SOFT }}>No ads, ever. Gems are only earned, never sold.</span>
+        <span className="text-[14px] font-bold" style={{ color: CYAN_SOFT }}>No ads, ever. Gems are only earned, never sold.</span>
       </div>
     </PanelFrame>
   );

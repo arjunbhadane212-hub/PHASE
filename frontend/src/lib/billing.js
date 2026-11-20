@@ -9,9 +9,13 @@ export const PLANS = {
 };
 export const SAVE_PCT = 40; // 49.99 vs 12 x 6.99 = 83.88
 
-// The paywall step in onboarding is on by default. Set
-// REACT_APP_PAYMENTS_ENABLED=false in the host's env to hide it.
-export const PAYWALL_ENABLED = process.env.REACT_APP_PAYMENTS_ENABLED !== 'false';
+// Billing / Pro UI is OFF for v1. Nothing is functionally gated behind is_pro
+// in the app, Stripe isn't wired up, and Google Play forbids an external
+// payment flow for digital goods — so the onboarding paywall step and the
+// Settings "Plan" card both stay hidden until we deliberately switch them on.
+// Flip it back on per-build with REACT_APP_PAYMENTS_ENABLED=true once Stripe +
+// the stores' in-app billing are in place.
+export const PAYWALL_ENABLED = process.env.REACT_APP_PAYMENTS_ENABLED === 'true';
 
 export const money = (n) => `$${n.toFixed(2)}`;
 

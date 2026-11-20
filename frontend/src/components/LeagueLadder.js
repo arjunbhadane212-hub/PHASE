@@ -30,8 +30,8 @@ export default function LeagueLadder({ current = 1 }) {
       data-testid="league-ladder"
     >
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
-        <h2 className="text-[15px] font-['Archivo'] font-extrabold text-[color:var(--gm-ink)]">League Ladder</h2>
-        <span className="font-['JetBrains_Mono'] text-[10px] font-bold tracking-[0.12em] uppercase text-[color:var(--gm-muted)]">
+        <h2 className="text-[17px] font-display font-extrabold text-[color:var(--gm-ink)]">League Ladder</h2>
+        <span className="font-label text-[12px] font-bold tracking-[0.12em] uppercase text-[color:var(--gm-muted)]">
           Tier {Math.min(current, 10)} / 10
         </span>
       </div>
@@ -76,7 +76,7 @@ export default function LeagueLadder({ current = 1 }) {
                 style={{ opacity: nodeOpacity, width: isCurrent ? 104 : 76 }}
                 data-testid={`ladder-node-${t.n}`}
               >
-                <div className="h-3 mb-1.5 font-['JetBrains_Mono'] text-[8.5px] font-bold tracking-[0.14em] uppercase" style={{ color: capColor }}>
+                <div className="h-3 mb-1.5 font-label text-[10.5px] font-bold tracking-[0.14em] uppercase" style={{ color: capColor }}>
                   {cap}
                 </div>
 
@@ -93,10 +93,10 @@ export default function LeagueLadder({ current = 1 }) {
                   </span>
                 )}
 
-                <div className="mt-2 text-[11px] font-['Archivo'] font-extrabold leading-tight text-center" style={{ color: nameColor }}>
+                <div className="mt-2 text-[13px] font-display font-extrabold leading-tight text-center" style={{ color: nameColor }}>
                   {name}
                 </div>
-                <div className="font-['JetBrains_Mono'] text-[8.5px] text-[color:var(--gm-muted)] tracking-[0.06em]">
+                <div className="font-label text-[10.5px] text-[color:var(--gm-muted)] tracking-[0.06em]">
                   {locked ? 'Locked' : `Tier ${t.n}`}
                 </div>
               </div>

@@ -24,7 +24,7 @@ import TitlePlate from './profile/TitlePlate';
 import { PhaseBanner } from './banners/PhaseBanners';
 import MotionRing from './profile/MotionRing';
 
-const MONO = "font-['JetBrains_Mono'] uppercase tracking-[0.08em]";
+const MONO = "font-label uppercase tracking-[0.08em]";
 
 // Every equippable category, in one list. Adding a category to the shop means
 // adding exactly one row here and it appears on both surfaces at once.
@@ -95,7 +95,7 @@ export default function Inventory({ onNavigate }) {
   if (loading) {
     return (
       <div className="flex justify-center py-8">
-        <div className="w-5 h-5 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-[#D4F36B] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -105,7 +105,7 @@ export default function Inventory({ onNavigate }) {
       {total === 0 ? (
         <div className="rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)] py-8 px-4 text-center">
           <p className="text-sm text-[color:var(--gm-muted)] mb-1">Your inventory is empty.</p>
-          <p className="text-[11px] text-[color:var(--gm-muted)]">
+          <p className="text-[13px] text-[color:var(--gm-muted)]">
             <Gem className="w-3 h-3 inline" /> Earn titles through streaks, or buy them in the{' '}
             <Link to="/dashboard/shop" onClick={onNavigate} className="font-semibold text-[color:var(--gm-ink)] hover:opacity-80">Shop</Link>.
           </p>
@@ -123,14 +123,14 @@ export default function Inventory({ onNavigate }) {
               onToggle={() => setOpen(open === sec.id ? null : sec.id)}
             >
               {items.length === 0 ? (
-                <p className="text-[11px] text-[color:var(--gm-muted)]">
+                <p className="text-[13px] text-[color:var(--gm-muted)]">
                   None yet — find these in the <Link to="/dashboard/shop" onClick={onNavigate} className="font-semibold text-[color:var(--gm-ink)] hover:opacity-80">Shop</Link>.
                 </p>
               ) : (
                 <>
                   {equippedKey && (
                     <button onClick={() => unequip(sec.id)} disabled={busy === `${sec.id}-null`}
-                      className="mb-2 inline-flex items-center px-2.5 h-7 rounded-full text-[11px] font-bold text-[#B91C1C] hover:bg-[#B91C1C]/10 transition-colors disabled:opacity-50"
+                      className="mb-2 inline-flex items-center px-2.5 h-7 rounded-full text-[13px] font-bold text-[#B91C1C] hover:bg-[#B91C1C]/10 transition-colors disabled:opacity-50"
                       data-testid={`inv-remove-${sec.id}`}>
                       Remove
                     </button>
@@ -160,10 +160,10 @@ function ItemTile({ item, category, equipped, busy, onEquip }) {
     return (
       <button onClick={onEquip} disabled={equipped || busy}
         className={`inline-flex items-center gap-1.5 p-1 rounded-xl transition-all disabled:cursor-default ${
-          equipped ? 'ring-1 ring-[#DBF67F]' : 'hover:brightness-110'}`}
+          equipped ? 'ring-1 ring-[#D4F36B]' : 'hover:brightness-110'}`}
         data-testid={`inv-title-${item.key}`}>
         <TitlePlate titleKey={item.key} name={item.name} tier={item.rarity_tier || 'common'} size="sm" />
-        {equipped && <Check className="w-3 h-3 text-[#DBF67F] flex-none" strokeWidth={3} />}
+        {equipped && <Check className="w-3 h-3 text-[#D4F36B] flex-none" strokeWidth={3} />}
       </button>
     );
   }
@@ -175,13 +175,13 @@ function ItemTile({ item, category, equipped, busy, onEquip }) {
   return (
     <button onClick={onEquip} disabled={equipped || busy}
       className={`rounded-xl overflow-hidden text-left transition-all disabled:cursor-default ${
-        equipped ? 'ring-1 ring-[#DBF67F]' : 'hover:brightness-110'}`}
+        equipped ? 'ring-1 ring-[#D4F36B]' : 'hover:brightness-110'}`}
       style={{ background: 'var(--gm-badge)' }}
       data-testid={`inv-${category}-${item.key}`}>
-      <div className="h-12 flex items-center justify-center overflow-hidden">{preview}</div>
+      <div className="h-12 flex items-center justify-center overflow-hidden" style={category === 'banner' ? undefined : { background: '#141416' }}>{preview}</div>
       <div className="px-2 py-1.5 flex items-center gap-1">
-        <span className="text-[11px] font-['General_Sans'] font-bold text-[color:var(--gm-ink)] truncate flex-1">{item.name}</span>
-        {equipped && <Check className="w-3 h-3 text-[#DBF67F] flex-none" strokeWidth={3} />}
+        <span className="text-[13px] font-sans font-bold text-[color:var(--gm-ink)] truncate flex-1">{item.name}</span>
+        {equipped && <Check className="w-3 h-3 text-[#D4F36B] flex-none" strokeWidth={3} />}
       </div>
     </button>
   );
@@ -192,8 +192,8 @@ function Section({ label, count, expanded, onToggle, children }) {
     <div className="mb-2.5 rounded-2xl overflow-hidden bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]">
       <button onClick={onToggle} className="w-full flex items-center justify-between px-3 py-2.5"
         data-testid={`inv-section-${label.toLowerCase().replace(/\s+/g, '-')}`}>
-        <span className="text-xs font-['General_Sans'] font-bold text-[color:var(--gm-ink)]">
-          {label} <span className={`${MONO} text-[10px] text-[color:var(--gm-muted)] font-normal`}>{count}</span>
+        <span className="text-xs font-sans font-bold text-[color:var(--gm-ink)]">
+          {label} <span className={`${MONO} text-[12px] text-[color:var(--gm-muted)] font-normal`}>{count}</span>
         </span>
         {expanded
           ? <ChevronUp className="w-4 h-4 text-[color:var(--gm-muted)]" />

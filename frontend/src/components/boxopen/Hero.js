@@ -14,9 +14,9 @@ import { ShopItemIcon } from '../ShopIcons';
 // Reveal tiers (shop_items.rarity). ink = readable text colour ON the tier colour.
 export const TIER = {
   common:    { key: 'common',    color: '#9BA09C', ink: '#20242A', label: 'COMMON',    level: 0 },
-  rare:      { key: 'rare',      color: '#95DEE6', ink: '#183A3F', label: 'RARE',      level: 1 },
-  legendary: { key: 'legendary', color: '#DBF67F', ink: '#2A3B0B', label: 'LEGENDARY', level: 2 },
-  mythic:    { key: 'mythic',    color: '#A59BCC', ink: '#231D3A', label: 'MYTHIC',    level: 3 },
+  rare:      { key: 'rare',      color: '#D4F36B', ink: '#2B3A06', label: 'RARE',      level: 1 },
+  legendary: { key: 'legendary', color: '#D4F36B', ink: '#2B3A06', label: 'LEGENDARY', level: 2 },
+  mythic:    { key: 'mythic',    color: '#141416', ink: '#231D3A', label: 'MYTHIC',    level: 3 },
 };
 export const tierOf = (t) => TIER[t] || TIER.common;
 
@@ -61,8 +61,8 @@ function DrawGlyph({ titleKey, size, strokeWidth = 2.4 }) {
   );
 }
 
-const FONT_DISPLAY = "'Archivo', sans-serif";
-const FONT_MONO = "'JetBrains Mono', monospace";
+const FONT_DISPLAY = "'Bricolage Grotesque', sans-serif";
+const FONT_MONO = "'Bricolage Grotesque', sans-serif";
 
 // ---------- the big hero (center stage) ----------
 export function Hero({ item, scale = 1 }) {

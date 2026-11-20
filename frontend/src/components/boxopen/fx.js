@@ -96,7 +96,7 @@ export function Marquee({ text, color, rows = 3, speed = 24, z = 2, outline = fa
       {Array.from({ length: rows }).map((_, i) => (
         <motion.div
           key={i}
-          className="whitespace-nowrap font-['Archivo',sans-serif] font-black uppercase"
+          className="whitespace-nowrap font-display font-black uppercase"
           style={{ ...typeStyle, fontSize: 'clamp(72px, 21vw, 132px)', lineHeight: 0.92, letterSpacing: '-0.02em' }}
           initial={{ x: i % 2 ? '-50%' : '0%' }}
           animate={{ x: i % 2 ? '0%' : '-50%' }}

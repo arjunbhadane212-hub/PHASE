@@ -14,6 +14,6 @@ export function SparkleIcon({ className }) {
 
 // The tile colour a consumable sits on (cyan = utility, lime = XP/energy).
 export function shopItemTone(itemKey = '') {
-  if (itemKey.startsWith('boost_xp_')) return { bg: '#DBF67F', ink: '#2A3B0B' };
-  return { bg: '#95DEE6', ink: '#183A3F' };
+  if (itemKey.startsWith('boost_xp_')) return { bg: '#D4F36B', ink: '#2B3A06' };
+  return { bg: '#D4F36B', ink: '#2B3A06' };
 }

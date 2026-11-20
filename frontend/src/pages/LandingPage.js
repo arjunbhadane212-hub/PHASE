@@ -47,12 +47,12 @@ const reveal = {
 };
 
 function Eyebrow({ children, className = '' }) {
-  return <span className={`${eyebrow} text-[11px] text-[var(--gm-muted)] ${className}`}>{children}</span>;
+  return <span className={`${eyebrow} text-[13px] text-[var(--gm-muted)] ${className}`}>{children}</span>;
 }
 
 function H2({ children, className = '' }) {
   return (
-    <h2 className={`font-['Archivo'] font-black text-[var(--gm-ink)] text-[40px] sm:text-[56px] lg:text-[64px] leading-[0.92] tracking-[-0.025em] ${className}`}>
+    <h2 className={`font-display font-black text-[var(--gm-ink)] text-[40px] sm:text-[56px] lg:text-[64px] leading-[0.92] tracking-[-0.025em] ${className}`}>
       {children}
     </h2>
   );
@@ -62,8 +62,8 @@ function CTA({ children, to = '/signup', dark = false, className = '', testId })
   return (
     <Link
       to={to}
-      className={`inline-flex items-center justify-center gap-2 h-[52px] px-7 rounded-full text-[15px] font-bold transition hover:opacity-90 active:scale-[0.98] ${
-        dark ? 'bg-[#183A3F] text-[#95DEE6]' : 'bg-[#95DEE6] text-[#183A3F] shadow-[var(--gm-shadow-cyan)]'
+      className={`inline-flex items-center justify-center gap-2 h-[52px] px-7 rounded-full text-[17px] font-bold transition hover:opacity-90 active:scale-[0.98] ${
+        dark ? 'bg-[#2B3A06] text-[#D4F36B]' : 'bg-[#D4F36B] text-[#2B3A06] shadow-[var(--gm-shadow-cyan)]'
       } ${className}`}
       data-testid={testId}
     >
@@ -147,7 +147,7 @@ export default function LandingPage() {
             >
               <div className="px-5 pb-6 pt-2 space-y-1">
                 {NAV.map(([id, label]) => (
-                  <button key={id} onClick={() => go(id)} className="block w-full text-left py-3 font-['Archivo'] font-black text-2xl text-[var(--gm-ink)]">
+                  <button key={id} onClick={() => go(id)} className="block w-full text-left py-3 font-display font-black text-2xl text-[var(--gm-ink)]">
                     {label}
                   </button>
                 ))}
@@ -156,7 +156,7 @@ export default function LandingPage() {
                     <CTA to="/dashboard" className="col-span-2">Open Phase</CTA>
                   ) : (
                     <>
-                      <Link to="/login" className="h-[52px] rounded-full bg-[var(--gm-card)] flex items-center justify-center text-[15px] font-bold text-[var(--gm-ink)]">Log in</Link>
+                      <Link to="/login" className="h-[52px] rounded-full bg-[var(--gm-card)] flex items-center justify-center text-[17px] font-bold text-[var(--gm-ink)]">Log in</Link>
                       <CTA>Start free</CTA>
                     </>
                   )}
@@ -172,15 +172,15 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-5 sm:px-8 grid lg:grid-cols-[1.1fr_1fr] gap-14 lg:gap-10 items-center">
           <div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <span className={`${eyebrow} text-[11px] inline-flex items-center gap-2 rounded-full bg-[var(--gm-card)] px-3 py-1.5 text-[var(--gm-muted)]`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#DBF67F]" /> The habit tracker for a better life
+              <span className={`${eyebrow} text-[13px] inline-flex items-center gap-2 rounded-full bg-[var(--gm-card)] px-3 py-1.5 text-[var(--gm-muted)]`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4F36B]" /> The habit tracker for a better life
               </span>
               <h1
-                className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[60px] sm:text-[88px] xl:text-[104px] leading-[0.86] tracking-[-0.035em] mt-6"
+                className="font-display font-black text-[var(--gm-ink)] text-[60px] sm:text-[88px] xl:text-[104px] leading-[0.86] tracking-[-0.035em] mt-6"
                 data-testid="hero-title"
               >
                 Discipline,<br />made{' '}
-                <span className="inline-block bg-[#95DEE6] text-[#183A3F] px-3 sm:px-4 rounded-[18px] sm:rounded-[24px] -rotate-2 mt-2">fun.</span>
+                <span className="inline-block bg-[#D4F36B] text-[#2B3A06] px-3 sm:px-4 rounded-[18px] sm:rounded-[24px] -rotate-2 mt-2">fun.</span>
               </h1>
               <p className="text-lg sm:text-xl font-medium text-[var(--gm-muted)] mt-7 max-w-[540px] leading-relaxed" data-testid="hero-subtitle">
                 Phase helps you build the habits that change your life: training, sleep, reading, focus. Then it makes showing up every day feel like progress you can actually see.
@@ -196,7 +196,7 @@ export default function LandingPage() {
               <CTA testId="hero-cta-btn">Start building, free <ArrowRight className="w-4 h-4" /></CTA>
               <button
                 onClick={() => go('loop')}
-                className="h-[52px] px-7 rounded-full bg-[var(--gm-card)] text-[15px] font-bold text-[var(--gm-ink)] hover:bg-[var(--gm-badge)] transition-colors"
+                className="h-[52px] px-7 rounded-full bg-[var(--gm-card)] text-[17px] font-bold text-[var(--gm-ink)] hover:bg-[var(--gm-badge)] transition-colors"
               >
                 See how it works
               </button>
@@ -210,7 +210,7 @@ export default function LandingPage() {
             >
               {['Free forever', 'No ads', 'Set up in a minute'].map((t) => (
                 <li key={t} className="flex items-center gap-2 text-sm font-bold text-[var(--gm-muted)]">
-                  <Check className="w-4 h-4 text-[#DBF67F]" strokeWidth={3} /> {t}
+                  <Check className="w-4 h-4 text-[#D4F36B]" strokeWidth={3} /> {t}
                 </li>
               ))}
             </motion.ul>
@@ -286,8 +286,8 @@ export default function LandingPage() {
             <motion.div {...reveal}><RoastDemo /></motion.div>
             <motion.div {...reveal} className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 sm:p-8 flex flex-col">
               <Eyebrow>Your profile</Eyebrow>
-              <h3 className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em] mt-2">Proof you can share.</h3>
-              <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3">
+              <h3 className="font-display font-black text-[var(--gm-ink)] text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em] mt-2">Proof you can share.</h3>
+              <p className="text-[17px] font-medium text-[var(--gm-muted)] mt-3">
                 Your streak, your progress and your best run, on one link. Send it to the friend who's keeping you honest. Always free.
               </p>
               <div className="mt-6 flex-1 flex items-center justify-center">
@@ -322,7 +322,7 @@ export default function LandingPage() {
                 <AccordionTrigger className="text-left text-base font-bold hover:no-underline py-5 text-[var(--gm-ink)]">
                   {f.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-[15px] font-medium text-[var(--gm-muted)] pb-5 leading-relaxed">
+                <AccordionContent className="text-[17px] font-medium text-[var(--gm-muted)] pb-5 leading-relaxed">
                   {f.a}
                 </AccordionContent>
               </AccordionItem>
@@ -333,21 +333,21 @@ export default function LandingPage() {
 
       {/* ── Final CTA ───────────────────────────────────────────────────── */}
       <section className="px-4 sm:px-6 pb-6">
-        <motion.div {...reveal} className="max-w-7xl mx-auto rounded-[32px] bg-[#95DEE6] px-6 sm:px-12 py-16 sm:py-24">
+        <motion.div {...reveal} className="max-w-7xl mx-auto rounded-[32px] bg-[#D4F36B] px-6 sm:px-12 py-16 sm:py-24">
           <div className="grid lg:grid-cols-[1fr_auto] gap-10 items-end">
             <div>
-              <span className={`${eyebrow} text-[11px] text-[#3E6C71]`}>Day 1</span>
-              <h2 className="font-['Archivo'] font-black text-[#183A3F] text-[52px] sm:text-[84px] lg:text-[104px] leading-[0.86] tracking-[-0.035em] mt-4">
+              <span className={`${eyebrow} text-[13px] text-[#4F6115]`}>Day 1</span>
+              <h2 className="font-display font-black text-[#2B3A06] text-[52px] sm:text-[84px] lg:text-[104px] leading-[0.86] tracking-[-0.035em] mt-4">
                 Your better<br />routine starts today.
               </h2>
-              <p className="text-lg font-medium text-[#3E6C71] mt-6 max-w-md">
+              <p className="text-lg font-medium text-[#4F6115] mt-6 max-w-md">
                 Pick one habit. Check it off. That's day one. Phase helps with every day after.
               </p>
             </div>
             <div className="flex flex-col gap-3">
               <CTA dark testId="final-cta-btn">Start free <ArrowRight className="w-4 h-4" /></CTA>
               {!isAuthenticated && (
-                <Link to="/login" className="text-center text-sm font-bold text-[#183A3F] underline underline-offset-4">
+                <Link to="/login" className="text-center text-sm font-bold text-[#2B3A06] underline underline-offset-4">
                   I already have an account
                 </Link>
               )}
@@ -371,7 +371,7 @@ export default function LandingPage() {
             <Link to="/signup" className="hover:text-[var(--gm-ink)]">Sign up</Link>
           </div>
         </div>
-        <div className={`max-w-7xl mx-auto mt-10 pt-6 border-t border-[var(--gm-track)] ${eyebrow} text-[10px] text-[var(--gm-muted)]`}>
+        <div className={`max-w-7xl mx-auto mt-10 pt-6 border-t border-[var(--gm-track)] ${eyebrow} text-[12px] text-[var(--gm-muted)]`}>
           © {new Date().getFullYear()} Phase
         </div>
       </footer>
@@ -408,20 +408,20 @@ function Impact() {
               key={s.label}
               {...reveal}
               transition={{ ...reveal.transition, delay: i * 0.08 }}
-              className={`rounded-[28px] p-7 sm:p-9 ${i === 0 ? 'bg-[#DBF67F]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)]'}`}
+              className={`rounded-[28px] p-7 sm:p-9 ${i === 0 ? 'bg-[#D4F36B]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)]'}`}
             >
               <div
-                className={`font-['Archivo'] font-black text-[72px] sm:text-[96px] xl:text-[112px] leading-[0.85] tracking-[-0.04em] tabular-nums ${i === 0 ? 'text-[#2A3B0B]' : 'text-[var(--gm-ink)]'}`}
+                className={`font-display font-black text-[72px] sm:text-[96px] xl:text-[112px] leading-[0.85] tracking-[-0.04em] tabular-nums ${i === 0 ? 'text-[#2B3A06]' : 'text-[var(--gm-ink)]'}`}
                 data-testid={`impact-${i}`}
               >
                 <CountUp value={s.value} format={s.format} />
               </div>
-              <div className={`text-lg sm:text-xl font-bold mt-5 ${i === 0 ? 'text-[#2A3B0B]' : 'text-[var(--gm-muted)]'}`}>{s.label}</div>
+              <div className={`text-lg sm:text-xl font-bold mt-5 ${i === 0 ? 'text-[#2B3A06]' : 'text-[var(--gm-muted)]'}`}>{s.label}</div>
             </motion.div>
           ))}
         </div>
         <motion.div {...reveal} className="mt-4 rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-7 sm:p-9 grid md:grid-cols-[auto_1fr] gap-6 md:gap-10 items-center">
-          <div className="font-['Archivo'] font-black text-[72px] sm:text-[96px] leading-[0.85] tracking-[-0.04em]">66 days</div>
+          <div className="font-display font-black text-[72px] sm:text-[96px] leading-[0.85] tracking-[-0.04em]">66 days</div>
           <p className="text-lg sm:text-xl font-medium text-[var(--gm-muted)] max-w-xl">
             The average time it takes for a new habit to feel automatic, according to research from University College London. Phase is built to carry you through all 66.
           </p>
@@ -455,8 +455,8 @@ function WhyPhase() {
 
         <div className="mt-14 rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] overflow-hidden">
           <div className="grid grid-cols-2 border-b border-[var(--gm-track)]">
-            <div className={`${eyebrow} text-[10px] sm:text-[11px] text-[var(--gm-muted)] px-5 sm:px-8 py-4`}>Doing it alone</div>
-            <div className={`${eyebrow} text-[10px] sm:text-[11px] text-[#183A3F] bg-[#95DEE6] px-5 sm:px-8 py-4`}>With Phase</div>
+            <div className={`${eyebrow} text-[12px] sm:text-[13px] text-[var(--gm-muted)] px-5 sm:px-8 py-4`}>Doing it alone</div>
+            <div className={`${eyebrow} text-[12px] sm:text-[13px] text-[#2B3A06] bg-[#D4F36B] px-5 sm:px-8 py-4`}>With Phase</div>
           </div>
           {COMPARE.map(([old, phase], i) => (
             <motion.div
@@ -472,8 +472,8 @@ function WhyPhase() {
                 <span className="text-sm sm:text-base font-medium text-[var(--gm-muted)]">{old}</span>
               </div>
               <div className="px-5 sm:px-8 py-5 flex items-start gap-3">
-                <span className="w-5 h-5 mt-0.5 rounded-full bg-[#DBF67F] flex items-center justify-center flex-shrink-0">
-                  <Check className="w-3 h-3 text-[#2A3B0B]" strokeWidth={3} />
+                <span className="w-5 h-5 mt-0.5 rounded-full bg-[#D4F36B] flex items-center justify-center flex-shrink-0">
+                  <Check className="w-3 h-3 text-[#2B3A06]" strokeWidth={3} />
                 </span>
                 <span className="text-sm sm:text-base font-bold text-[var(--gm-ink)]">{phase}</span>
               </div>
@@ -515,12 +515,12 @@ function Step({ i, step, active, innerRef }) {
     <div ref={innerRef} className="lg:min-h-[70vh] flex items-center">
       <div className={`transition-opacity duration-300 ${active ? 'lg:opacity-100' : 'lg:opacity-30'}`}>
         <div className="flex items-center gap-3">
-          <span className={`w-9 h-9 rounded-full flex items-center justify-center font-['Archivo'] font-black text-sm ${active ? 'bg-[#95DEE6] text-[#183A3F]' : 'bg-[var(--gm-card)] text-[var(--gm-muted)]'}`}>
+          <span className={`w-9 h-9 rounded-full flex items-center justify-center font-display font-black text-sm ${active ? 'bg-[#D4F36B] text-[#2B3A06]' : 'bg-[var(--gm-card)] text-[var(--gm-muted)]'}`}>
             {i + 1}
           </span>
           <Eyebrow>{step.k}</Eyebrow>
         </div>
-        <h3 className="font-['Archivo'] font-black text-[36px] sm:text-[48px] leading-[0.95] tracking-[-0.02em] mt-5">{step.title}</h3>
+        <h3 className="font-display font-black text-[36px] sm:text-[48px] leading-[0.95] tracking-[-0.02em] mt-5">{step.title}</h3>
         <p className="text-lg font-medium text-[var(--gm-muted)] mt-4 max-w-md leading-relaxed">{step.body}</p>
         {/* Mobile: each step carries its own phone */}
         <div className="lg:hidden mt-10 flex justify-center">
@@ -574,7 +574,7 @@ function HowItWorks() {
               <LoopPhone step={active} />
               <div className="flex gap-1.5 mt-6">
                 {STEPS.map((s, i) => (
-                  <span key={s.k} className={`h-1.5 rounded-full transition-all ${i === active ? 'w-8 bg-[#95DEE6]' : 'w-1.5 bg-[var(--gm-track)]'}`} />
+                  <span key={s.k} className={`h-1.5 rounded-full transition-all ${i === active ? 'w-8 bg-[#D4F36B]' : 'w-1.5 bg-[var(--gm-track)]'}`} />
                 ))}
               </div>
             </div>
@@ -619,24 +619,24 @@ function AreaCard({ area, index }) {
       className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 flex flex-col"
     >
       <div className="flex items-center justify-between">
-        <div className="w-11 h-11 rounded-xl bg-[#95DEE6] flex items-center justify-center">
-          <Icon className="w-5 h-5 text-[#183A3F]" />
+        <div className="w-11 h-11 rounded-xl bg-[#D4F36B] flex items-center justify-center">
+          <Icon className="w-5 h-5 text-[#2B3A06]" />
         </div>
-        <span className={`${eyebrow} text-[10px] text-[var(--gm-muted)]`}>{count}/4 today</span>
+        <span className={`${eyebrow} text-[12px] text-[var(--gm-muted)]`}>{count}/4 today</span>
       </div>
-      <div className="font-['Archivo'] font-black text-[30px] leading-none mt-5">{area.name}</div>
-      <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-2">{area.line}</p>
+      <div className="font-display font-black text-[30px] leading-none mt-5">{area.name}</div>
+      <p className="text-[17px] font-medium text-[var(--gm-muted)] mt-2">{area.line}</p>
       <div className="mt-5 space-y-2">
         {area.habits.map((h, i) => (
           <button
             key={h}
             onClick={() => setDone((d) => d.map((v, j) => (j === i ? !v : v)))}
-            className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${done[i] ? 'bg-[#DBF67F]' : 'bg-[var(--gm-bg)] hover:bg-[var(--gm-badge)]'}`}
+            className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${done[i] ? 'bg-[#D4F36B]' : 'bg-[var(--gm-bg)] hover:bg-[var(--gm-badge)]'}`}
           >
-            <span className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${done[i] ? 'bg-[#2A3B0B]' : 'border-2 border-[var(--gm-checkbox)]'}`}>
-              {done[i] && <Check className="w-3 h-3 text-[#DBF67F]" strokeWidth={3} />}
+            <span className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${done[i] ? 'bg-[#2B3A06]' : 'border-2 border-[var(--gm-checkbox)]'}`}>
+              {done[i] && <Check className="w-3 h-3 text-[#D4F36B]" strokeWidth={3} />}
             </span>
-            <span className={`text-sm font-bold ${done[i] ? 'text-[#2A3B0B]' : 'text-[var(--gm-ink)]'}`}>{h}</span>
+            <span className={`text-sm font-bold ${done[i] ? 'text-[#2B3A06]' : 'text-[var(--gm-ink)]'}`}>{h}</span>
           </button>
         ))}
       </div>
@@ -671,8 +671,8 @@ function FunCard({ title, body, children, bare = false }) {
   return (
     <motion.div {...reveal} className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 flex flex-col">
       <div className={bare ? '[&>button]:!bg-[var(--gm-bg)] [&>button]:!shadow-none [&>button]:w-full [&>button]:!rounded-2xl' : ''}>{children}</div>
-      <h3 className="font-['Archivo'] font-black text-[24px] leading-[1] tracking-[-0.01em] mt-6">{title}</h3>
-      <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-2">{body}</p>
+      <h3 className="font-display font-black text-[27px] leading-[1] tracking-[-0.01em] mt-6">{title}</h3>
+      <p className="text-[17px] font-medium text-[var(--gm-muted)] mt-2">{body}</p>
     </motion.div>
   );
 }
@@ -689,7 +689,7 @@ function ModeCard({ kind, children }) {
   return (
     <motion.div
       {...reveal}
-      className={`rounded-[32px] p-6 sm:p-8 flex flex-col ${dark ? 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)]' : 'bg-[#95DEE6]'}`}
+      className={`rounded-[32px] p-6 sm:p-8 flex flex-col ${dark ? 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)]' : 'bg-[#D4F36B]'}`}
       data-testid={`mode-card-${kind}`}
     >
       {children}
@@ -734,15 +734,15 @@ function Modes() {
           <ModeCard kind="game">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#95DEE6] flex items-center justify-center">
-                  <Gamepad2 className="w-5 h-5 text-[#183A3F]" />
+                <div className="w-11 h-11 rounded-xl bg-[#D4F36B] flex items-center justify-center">
+                  <Gamepad2 className="w-5 h-5 text-[#2B3A06]" />
                 </div>
                 <div>
                   <Eyebrow>Mode 01</Eyebrow>
-                  <div className="font-['Archivo'] font-black text-[26px] leading-none mt-1">Game Mode</div>
+                  <div className="font-display font-black text-[26px] leading-none mt-1">Game Mode</div>
                 </div>
               </div>
-              <span className={`${eyebrow} text-[10px] text-[var(--gm-muted)]`}>For the competitive</span>
+              <span className={`${eyebrow} text-[12px] text-[var(--gm-muted)]`}>For the competitive</span>
             </div>
 
             <div className="mt-6 flex justify-center">
@@ -752,10 +752,10 @@ function Modes() {
             </div>
 
             <div className="mt-6">
-              <h3 className="font-['Archivo'] font-black text-[28px] sm:text-[32px] leading-[0.95] tracking-[-0.02em]">
+              <h3 className="font-display font-black text-[28px] sm:text-[32px] leading-[0.95] tracking-[-0.02em]">
                 Make it feel like leveling up.
               </h3>
-              <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3">
+              <p className="text-[17px] font-medium text-[var(--gm-muted)] mt-3">
                 XP, gems and 15 ranks for every habit you finish. Weekly league against people at your level. Rewards, titles and a profile that's built to share.
               </p>
               <ul className="mt-6 grid sm:grid-cols-2 gap-2">
@@ -766,8 +766,8 @@ function Modes() {
                   ['Tough-love reminders', 'A nudge when you slack'],
                 ].map(([t, s]) => (
                   <li key={t} className="rounded-2xl bg-[var(--gm-bg)] p-3.5">
-                    <div className="text-[14px] font-bold">{t}</div>
-                    <div className="text-[12px] font-medium text-[var(--gm-muted)] mt-0.5">{s}</div>
+                    <div className="text-[16px] font-bold">{t}</div>
+                    <div className="text-[14px] font-medium text-[var(--gm-muted)] mt-0.5">{s}</div>
                   </li>
                 ))}
               </ul>
@@ -778,15 +778,15 @@ function Modes() {
           <ModeCard kind="focus">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#183A3F] flex items-center justify-center">
-                  <Eye className="w-5 h-5 text-[#95DEE6]" />
+                <div className="w-11 h-11 rounded-xl bg-[#2B3A06] flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-[#D4F36B]" />
                 </div>
                 <div>
-                  <span className={`${eyebrow} text-[10px] text-[#3E6C71]`}>Mode 02</span>
-                  <div className="font-['Archivo'] font-black text-[26px] leading-none mt-1 text-[#183A3F]">Focus Mode</div>
+                  <span className={`${eyebrow} text-[12px] text-[#4F6115]`}>Mode 02</span>
+                  <div className="font-display font-black text-[26px] leading-none mt-1 text-[#2B3A06]">Focus Mode</div>
                 </div>
               </div>
-              <span className={`${eyebrow} text-[10px] text-[#3E6C71]`}>For the serious</span>
+              <span className={`${eyebrow} text-[12px] text-[#4F6115]`}>For the serious</span>
             </div>
 
             <div className="mt-6 flex justify-center">
@@ -807,10 +807,10 @@ function Modes() {
             </div>
 
             <div className="mt-6">
-              <h3 className="font-['Archivo'] font-black text-[28px] sm:text-[32px] leading-[0.95] tracking-[-0.02em] text-[#183A3F]">
+              <h3 className="font-display font-black text-[28px] sm:text-[32px] leading-[0.95] tracking-[-0.02em] text-[#2B3A06]">
                 Make the work impossible to fake.
               </h3>
-              <p className="text-[15px] font-medium text-[#3E6C71] mt-3">
+              <p className="text-[17px] font-medium text-[#4F6115] mt-3">
                 Tap Begin and a full-screen timer takes over your phone. Sit the session or the habit fails and you pay for it. The deep-work discipline, measured in real minutes.
               </p>
               <ul className="mt-6 grid sm:grid-cols-2 gap-2">
@@ -820,9 +820,9 @@ function Modes() {
                   ['Skin in the game', 'Leave early, lose 30 gems'],
                   ['Nothing to distract', 'No XP, no league, no shop'],
                 ].map(([t, s]) => (
-                  <li key={t} className="rounded-2xl bg-[#183A3F] p-3.5">
-                    <div className="text-[14px] font-bold text-[#95DEE6]">{t}</div>
-                    <div className="text-[12px] font-medium text-[#76B5BC] mt-0.5">{s}</div>
+                  <li key={t} className="rounded-2xl bg-[#2B3A06] p-3.5">
+                    <div className="text-[16px] font-bold text-[#D4F36B]">{t}</div>
+                    <div className="text-[14px] font-medium text-[#A9C93C] mt-0.5">{s}</div>
                   </li>
                 ))}
               </ul>
@@ -832,9 +832,9 @@ function Modes() {
 
         <motion.div {...reveal} className="mt-5 rounded-2xl bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-5 flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-[var(--gm-badge)] flex items-center justify-center flex-shrink-0">
-            <span className="font-['Archivo'] font-black text-sm">⇄</span>
+            <span className="font-display font-black text-sm">⇄</span>
           </div>
-          <p className="text-[15px] font-bold">
+          <p className="text-[17px] font-bold">
             You get both. Switch any time from Settings.{' '}
             <span className="font-medium text-[var(--gm-muted)]">Your habits and your streak come with you.</span>
           </p>
@@ -880,10 +880,10 @@ function Pricing() {
               <button
                 key={l}
                 onClick={() => setAnnual(v)}
-                className={`px-5 py-2 rounded-full text-sm font-bold transition-colors ${annual === v ? 'bg-[#95DEE6] text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}
+                className={`px-5 py-2 rounded-full text-sm font-bold transition-colors ${annual === v ? 'bg-[#D4F36B] text-[#2B3A06]' : 'text-[var(--gm-muted)]'}`}
                 data-testid={`pricing-${l.toLowerCase()}`}
               >
-                {l}{v && <span className="ml-1.5 text-[11px] opacity-80">−40%</span>}
+                {l}{v && <span className="ml-1.5 text-[13px] opacity-80">−40%</span>}
               </button>
             ))}
           </div>
@@ -891,28 +891,28 @@ function Pricing() {
 
         <div className="grid md:grid-cols-2 gap-4">
           <motion.div {...reveal} className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-7 sm:p-9 flex flex-col" data-testid="pricing-free">
-            <span className="font-['Archivo'] font-black text-2xl">Free</span>
+            <span className="font-display font-black text-2xl">Free</span>
             <div className="mt-6 flex items-end gap-2">
-              <span className="font-['Archivo'] font-black text-[64px] leading-[0.85] tracking-[-0.03em]">$0</span>
-              <span className={`${eyebrow} text-[11px] text-[var(--gm-muted)] pb-1.5`}>forever</span>
+              <span className="font-display font-black text-[64px] leading-[0.85] tracking-[-0.03em]">$0</span>
+              <span className={`${eyebrow} text-[13px] text-[var(--gm-muted)] pb-1.5`}>forever</span>
             </div>
-            <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-4">Everything you need to build the habit and stick with it.</p>
+            <p className="text-[17px] font-medium text-[var(--gm-muted)] mt-4">Everything you need to build the habit and stick with it.</p>
             <ul className="mt-7 space-y-3 flex-1">
               {FREE.map((f) => (
-                <li key={f} className="flex items-center gap-3 text-[15px] font-bold">
+                <li key={f} className="flex items-center gap-3 text-[17px] font-bold">
                   <Check className="w-4 h-4 text-[var(--gm-muted)]" strokeWidth={3} /> {f}
                 </li>
               ))}
             </ul>
-            <Link to="/signup" className="mt-9 h-[52px] rounded-full bg-[var(--gm-badge)] flex items-center justify-center text-[15px] font-bold hover:opacity-90">
+            <Link to="/signup" className="mt-9 h-[52px] rounded-full bg-[var(--gm-badge)] flex items-center justify-center text-[17px] font-bold hover:opacity-90">
               Start free
             </Link>
           </motion.div>
 
-          <motion.div {...reveal} className="rounded-[28px] bg-[#95DEE6] p-7 sm:p-9 flex flex-col text-[#183A3F]" data-testid="pricing-pro">
+          <motion.div {...reveal} className="rounded-[28px] bg-[#D4F36B] p-7 sm:p-9 flex flex-col text-[#2B3A06]" data-testid="pricing-pro">
             <div className="flex items-center justify-between">
-              <span className="font-['Archivo'] font-black text-2xl">Phase Pro</span>
-              {annual && <span className={`${eyebrow} text-[10px] rounded-full bg-[#183A3F] text-[#95DEE6] px-2.5 py-1`}>Save 40%</span>}
+              <span className="font-display font-black text-2xl">Phase Pro</span>
+              {annual && <span className={`${eyebrow} text-[12px] rounded-full bg-[#2B3A06] text-[#D4F36B] px-2.5 py-1`}>Save 40%</span>}
             </div>
             <div className="mt-6 flex items-end gap-2">
               <AnimatePresence mode="wait" initial={false}>
@@ -921,27 +921,27 @@ function Pricing() {
                   initial={{ y: 12, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -12, opacity: 0 }}
-                  className="font-['Archivo'] font-black text-[64px] leading-[0.85] tracking-[-0.03em]"
+                  className="font-display font-black text-[64px] leading-[0.85] tracking-[-0.03em]"
                 >
                   {annual ? '$4.17' : '$6.99'}
                 </motion.span>
               </AnimatePresence>
-              <span className={`${eyebrow} text-[11px] text-[#3E6C71] pb-1.5`}>/ month</span>
+              <span className={`${eyebrow} text-[13px] text-[#4F6115] pb-1.5`}>/ month</span>
             </div>
-            <p className="text-[15px] font-medium text-[#3E6C71] mt-4">
+            <p className="text-[17px] font-medium text-[#4F6115] mt-4">
               {annual ? '$49.99 billed once a year.' : 'Billed monthly. Cancel any time.'} Deeper insight into your progress, plus every reward.
             </p>
             <ul className="mt-7 grid sm:grid-cols-2 gap-x-4 gap-y-3 flex-1">
               {PRO.map((f) => (
-                <li key={f} className="flex items-start gap-3 text-[15px] font-bold">
-                  <span className="w-5 h-5 mt-0.5 rounded-full bg-[#183A3F] flex items-center justify-center flex-shrink-0">
-                    <Check className="w-3 h-3 text-[#95DEE6]" strokeWidth={3} />
+                <li key={f} className="flex items-start gap-3 text-[17px] font-bold">
+                  <span className="w-5 h-5 mt-0.5 rounded-full bg-[#2B3A06] flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3 h-3 text-[#D4F36B]" strokeWidth={3} />
                   </span>
                   {f}
                 </li>
               ))}
             </ul>
-            <Link to="/signup" className="mt-9 h-[52px] rounded-full bg-[#183A3F] text-[#95DEE6] flex items-center justify-center gap-2 text-[15px] font-bold hover:opacity-90">
+            <Link to="/signup" className="mt-9 h-[52px] rounded-full bg-[#2B3A06] text-[#D4F36B] flex items-center justify-center gap-2 text-[17px] font-bold hover:opacity-90">
               Start free, upgrade in the app <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
@@ -950,7 +950,7 @@ function Pricing() {
         <motion.div {...reveal} className="mt-6 grid sm:grid-cols-3 gap-3">
           {[['No ads', 'Not now, not ever.'], ['Nothing to buy your way past', 'Gems are only earned by doing the work.'], ['Your progress is yours', 'Pro adds insight, never an unfair edge.']].map(([t, s]) => (
             <div key={t} className="rounded-2xl bg-[var(--gm-card)] p-5">
-              <div className="font-['Archivo'] font-black text-lg">{t}</div>
+              <div className="font-display font-black text-lg">{t}</div>
               <div className="text-sm font-medium text-[var(--gm-muted)] mt-1">{s}</div>
             </div>
           ))}

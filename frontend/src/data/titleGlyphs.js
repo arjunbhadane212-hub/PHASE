@@ -12,22 +12,22 @@
 // way the shop's item tiles do.
 
 /* ── Accent palette ──────────────────────────────────────────────────────────
-   Every hue is a v2 pastel in the same family as cyan #95DEE6 / lime #DBF67F /
-   purple #A59BCC, and every one is used as a SURFACE with dark ink on top --
+   Every hue is a v2 pastel in the same family as cyan #D4F36B / lime #D4F36B /
+   purple #141416, and every one is used as a SURFACE with dark ink on top --
    the v2 rule, because these pastels are illegible as text. Soft enough to sit
    quietly on a black profile, saturated enough to be worth flexing. */
 export const ACCENTS = {
   mist:   { surface: '#AEB7B8', ink: '#232B2C' },
   slate:  { surface: '#9FB0C3', ink: '#1E2730' },
   ice:    { surface: '#C7E4EA', ink: '#1C3034' },
-  cyan:   { surface: '#95DEE6', ink: '#183A3F' },
+  cyan:   { surface: '#D4F36B', ink: '#2B3A06' },
   teal:   { surface: '#8FD3C4', ink: '#143029' },
   sage:   { surface: '#BFD9A0', ink: '#243208' },
-  lime:   { surface: '#DBF67F', ink: '#2A3B0B' },
+  lime:   { surface: '#D4F36B', ink: '#2B3A06' },
   sand:   { surface: '#E8D9A8', ink: '#352C10' },
   peach:  { surface: '#F0C9A8', ink: '#3A2614' },
   rose:   { surface: '#E8B4B8', ink: '#3A1F22' },
-  purple: { surface: '#A59BCC', ink: '#231D3A' },
+  purple: { surface: '#141416', ink: '#231D3A' },
   indigo: { surface: '#9AA8D4', ink: '#1C2340' },
 };
 

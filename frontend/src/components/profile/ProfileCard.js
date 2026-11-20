@@ -14,7 +14,7 @@ import { accentFor } from '../../data/titleGlyphs';
 import { RankBadge, StreakBadge, StandingBadge, GlobalRankBadge, TitleBadge, ZoneChip } from './FlexBadge';
 
 const RESULT_STYLE = {
-  promoted: { label: 'Promoted', color: '#DBF67F' },
+  promoted: { label: 'Promoted', color: '#D4F36B' },
   demoted:  { label: 'Relegated', color: '#B91C1C' },
   held:     { label: 'Held', color: '#7D818F' },
 };
@@ -69,7 +69,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
         {/* Avatar — ring + bloom coloured by rank, alive from Elite up. */}
         <div className="flex items-end justify-between gap-3 mb-4">
           <div
-            className={`relative rounded-full flex items-center justify-center font-['Archivo'] font-black text-[color:var(--gm-ink)] bg-[color:var(--gm-badge)] ${compact ? 'w-20 h-20 text-xl' : 'w-24 h-24 sm:w-28 sm:h-28 text-2xl sm:text-3xl'}`}
+            className={`relative rounded-full flex items-center justify-center font-display font-black text-[color:var(--gm-ink)] bg-[color:var(--gm-badge)] ${compact ? 'w-20 h-20 text-xl' : 'w-24 h-24 sm:w-28 sm:h-28 text-2xl sm:text-3xl'}`}
             style={{ border: '4px solid var(--gm-card)' }}
             data-testid="profile-avatar"
           >
@@ -79,7 +79,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
           {compact && onViewFull && (
             <button
               onClick={onViewFull}
-              className="mb-1 inline-flex items-center gap-1 text-[11px] font-extrabold px-3 py-1.5 rounded-lg bg-[#95DEE6] text-[#183A3F] transition-colors"
+              className="mb-1 inline-flex items-center gap-1 text-[13px] font-extrabold px-3 py-1.5 rounded-lg bg-[#D4F36B] text-[#2B3A06] transition-colors"
 
               data-testid="popout-view-full"
             >
@@ -90,7 +90,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
 
         {/* Identity */}
         <div className="mb-3">
-          <h1 className={`font-['Archivo'] font-black text-[color:var(--gm-ink)] leading-tight ${compact ? 'text-lg' : 'text-2xl sm:text-3xl'}`}
+          <h1 className={`font-display font-black text-[color:var(--gm-ink)] leading-tight ${compact ? 'text-lg' : 'text-2xl sm:text-3xl'}`}
             data-testid="profile-display-name">
             {profile.first_name} {profile.last_name}
           </h1>
@@ -127,10 +127,10 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
           style={{ background: 'var(--gm-card)' }}
           data-testid="profile-level-progress">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-['JetBrains_Mono'] text-[11px] font-bold tracking-[0.16em] text-[color:var(--gm-ink)]">
+            <span className="font-label text-[13px] font-bold tracking-[0.16em] text-[color:var(--gm-ink)]">
               {info.name.toUpperCase()}
             </span>
-            <span className="text-[11px] font-bold text-[color:var(--gm-muted)] tabular-nums">
+            <span className="text-[13px] font-bold text-[color:var(--gm-muted)] tabular-nums">
               {lvl.isMax ? 'MAX RANK' : `${(profile.current_xp || 0).toLocaleString()} / ${(profile.level_max_xp || 0).toLocaleString()} XP`}
             </span>
           </div>
@@ -139,12 +139,12 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
               className="h-full rounded-full transition-[width] duration-700"
               style={{
                 width: `${lvl.progressPct ?? 0}%`,
-                background: '#DBF67F',
+                background: '#D4F36B',
               }}
             />
           </div>
           {!lvl.isMax && (
-            <p className="text-[11px] text-[color:var(--gm-muted)] mt-2">
+            <p className="text-[13px] text-[color:var(--gm-muted)] mt-2">
               {xpToNext.toLocaleString()} XP to {rankInfo(rank + 1).name}
             </p>
           )}
@@ -164,18 +164,18 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
             style={{ color: 'var(--gm-ink)' }}
           />
           <div className="min-w-0">
-            <p className={`font-['Archivo'] font-black text-[color:var(--gm-ink)] leading-none ${compact ? 'text-3xl' : 'text-5xl sm:text-6xl'}`}>
+            <p className={`font-display font-black text-[color:var(--gm-ink)] leading-none ${compact ? 'text-3xl' : 'text-5xl sm:text-6xl'}`}>
               {streak}
             </p>
-            <p className="font-['JetBrains_Mono'] text-[11px] font-bold tracking-[0.22em] mt-1.5 text-[color:var(--gm-muted)]">
+            <p className="font-label text-[13px] font-bold tracking-[0.22em] mt-1.5 text-[color:var(--gm-muted)]">
               DAY STREAK{s.alive ? ` · ${s.label}` : ''}
             </p>
             {s.next && s.alive && (
-              <p className="text-[11px] text-[color:var(--gm-muted)] mt-1">
+              <p className="text-[13px] text-[color:var(--gm-muted)] mt-1">
                 {s.next.min - streak} more to {s.next.label.toLowerCase()}
               </p>
             )}
-            {!s.alive && <p className="text-[11px] text-[color:var(--gm-muted)] mt-1">Cold. Nothing burning yet.</p>}
+            {!s.alive && <p className="text-[13px] text-[color:var(--gm-muted)] mt-1">Cold. Nothing burning yet.</p>}
           </div>
         </div>
 
@@ -199,7 +199,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
               <p className="text-sm font-extrabold text-[color:var(--gm-ink)]">
                 #{standing.position} of {standing.group_size} · {standing.tier_name} League
               </p>
-              <p className="text-[11px] text-[color:var(--gm-muted)]">
+              <p className="text-[13px] text-[color:var(--gm-muted)]">
                 {(profile.current_period_xp || 0).toLocaleString()} XP this period
                 {resets && <> · resets in {resets}</>}
               </p>
@@ -223,7 +223,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
                   size={compact ? 'md' : 'lg'} />
               ))}
               {compact && ownedTitles.length > 6 && (
-                <span className="text-[11px] font-bold text-[color:var(--gm-muted)] self-center">+{ownedTitles.length - 6} more</span>
+                <span className="text-[13px] font-bold text-[color:var(--gm-muted)] self-center">+{ownedTitles.length - 6} more</span>
               )}
             </div>
           </div>
@@ -243,11 +243,11 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
                     <TierEmblem tier={h.tier_num || tierNumByName(h.tier_name)} size={26} glow={false} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-[color:var(--gm-ink)] truncate">{h.tier_name || 'League'}</p>
-                      <p className="text-[11px] text-[color:var(--gm-muted)]">
+                      <p className="text-[13px] text-[color:var(--gm-muted)]">
                         Rank #{h.final_rank ?? '-'} · {Number(h.period_xp ?? 0).toLocaleString()} XP · {when}
                       </p>
                     </div>
-                    <span className="text-[10px] font-extrabold px-2 py-1 rounded-lg"
+                    <span className="text-[12px] font-extrabold px-2 py-1 rounded-lg"
                       style={{ background: `${rs.color}22`, color: rs.color }}>{rs.label}</span>
                   </div>
                 );
@@ -257,7 +257,7 @@ export default function ProfileCard({ profile, variant = 'page', onViewFull }) {
         )}
 
         <div className={compact ? 'pb-5' : 'text-center pb-10'}>
-          <p className="text-[11px] text-[color:var(--gm-muted)]">Member since {memberDate}</p>
+          <p className="text-[13px] text-[color:var(--gm-muted)]">Member since {memberDate}</p>
         </div>
       </div>
     </div>
@@ -270,9 +270,9 @@ function Stat({ icon, label, value }) {
       data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
       <div className="flex items-center gap-1.5 mb-1.5">
         {icon}
-        <span className="text-[10px] text-[color:var(--gm-muted)] font-bold tracking-wide">{label}</span>
+        <span className="text-[12px] text-[color:var(--gm-muted)] font-bold tracking-wide">{label}</span>
       </div>
-      <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)] tabular-nums">{value}</p>
+      <p className="text-lg font-display font-black text-[color:var(--gm-ink)] tabular-nums">{value}</p>
     </div>
   );
 }
@@ -281,7 +281,7 @@ function SectionHead({ icon, label, accent }) {
   return (
     <div className="flex items-center gap-2 mb-2.5">
       <span style={{ color: accent }}>{icon}</span>
-      <span className="text-[11px] font-extrabold tracking-[0.16em] uppercase text-[color:var(--gm-muted)]">{label}</span>
+      <span className="text-[13px] font-extrabold tracking-[0.16em] uppercase text-[color:var(--gm-muted)]">{label}</span>
       <span className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${accent}55, transparent)` }} />
     </div>
   );

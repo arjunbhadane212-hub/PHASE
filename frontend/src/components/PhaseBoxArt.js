@@ -6,10 +6,10 @@
 export const BOX_TIERS = {
   starter: { key: 'starter', label: 'STARTER', accent: '#9BA09C',
     top: '#C9CCC6', right: '#9BA09C', left: '#5F625F', edge: '#E4E6E1', ink: '#20242A', glow: '#E4E6E1' },
-  delta: { key: 'delta', label: 'DELTA', accent: '#95DEE6',
-    top: '#95DEE6', right: '#5AAAB4', left: '#2C6870', edge: '#C7F0F5', ink: '#0C2A2E', glow: '#C7F0F5' },
-  phase: { key: 'phase', label: 'PHASE', accent: '#DBF67F', legendary: true,
-    top: '#DBF67F', right: '#A6C64B', left: '#59691F', edge: '#ECFAB8', ink: '#26310A', glow: '#ECFAB8' },
+  delta: { key: 'delta', label: 'DELTA', accent: '#D4F36B',
+    top: '#D4F36B', right: '#5AAAB4', left: '#2C6870', edge: '#EEF8C8', ink: '#0C2A2E', glow: '#EEF8C8' },
+  phase: { key: 'phase', label: 'PHASE', accent: '#D4F36B', legendary: true,
+    top: '#D4F36B', right: '#A6C64B', left: '#59691F', edge: '#EEF8C8', ink: '#26310A', glow: '#EEF8C8' },
 };
 
 export const tierFor = (id) => BOX_TIERS[id] || BOX_TIERS.starter;

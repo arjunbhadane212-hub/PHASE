@@ -44,9 +44,9 @@ const SCENARIOS = [
 export default function DevBoxOpeningPage() {
   const [run, setRun] = useState(null);
   return (
-    <div style={{ minHeight: '100vh', background: '#0E1012', color: '#F4F5F2', padding: 24, fontFamily: "'General Sans', sans-serif" }}>
-      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.24em', color: '#9BA09C' }}>DEV · BOX OPENING PREVIEW</div>
-      <h1 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 900, fontSize: 32, margin: '8px 0 6px' }}>Pick a pull</h1>
+    <div style={{ minHeight: '100vh', background: '#0E1012', color: '#F4F5F2', padding: 24, fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+      <div style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 11, letterSpacing: '0.24em', color: '#9BA09C' }}>DEV · BOX OPENING PREVIEW</div>
+      <h1 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 900, fontSize: 32, margin: '8px 0 6px' }}>Pick a pull</h1>
       <p style={{ color: '#9BA09C', fontSize: 13, marginBottom: 20 }}>Fake data only. Nothing is spent or saved.</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, maxWidth: 520 }}>
         {SCENARIOS.map((s) => (

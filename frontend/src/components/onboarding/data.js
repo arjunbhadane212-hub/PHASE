@@ -1,6 +1,6 @@
 import { Brain, Rocket, Gamepad2, Target, Lock, BarChart3, Trophy, MessageSquare, Flame, Eye, Gem, Heart, Sparkles, Clock, Calendar, RotateCcw, TrendingDown, ShieldAlert } from '../icons';
 
-export const eyebrow = "font-['JetBrains_Mono'] font-bold uppercase text-[10px] sm:text-[11px] tracking-[0.08em]";
+export const eyebrow = "font-label font-bold uppercase text-[12px] sm:text-[13px] tracking-[0.08em]";
 
 // Each question does a job, in this order:
 //   1. main_goal            name the pain       -> picks the starter habits

@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMode } from '../contexts/ModeContext';
 import { useGame } from '../contexts/GameContext';
 import { rankInfo, levelForXp } from '../data/levels';
 import { motion, AnimatePresence } from 'framer-motion';
+import { EASE, fadeUp, staggerParent } from '../lib/motion';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -283,7 +285,7 @@ export default function HomePage() {
           >
             <div className="rounded-2xl bg-[var(--gm-card)] text-[var(--gm-ink)] p-4 shadow-[var(--gm-shadow-card)]">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#95DEE6] text-[#183A3F] flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#D4F36B] text-[#2B3A06] flex items-center justify-center flex-shrink-0">
                   <Flame className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
@@ -321,15 +323,27 @@ export default function HomePage() {
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between gap-3">
+            {/* UI v3: greeting row like the references (avatar + hello + date) */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-12 h-12 rounded-full bg-[#F6B3CE] text-[#4B1530] flex items-center justify-center font-display text-[23px] flex-shrink-0">
+                {(user?.username || 'P').charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[15px] font-medium text-[var(--gm-muted)]">
+                  {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+                </p>
+                <p className="font-display text-[25px] leading-tight text-[var(--gm-ink)] truncate">Hi, {user?.username || 'there'}</p>
+              </div>
+            </div>
             {/* Game Mode Stats (gems / shields) — light pills on the light bg */}
-            {isGameMode && (
+            {(
               <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#95DEE6] cursor-default" data-testid="gems-display">
-                  <Gem className="w-4 h-4 text-[#183A3F]" />
-                  <span className="text-sm font-['Archivo'] font-black text-[#183A3F]">{user?.gems ?? 0}</span>
+                <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#141416] cursor-default" data-testid="gems-display">
+                  <Gem className="w-4 h-4 text-[#D4F36B]" />
+                  <span className="text-sm font-display font-black text-white">{user?.gems ?? 0}</span>
                 </div>
                 {streakShields > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--gm-card)]" data-testid="shields-display">
+                  <div className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[var(--gm-card)]" data-testid="shields-display">
                     <Shield className="w-4 h-4 text-[var(--gm-ink)]" />
                     <span className="text-sm font-bold text-[var(--gm-ink)]">{streakShields}</span>
                   </div>
@@ -341,67 +355,67 @@ export default function HomePage() {
           {/* Stat tiles + boost/revive — Game Mode Only */}
           {isGameMode && (
             <>
-              <div className="grid grid-cols-3 gap-3 mt-4">
+              <motion.div className="grid grid-cols-3 gap-3 mt-4" variants={staggerParent(0.08, 0.1)} initial="hidden" animate="show">
                 {/* Tile 1 — Today's XP. Sourced from daily_logs.xp_earned_today
                     (see fetchWeeklyXp), which is keyed by log_date — a new day
                     is a new row, so this resets automatically at local midnight
                     with no client-side reset logic to get wrong. All-time total
                     XP still lives on the Settings page; it's intentionally not
                     duplicated here. */}
-                <div className="rounded-2xl bg-[var(--gm-card)] p-4" data-testid="stat-tile-xp">
-                  <div className="font-['Archivo'] font-black text-[var(--gm-ink)] text-2xl sm:text-3xl leading-none">
+                <motion.div variants={fadeUp} className="rounded-[24px] bg-[#FFD25E] p-4 flex flex-col justify-between" data-testid="stat-tile-xp">
+                  <div className="font-display text-[#4A3500] text-[28px] sm:text-3xl leading-none">
                     {todayXpEarned.toLocaleString()}
                   </div>
-                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[var(--gm-muted)] mt-2" style={{ letterSpacing: '0.08em' }}>
-                    XP Today
+                  <div className="font-label text-[14px] text-[#4A3500]/75 mt-2">
+                    XP today
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Tile 2 — Weekly progress ring (blue is reserved for progress) */}
-                <div className="rounded-2xl bg-[var(--gm-card)] p-4 flex flex-col items-center justify-center text-center" data-testid="stat-tile-week">
+                <motion.div variants={fadeUp} className="rounded-[24px] bg-[#9DD3F7] p-4 flex flex-col items-center justify-center text-center" data-testid="stat-tile-week" style={{ '--gm-ink': '#0B2E45', '--gm-muted': '#0B2E45B3', '--gm-track': '#0B2E4526' }}>
                   <div className="relative w-[68px] h-[68px]">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 68 68">
                       <circle cx="34" cy="34" r="28" fill="none" stroke="var(--gm-track)" strokeWidth="6" />
                       <circle
                         cx="34" cy="34" r="28" fill="none"
-                        stroke="#DBF67F" strokeWidth="6" strokeLinecap="round"
+                        stroke="#0B2E45" strokeWidth="6" strokeLinecap="round"
                         strokeDasharray={2 * Math.PI * 28}
                         strokeDashoffset={(2 * Math.PI * 28) * (1 - weeklyRingPct / 100)}
                         style={{ transition: 'stroke-dashoffset 700ms ease-out' }}
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="font-['JetBrains_Mono'] font-bold text-[10px] text-[var(--gm-ink)]">
+                      <span className="font-label font-bold text-[12px] text-[var(--gm-ink)]">
                         {weeklyXpEarned}/{weeklyXpGoal}
                       </span>
                     </div>
                   </div>
-                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[var(--gm-muted)] mt-2" style={{ letterSpacing: '0.08em' }}>
-                    This Week
+                  <div className="font-label text-[14px] text-[var(--gm-muted)] mt-2">
+                    This week
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Tile 3 — Level */}
-                <div className="rounded-2xl bg-[var(--gm-card)] p-4" data-testid="stat-tile-level">
-                  <div className="font-['Archivo'] font-black text-[var(--gm-ink)] text-2xl sm:text-3xl leading-none">
-                    LV.{currentLevel}
+                <motion.div variants={fadeUp} className="rounded-[24px] bg-[#FF9F82] p-4" data-testid="stat-tile-level">
+                  <div className="font-display text-[#4D1A0B] text-[28px] sm:text-3xl leading-none">
+                    Lv {currentLevel}
                   </div>
-                  <div className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] text-[var(--gm-muted)] mt-2 truncate" style={{ letterSpacing: '0.08em' }}>
+                  <div className="font-label text-[14px] text-[#4D1A0B]/75 mt-2 truncate">
                     {levelName}
                   </div>
                   {currentLevel < 15 && (
-                    <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-[var(--gm-ink)]" data-testid="next-level-reward">
-                      LV.{currentLevel + 1} <Gem className="w-3 h-3 text-[#95DEE6]" /> +{levelRewardGems(currentLevel + 1)}
+                    <div className="flex items-center gap-1 mt-1 text-[12px] font-semibold text-[#4D1A0B] whitespace-nowrap" data-testid="next-level-reward">
+                      Next <Gem className="w-3.5 h-3.5 text-[#4D1A0B]" /> +{levelRewardGems(currentLevel + 1)}
                     </div>
                   )}
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
 
               {/* Boost + Revive — kept functional, repositioned under the tiles */}
               {(boostMultiplier > 0 || (user?.current_streak === 0 && streakRevives > 0)) && (
                 <div className="flex flex-wrap items-center gap-2 mt-3">
                   {boostMultiplier > 0 && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#DBF67F] text-[#2A3B0B]" data-testid="boost-active">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#D4F36B] text-[#2B3A06]" data-testid="boost-active">
                       <Zap className="w-3.5 h-3.5" />
                       <span className="text-xs font-bold">{boostMultiplier}× XP active</span>
                     </div>
@@ -411,7 +425,7 @@ export default function HomePage() {
                       size="sm"
                       onClick={handleUseStreakRevive}
                       disabled={reviveBusy}
-                      className="bg-[#95DEE6] text-[#183A3F] hover:opacity-90 text-xs font-bold rounded-full"
+                      className="bg-[#D4F36B] text-[#2B3A06] hover:opacity-90 text-xs font-bold rounded-full"
                       data-testid="use-streak-revive-btn"
                     >
                       <ReviveIcon className="w-3.5 h-3.5 mr-1" />
@@ -423,8 +437,21 @@ export default function HomePage() {
             </>
           )}
 
+          {/* UI v3: Focus Mode home — a real dashboard instead of an empty page.
+              Today's focus minutes, the next session one tap away, and tiles. */}
+          {!isGameMode && (
+            <FocusHero
+              habits={habits}
+              user={user}
+              shields={streakShields}
+              shieldBusy={shieldBusy}
+              onBuyShield={handleBuyFocusShield}
+              onBegin={(h) => setFocusSession({ habit: h, duration: h.session_duration || 15 })}
+            />
+                    )}
+
           {/* Streak Card */}
-          <div className="mt-4">
+          <motion.div className="mt-4" initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.3 }}>
             <StreakCard
               streak={user?.current_streak || 0}
               shieldsActive={streakShields}
@@ -432,35 +459,8 @@ export default function HomePage() {
               isGameMode={isGameMode}
               refreshKey={questKey}
             />
-          </div>
+          </motion.div>
 
-          {/* Focus Mode: Streak Shield button on the home screen (500 gems).
-              Locked decision — Focus Mode has no shop, this is its only purchase. */}
-          {!isGameMode && (
-            <div className="mt-4 p-4 rounded-[20px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] flex items-center gap-4" data-testid="focus-shield-card">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(149,222,230,0.16)' }}>
-                <Shield className="w-5 h-5 text-[#183A3F]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[var(--gm-ink)]">Streak Shield</p>
-                <p className="text-xs text-[var(--gm-muted)] mt-0.5">
-                  {streakShields > 0
-                    ? `${streakShields} active · protects a missed day`
-                    : 'Protects your streak on a missed day'}
-                </p>
-              </div>
-              <Button
-                onClick={handleBuyFocusShield}
-                disabled={shieldBusy || (user?.gems ?? 0) < 500}
-                className="rounded-full py-[9px] px-[14px] bg-[#95DEE6] hover:opacity-90 text-[#183A3F] text-sm flex-shrink-0 shadow-[var(--gm-shadow-cyan)] disabled:opacity-40"
-                data-testid="buy-focus-shield-btn"
-              >
-                {shieldBusy
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <span className="flex items-center gap-[6px]"><Gem className="w-3.5 h-3.5 text-[#183A3F]" /> 500</span>}
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* Daily quests — real, server-computed, claimable */}
@@ -478,7 +478,7 @@ export default function HomePage() {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-[var(--gm-card)]">
               <SparkleIcon className="w-8 h-8 text-[var(--gm-muted)]" />
             </div>
-            <h3 className="text-xl font-extrabold font-['Archivo',sans-serif] mb-2 text-[var(--gm-ink)]">No habits yet</h3>
+            <h3 className="text-xl font-extrabold font-display mb-2 text-[var(--gm-ink)]">No habits yet</h3>
             <p className="mb-6 text-[var(--gm-muted)]">{isGameMode ? 'Add your first habit to start earning XP and gems' : 'Add your first habit to start tracking'}</p>
             <AddHabitDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSuccess={fetchHabits} isGameMode={isGameMode} />
           </div>
@@ -530,10 +530,10 @@ export default function HomePage() {
           isGameMode={isGameMode}
           trigger={
             <Button
-              className="fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-[var(--gm-shadow-fab)] hover-scale bg-[var(--gm-ink)] hover:opacity-90"
+              className="fixed bottom-24 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-[var(--gm-shadow-fab)] hover-scale bg-[#F6B3CE] hover:opacity-90"
               data-testid="add-habit-fab"
             >
-              <Plus className="w-6 h-6 text-[var(--gm-bg)]" />
+              <Plus className="w-6 h-6 text-[#4B1530]" />
             </Button>
           }
         />
@@ -562,20 +562,97 @@ export default function HomePage() {
   );
 }
 
+function FocusHero({ habits, user, shields, shieldBusy, onBuyShield, onBegin }) {
+  const navigate = useNavigate();
+  const mins = (h) => h.session_duration || 15;
+  const planned = habits.reduce((a, h) => a + mins(h), 0);
+  const done = habits.filter((h) => h.completed_today).reduce((a, h) => a + mins(h), 0);
+  const doneCount = habits.filter((h) => h.completed_today).length;
+  const next = habits.find((h) => !h.completed_today && !h.failed_today);
+  const pct = planned ? Math.min(100, Math.round((done / planned) * 100)) : 0;
+  const R = 34; const C = 2 * Math.PI * R;
+  const total = user?.total_focus_minutes || 0;
+  const totalLabel = total >= 60 ? `${Math.floor(total / 60)}h ${total % 60}m` : `${total}m`;
+  return (
+    <motion.div className="mt-4 space-y-3" variants={staggerParent(0.08, 0.15)} initial="hidden" animate="show" data-testid="focus-hero">
+      <motion.div variants={fadeUp} className="rounded-[28px] p-5 bg-[#9DD3F7] text-[#0B2E45]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[14px] font-semibold opacity-70">Today's focus</p>
+            <p className="font-display text-[52px] leading-none mt-1 tabular-nums">{done}<span className="text-[22px] ml-1">min</span></p>
+            <p className="text-[14px] font-semibold opacity-70 mt-1">of {planned} min planned · {doneCount}/{habits.length} sessions</p>
+          </div>
+          <div className="relative w-[84px] h-[84px] flex-none">
+            <svg viewBox="0 0 84 84" className="w-full h-full -rotate-90">
+              <circle cx="42" cy="42" r={R} fill="none" stroke="rgba(11,46,69,0.15)" strokeWidth="9" />
+              <motion.circle cx="42" cy="42" r={R} fill="none" stroke="#0B2E45" strokeWidth="9" strokeLinecap="round"
+                strokeDasharray={C} initial={{ strokeDashoffset: C }} animate={{ strokeDashoffset: C * (1 - pct / 100) }}
+                transition={{ duration: 1.2, ease: EASE, delay: 0.3 }} />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center font-display text-[18px]">{pct}%</span>
+          </div>
+        </div>
+        {next ? (
+          <div className="mt-4 rounded-[20px] bg-white/55 p-3 flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-semibold opacity-70">Up next</p>
+              <p className="text-[17px] font-bold truncate">{next.habit_name}</p>
+              <p className="text-[13px] font-semibold opacity-70">{mins(next)} min session</p>
+            </div>
+            <motion.button type="button" whileTap={{ scale: 0.94 }} onClick={() => onBegin(next)}
+              className="h-12 px-5 rounded-full bg-[#0B2E45] text-white font-bold text-[16px] flex items-center gap-2 flex-none" data-testid="focus-start-next">
+              <Play className="w-4 h-4 fill-current" /> Start
+            </motion.button>
+          </div>
+        ) : habits.length > 0 ? (
+          <p className="mt-4 rounded-[20px] bg-white/55 p-3 text-[16px] font-bold">Every session done today. Rest well.</p>
+        ) : null}
+      </motion.div>
+
+      <div className="grid grid-cols-3 gap-2.5">
+        <motion.div variants={fadeUp} className="rounded-[22px] p-3.5 bg-[#FFD25E] text-[#4A3500]">
+          <p className="font-display text-[22px] leading-none">{totalLabel}</p>
+          <p className="text-[12px] font-semibold opacity-75 mt-2">All-time focus</p>
+        </motion.div>
+        <motion.div variants={fadeUp} className="rounded-[22px] p-3.5 bg-[#F6B3CE] text-[#4B1530]">
+          <p className="font-display text-[22px] leading-none">{user?.longest_streak_ever || 0}d</p>
+          <p className="text-[12px] font-semibold opacity-75 mt-2">Best streak</p>
+        </motion.div>
+        <motion.button type="button" variants={fadeUp} whileTap={{ scale: 0.96 }}
+          onClick={() => (shields > 0 ? navigate('/dashboard/focus-shop?tab=essentials') : onBuyShield())}
+          disabled={shieldBusy || (shields === 0 && (user?.gems ?? 0) < 500)}
+          className="rounded-[22px] p-3.5 bg-[#D4F36B] text-[#2B3A06] text-left disabled:opacity-60" data-testid="buy-focus-shield-btn">
+          <p className="font-display text-[22px] leading-none flex items-center gap-1"><Shield className="w-5 h-5" /> {shields}</p>
+          <p className="text-[12px] font-semibold opacity-75 mt-2">{shieldBusy ? 'Buying…' : shields > 0 ? 'Shields ready' : 'Buy · 500'}</p>
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
+// UI v3: every time slot owns a color block (refs: full pastel cards).
+const SLOT_TONE = {
+  morning:   { bg: '#FFD25E', ink: '#4A3500' },
+  afternoon: { bg: '#FF9F82', ink: '#4D1A0B' },
+  night:     { bg: '#9DD3F7', ink: '#0B2E45' },
+};
+
 function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSession, completingHabit, isGameMode, onAddClick }) {
   if (habits.length === 0) return null;
   const IconMap = { morning: Sunrise, afternoon: Sun, night: Moon };
   const Icon = IconMap[title.toLowerCase()] || Sunrise;
   const leftCount = habits.filter(h => !h.completed_today).length;
+  const tone = SLOT_TONE[title.toLowerCase()] || SLOT_TONE.morning;
 
   return (
-    <div data-testid={`habits-${title.toLowerCase()}`}>
+    <motion.div data-testid={`habits-${title.toLowerCase()}`} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '0px 0px -60px 0px' }} transition={{ duration: 0.6, ease: EASE }}>
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2 min-w-0">
-          <Icon className="w-4 h-4 flex-shrink-0 text-[var(--gm-muted)]" />
+          <span className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: tone.bg, color: tone.ink }}>
+            <Icon className="w-[18px] h-[18px]" />
+          </span>
           <h3
-            className="font-['Archivo',sans-serif] font-extrabold text-[19px] sm:text-xl truncate text-[var(--gm-ink)]"
-            style={{ letterSpacing: '-0.01em' }}
+            className="font-display text-[25px] truncate text-[var(--gm-ink)]"
           >
             {title}
           </h3>
@@ -584,18 +661,17 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSe
           {/* Status indicator — not a button */}
           {leftCount > 0 && (
             <span
-              className={`font-['JetBrains_Mono'] font-bold uppercase text-[10px] px-2.5 py-1 rounded-full border ${isGameMode ? 'border-[#A59BCC]/50 text-[#A59BCC]' : 'border-[var(--gm-track)] text-[var(--gm-muted)]'}`}
-              style={{ letterSpacing: '0.06em' }}
+              className="font-label text-[14px] px-3 py-1.5 rounded-full bg-[var(--gm-card)] text-[var(--gm-ink)]"
               data-testid={`habits-left-${title.toLowerCase()}`}
             >
-              {leftCount} Left
+              {leftCount} left
             </span>
           )}
           {/* ADD pill — opens the SAME existing AddHabitDialog as the FAB */}
           <button
             type="button"
             onClick={onAddClick}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-['General_Sans'] font-bold uppercase transition-colors ${isGameMode ? 'border-[#A59BCC] text-[#A59BCC] hover:bg-[#A59BCC]/10' : 'border-[var(--gm-track)] text-[var(--gm-ink)] hover:bg-[var(--gm-card)]'}`}
+            className="flex items-center gap-1 pl-2.5 pr-3 py-1.5 rounded-full bg-[var(--gm-ink)] text-[var(--gm-bg)] text-[14px] font-sans font-bold transition-opacity hover:opacity-85"
             data-testid={`add-habit-pill-${title.toLowerCase()}`}
           >
             <Plus className="w-3.5 h-3.5" />
@@ -614,14 +690,15 @@ function HabitSection({ title, icon, habits, onComplete, onUncomplete, onBeginSe
             onBeginSession={onBeginSession}
             isCompleting={completingHabit === habit.habit_id}
             isGameMode={isGameMode}
+            tone={tone}
           />
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleting, isGameMode }) {
+function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleting, isGameMode, tone }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
 
@@ -644,13 +721,18 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative p-4 rounded-[18px] border transition-all duration-200 overflow-hidden ${
+      transition={{ duration: 0.5, ease: EASE, layout: { duration: 0.5, ease: EASE } }}
+      whileTap={{ scale: 0.985 }}
+      className={`relative p-4 rounded-[24px] border transition-colors duration-700 overflow-hidden ${
         habit.completed_today
-          ? 'bg-[#DBF67F] border-transparent shadow-[var(--gm-shadow-lime)]'
-          : 'bg-[var(--gm-card)] border-transparent hover:border-[var(--gm-track)] shadow-[var(--gm-shadow-card)]'
+          ? 'bg-[#D4F36B] border-transparent shadow-[var(--gm-shadow-lime)]'
+          : 'border-transparent'
       }`}
+      style={habit.completed_today || !tone ? undefined : {
+        background: tone.bg, '--gm-ink': tone.ink, '--gm-muted': `${tone.ink}B3`, '--gm-checkbox': `${tone.ink}66`,
+      }}
       data-testid={`habit-card-${habit.habit_id}`}
     >
       {/* Particle burst on complete - Game Mode */}
@@ -669,7 +751,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
                 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6 }}
-                className="absolute w-2 h-2 rounded-full bg-[#2A3B0B]"
+                className="absolute w-2 h-2 rounded-full bg-[#2B3A06]"
               />
             ))}
           </>
@@ -690,7 +772,7 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
           <button
             onClick={() => onBeginSession(habit)}
             disabled={isCompleting}
-            className="py-[10px] px-[16px] rounded-full bg-[#95DEE6] hover:opacity-90 text-[#183A3F] text-xs font-bold flex-shrink-0 transition-all flex items-center gap-[7px] shadow-[var(--gm-shadow-cyan)]"
+            className="py-[10px] px-[16px] rounded-full bg-[#D4F36B] hover:opacity-90 text-[#2B3A06] text-xs font-bold flex-shrink-0 transition-all flex items-center gap-[7px] shadow-[var(--gm-shadow-cyan)]"
             data-testid={`habit-begin-${habit.habit_id}`}
           >
             {isCompleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Play className="w-3 h-3 fill-current" /> Begin</>}
@@ -700,17 +782,19 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
           <button
             onClick={handleClick}
             disabled={isCompleting}
-            className={`w-[34px] h-[34px] rounded-[11px] border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+            className={`w-[38px] h-[38px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
               habit.completed_today
-                ? 'bg-[#2A3B0B] border-[#2A3B0B]'
-                : 'border-[var(--gm-checkbox)] hover:border-[var(--gm-muted)]'
+                ? 'bg-[#141416] border-[#141416]'
+                : 'border-[var(--gm-checkbox)] hover:border-[#141416]'
             }`}
             data-testid={`habit-checkbox-${habit.habit_id}`}
           >
             {isCompleting ? (
               <Loader2 className={`w-4 h-4 animate-spin ${isGameMode && !habit.completed_today ? 'text-[var(--gm-ink)]' : 'text-white'}`} />
             ) : habit.completed_today ? (
-              <Check className="w-4 h-4 text-white" />
+              <motion.span initial={{ scale: 0, rotate: -60 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 14 }}>
+                <Check className="w-5 h-5 text-[#D4F36B]" weight="bold" />
+              </motion.span>
             ) : null}
           </button>
         )}
@@ -721,8 +805,8 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
             habit.failed_today
               ? 'font-medium text-[var(--gm-muted)] line-through'
               : habit.completed_today
-                ? 'font-bold text-[#0F1210]'
-                : 'font-medium text-[var(--gm-ink)]'
+                ? 'font-bold text-[17px] text-[#0F1210]'
+                : 'font-bold text-[17px] text-[var(--gm-ink)]'
           }`}>
             {habit.habit_name}
           </p>
@@ -787,11 +871,11 @@ function HabitCard({ habit, onComplete, onUncomplete, onBeginSession, isCompleti
 }
 
 // v2 create-habit form primitives: JetBrains Mono eyebrow label + tactile
-// segmented pills (cyan #95DEE6 / ink #183A3F when selected) replacing the old
+// segmented pills (cyan #D4F36B / ink #2B3A06 when selected) replacing the old
 // native-style dropdowns.
 function HabitFieldLabel({ children }) {
   return (
-    <Label className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">
+    <Label className="font-label text-[12px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">
       {children}
     </Label>
   );
@@ -803,9 +887,9 @@ function OptionPill({ selected, onClick, children, testid }) {
       type="button"
       onClick={onClick}
       data-testid={testid}
-      className={`rounded-xl px-3 py-2 text-sm font-['General_Sans'] transition-all ${
+      className={`rounded-xl px-3 py-2 text-sm font-sans transition-all ${
         selected
-          ? 'bg-[#95DEE6] text-[#183A3F] font-bold'
+          ? 'bg-[#D4F36B] text-[#2B3A06] font-bold'
           : 'bg-[color:var(--gm-bg)] text-[color:var(--gm-muted)] border border-[color:var(--gm-track)] hover:text-[color:var(--gm-ink)]'
       }`}
     >
@@ -872,7 +956,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
       {!trigger && (
         <DialogTrigger asChild>
           <Button
-            className="bg-[#95DEE6] text-[#183A3F] hover:opacity-90 font-['General_Sans'] font-bold"
+            className="bg-[#D4F36B] text-[#2B3A06] hover:opacity-90 font-sans font-bold"
             data-testid="add-first-habit-btn"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -882,7 +966,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
       )}
       <DialogContent className="bg-[var(--gm-card)] border-[var(--gm-track)] text-[var(--gm-ink)] shadow-[var(--gm-shadow-card)] max-w-md" data-testid="add-habit-dialog">
         <DialogHeader>
-          <DialogTitle className="font-['Archivo',sans-serif] font-extrabold">Create New Habit</DialogTitle>
+          <DialogTitle className="font-display font-extrabold">Create New Habit</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5 mt-4">
           <div className="space-y-2">
@@ -891,7 +975,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
               placeholder="e.g., Morning workout"
               value={formData.habit_name}
               onChange={(e) => setFormData({ ...formData, habit_name: e.target.value })}
-              className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)] focus-visible:ring-[#95DEE6]"
+              className="bg-[var(--gm-bg)] border-[var(--gm-track)] text-[var(--gm-ink)] focus-visible:ring-[#D4F36B]"
               data-testid="habit-name-input"
             />
           </div>
@@ -921,11 +1005,11 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
                     onClick={() => setFormData({ ...formData, difficulty: v })}
                     data-testid={`habit-difficulty-${v}`}
                     className={`rounded-xl px-2 py-3 text-center transition-all ${
-                      sel ? 'bg-[#95DEE6]' : 'bg-[color:var(--gm-bg)] border border-[color:var(--gm-track)] hover:opacity-90'
+                      sel ? 'bg-[#D4F36B]' : 'bg-[color:var(--gm-bg)] border border-[color:var(--gm-track)] hover:opacity-90'
                     }`}
                   >
-                    <span className={`block text-sm font-['General_Sans'] font-bold ${sel ? 'text-[#183A3F]' : 'text-[color:var(--gm-ink)]'}`}>{l}</span>
-                    <span className={`block font-['JetBrains_Mono'] text-[9px] mt-1 ${sel ? 'text-[#183A3F]/80' : 'text-[color:var(--gm-muted)]'}`}>{reward}</span>
+                    <span className={`block text-sm font-sans font-bold ${sel ? 'text-[#2B3A06]' : 'text-[color:var(--gm-ink)]'}`}>{l}</span>
+                    <span className={`block font-label text-[11px] mt-1 ${sel ? 'text-[#2B3A06]/80' : 'text-[color:var(--gm-muted)]'}`}>{reward}</span>
                   </button>
                 );
               })}
@@ -961,7 +1045,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
             <Button
               type="submit"
               disabled={loading || !formData.habit_name.trim()}
-              className="w-full bg-[#95DEE6] text-[#183A3F] hover:opacity-90 font-['General_Sans'] font-bold"
+              className="w-full bg-[#D4F36B] text-[#2B3A06] hover:opacity-90 font-sans font-bold"
               data-testid="create-habit-btn"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Habit'}
@@ -975,7 +1059,7 @@ function AddHabitDialog({ open, onOpenChange, onSuccess, isGameMode, trigger }) 
 
 
 // Confetti tuned to read on the lime takeover background (dark ink, deep teal, cyan, olive)
-const CONFETTI_COLORS_LEVEL = ['#0F1210', '#183A3F', '#95DEE6', '#2A3B0B'];
+const CONFETTI_COLORS_LEVEL = ['#0F1210', '#2B3A06', '#D4F36B', '#2B3A06'];
 
 function LevelUpCelebration({ data, onDismiss }) {
   const canvasRef = useRef(null);
@@ -1078,14 +1162,14 @@ function LevelUpCelebration({ data, onDismiss }) {
 
   const rewardGems = data.level_up_gems || 0;
   const INK = '#0F1210';  // near-black text on the lime takeover
-  const SOFT = '#2A3B0B'; // deep olive for secondary text on lime
+  const SOFT = '#2B3A06'; // deep olive for secondary text on lime
 
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
       className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
-      style={{ backgroundColor: '#DBF67F' }}
+      style={{ backgroundColor: '#D4F36B' }}
       onClick={onDismiss} data-testid="level-up-celebration"
     >
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
@@ -1095,7 +1179,7 @@ function LevelUpCelebration({ data, onDismiss }) {
         <motion.p
           initial={{ y: -12, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.15 }}
-          className="font-['JetBrains_Mono',monospace] text-xs sm:text-sm font-bold uppercase tracking-[0.35em] mb-1"
+          className="font-label text-xs sm:text-sm font-bold uppercase tracking-[0.35em] mb-1"
           style={{ color: INK }}
         >
           Level Up
@@ -1105,7 +1189,7 @@ function LevelUpCelebration({ data, onDismiss }) {
         <motion.div
           initial={{ scale: 0, rotate: -8 }} animate={{ scale: [0, 1.25, 1], rotate: 0 }}
           transition={{ duration: 0.7, times: [0, 0.6, 1], ease: 'easeOut' }}
-          className="text-[8rem] sm:text-[11rem] font-black font-['Archivo',sans-serif] leading-[0.85] tracking-[-0.04em]"
+          className="text-[8rem] sm:text-[11rem] font-black font-display leading-[0.85] tracking-[-0.04em]"
           style={{ color: INK, textShadow: '0 6px 0 rgba(15,18,16,0.12)' }}
           data-testid="level-number"
         >
@@ -1116,7 +1200,7 @@ function LevelUpCelebration({ data, onDismiss }) {
         <motion.h2
           initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.45 }}
-          className="text-2xl sm:text-4xl font-black font-['Archivo',sans-serif] uppercase tracking-[-0.01em] mt-3"
+          className="text-2xl sm:text-4xl font-black font-display uppercase tracking-[-0.01em] mt-3"
           style={{ color: INK }}
           data-testid="level-up-text"
         >
@@ -1127,7 +1211,7 @@ function LevelUpCelebration({ data, onDismiss }) {
         <motion.p
           initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="font-['General_Sans',sans-serif] text-lg sm:text-2xl font-semibold mt-1"
+          className="font-sans text-lg sm:text-2xl font-semibold mt-1"
           style={{ color: SOFT }}
         >
           {data.level_name}
@@ -1142,15 +1226,15 @@ function LevelUpCelebration({ data, onDismiss }) {
             style={{ backgroundColor: INK }}
             data-testid="level-reward"
           >
-            <Gem className="w-4 h-4" style={{ color: '#95DEE6' }} />
-            <span className="font-['JetBrains_Mono',monospace] text-sm font-bold uppercase tracking-[0.06em] text-white">+{rewardGems} Gems</span>
+            <Gem className="w-4 h-4" style={{ color: '#D4F36B' }} />
+            <span className="font-label text-sm font-bold uppercase tracking-[0.06em] text-white">+{rewardGems} Gems</span>
           </motion.div>
         )}
 
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           transition={{ delay: 1.4 }}
-          className="font-['JetBrains_Mono',monospace] text-[11px] uppercase tracking-[0.15em] mt-8"
+          className="font-label text-[13px] uppercase tracking-[0.15em] mt-8"
           style={{ color: SOFT, opacity: 0.7 }}
           data-testid="level-up-dismiss"
         >

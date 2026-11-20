@@ -21,3 +21,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Phase Android app (Capacitor)
+.env.app.staging
+.env.app.production
+*.jks
+*.keystore
+/android/local.properties

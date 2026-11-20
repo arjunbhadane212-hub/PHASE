@@ -22,15 +22,15 @@ import TitlePlate from './TitlePlate';
 import { streakTier, levelBadge, standingBadge, globalBadge, normalizeRarity } from '../../data/profileIdentity';
 
 const PILL = 'inline-flex items-center gap-1.5 rounded-full bg-[color:var(--gm-badge)] text-[color:var(--gm-ink)] flex-none';
-const SIZE = { sm: 'h-[26px] px-2.5 text-[11px]', md: 'h-[31px] px-3 text-[12px]', lg: 'h-[36px] px-3.5 text-[13px]' };
+const SIZE = { sm: 'h-[26px] px-2.5 text-[13px]', md: 'h-[31px] px-3 text-[14px]', lg: 'h-[36px] px-3.5 text-[15px]' };
 
 export default function FlexBadge({ icon, label, value, size = 'md', className = '', title, ...rest }) {
   return (
     <span className={`${PILL} ${SIZE[size] || SIZE.md} ${className}`} title={title} {...rest}>
       {icon}
-      <span className="font-['General_Sans'] font-bold leading-none">{label}</span>
+      <span className="font-sans font-bold leading-none">{label}</span>
       {value != null && (
-        <span className="font-['JetBrains_Mono'] font-bold leading-none tabular-nums text-[color:var(--gm-muted)]">{value}</span>
+        <span className="font-label font-bold leading-none tabular-nums text-[color:var(--gm-muted)]">{value}</span>
       )}
     </span>
   );
@@ -89,7 +89,7 @@ export function StandingBadge({ standing, leagueTier, size = 'md' }) {
    because up and down genuinely need to be told apart at a glance. Lime for
    promotion, red for demotion, neutral for holding: the v2 meanings. */
 const ZONE = {
-  promotion: { fg: '#DBF67F', Icon: ChevronsUp },
+  promotion: { fg: '#D4F36B', Icon: ChevronsUp },
   demotion:  { fg: '#B91C1C', Icon: ChevronsDown },
   holding:   { fg: 'var(--gm-muted)', Icon: Minus },
 };
@@ -100,7 +100,7 @@ export function ZoneChip({ standing }) {
   const { Icon } = z;
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 h-[26px] rounded-full bg-[color:var(--gm-badge)] font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.12em] flex-none"
+      className="inline-flex items-center gap-1 px-2 h-[26px] rounded-full bg-[color:var(--gm-badge)] font-label text-[12px] font-bold uppercase tracking-[0.12em] flex-none"
       style={{ color: z.fg }}
       data-testid="chip-zone"
     >

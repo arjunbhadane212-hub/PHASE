@@ -1,4 +1,6 @@
+import { motion } from 'framer-motion';
 import { Gem, ChevronRight } from './icons';
+import { EASE } from '../lib/motion';
 import PhaseBoxArt, { tierFor } from './PhaseBoxArt';
 import { tierOdds } from '../data/boxDrops';
 
@@ -33,7 +35,7 @@ function OddsLegend({ odds }) {
       {odds.map((o) => (
         <span key={o.tier} className="flex items-center gap-1.5">
           <span style={{ width: 7, height: 7, borderRadius: 7, background: o.color }} />
-          <span className="font-['JetBrains_Mono'] text-[10px] font-bold tabular-nums text-[color:var(--gm-muted)]">
+          <span className="font-label text-[12px] font-bold tabular-nums text-[color:var(--gm-muted)]">
             {o.label} {o.pct.toFixed(0)}%
           </span>
         </span>
@@ -53,8 +55,8 @@ function gemPill(cost, afford) {
   return (
     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
       style={{ background: afford ? 'var(--gm-badge)' : 'var(--gm-badge)', opacity: afford ? 1 : 0.6 }}>
-      <Gem className="w-3.5 h-3.5 text-[#95DEE6]" strokeWidth={2.4} />
-      <span className="font-['JetBrains_Mono'] text-[13px] font-bold tabular-nums text-[color:var(--gm-ink)]">{cost}</span>
+      <Gem className="w-3.5 h-3.5 text-[#D4F36B]" strokeWidth={2.4} />
+      <span className="font-label text-[15px] font-bold tabular-nums text-[color:var(--gm-ink)]">{cost}</span>
     </div>
   );
 }
@@ -66,39 +68,42 @@ function FeaturedVault({ box, meta, gems, onOpen }) {
   const pulls = topPulls(box, 3);
   const afford = gems >= box.cost;
   return (
-    <button
+    <motion.button
+      layoutId={`box-${box.id}`}
+      transition={{ duration: 0.6, ease: EASE }}
+      whileTap={{ scale: 0.97 }}
       onClick={() => onOpen(box.id)}
-      className="w-full text-left rounded-[24px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] border border-[#DBF67F]/40 hover:border-[#DBF67F]/70 transition-all duration-200 active:scale-[0.99] overflow-hidden"
+      className="w-full text-left rounded-[24px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] border border-[#D4F36B]/40 hover:border-[#D4F36B]/70 transition-all duration-200 active:scale-[0.99] overflow-hidden"
       data-testid={`vault-${box.id}`}
     >
       {/* top accent strip */}
-      <div className="h-1 w-full" style={{ background: '#DBF67F' }} />
+      <div className="h-1 w-full" style={{ background: '#D4F36B' }} />
       <div className="flex items-stretch gap-4 p-4 sm:p-5">
         <div className="flex-shrink-0 w-[92px] sm:w-[108px] flex items-center justify-center">
           <PhaseBoxArt tier={box.id} className="w-full h-full" />
         </div>
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="flex items-center gap-1.5">
-            <span className="font-['JetBrains_Mono'] text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: t.accent }}>
+            <span className="font-label text-[12px] font-black uppercase tracking-[0.2em]" style={{ color: t.accent }}>
               {box.label} · Featured
             </span>
           </div>
-          <h3 className="font-['Archivo'] font-black text-[color:var(--gm-ink)] text-lg sm:text-xl leading-tight mt-0.5">
+          <h3 className="font-display font-black text-[color:var(--gm-ink)] text-lg sm:text-xl leading-tight mt-0.5">
             {meta.name}
           </h3>
-          <p className="text-[11px] sm:text-xs text-[color:var(--gm-muted)] leading-snug mt-1 pr-2">{meta.tag}</p>
+          <p className="text-[13px] sm:text-xs text-[color:var(--gm-muted)] leading-snug mt-1 pr-2">{meta.tag}</p>
 
           <div className="mt-2.5"><OddsBar odds={odds} /></div>
           <div className="mt-1.5"><OddsLegend odds={odds} /></div>
 
           {pulls.length > 0 && (
-            <p className="text-[11px] text-[color:var(--gm-muted)] mt-2 truncate">
+            <p className="text-[13px] text-[color:var(--gm-muted)] mt-2 truncate">
               <span className="text-[color:var(--gm-ink)] font-semibold">Chance at:</span> {pulls.join(' · ')}
             </p>
           )}
 
           <div className="flex items-center justify-between mt-3">
-            <span className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.1em] text-[color:var(--gm-muted)]">
+            <span className="font-label text-[12px] uppercase tracking-[0.1em] text-[color:var(--gm-muted)]">
               Opens {box.dropsPerOpen} · 1 legendary+ guaranteed
             </span>
             <div className="flex items-center gap-2">
@@ -110,7 +115,7 @@ function FeaturedVault({ box, meta, gems, onOpen }) {
           </div>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -121,7 +126,10 @@ function Vault({ box, meta, gems, onOpen }) {
   const afford = gems >= box.cost;
   const guar = box.id === 'delta' ? '1 rare+ guaranteed' : `Opens ${box.dropsPerOpen}`;
   return (
-    <button
+    <motion.button
+      layoutId={`box-${box.id}`}
+      transition={{ duration: 0.6, ease: EASE }}
+      whileTap={{ scale: 0.97 }}
       onClick={() => onOpen(box.id)}
       className="flex flex-col rounded-[22px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] border border-transparent hover:border-[var(--gm-track)] transition-all duration-200 active:scale-[0.98] overflow-hidden"
       data-testid={`vault-${box.id}`}
@@ -130,21 +138,21 @@ function Vault({ box, meta, gems, onOpen }) {
         <PhaseBoxArt tier={box.id} className="w-[78px] h-[78px]" />
       </div>
       <div className="px-4 pb-4 flex flex-col flex-1">
-        <span className="font-['JetBrains_Mono'] text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: t.accent }}>
+        <span className="font-label text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: t.accent }}>
           {box.label}
         </span>
-        <h3 className="font-['Archivo'] font-black text-[color:var(--gm-ink)] text-[15px] leading-tight mt-0.5">{meta.name}</h3>
+        <h3 className="font-display font-black text-[color:var(--gm-ink)] text-[17px] leading-tight mt-0.5">{meta.name}</h3>
 
         <div className="mt-2.5"><OddsBar odds={odds} height={6} /></div>
 
         <div className="flex items-center justify-between mt-auto pt-3">
           {gemPill(box.cost, afford)}
-          <span className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] text-right leading-tight max-w-[92px]">
+          <span className="font-label text-[11px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)] text-right leading-tight max-w-[92px]">
             {guar}
           </span>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -166,12 +174,8 @@ export default function MysteryBoxesHeader({ onOpenBox, boxes, gems = 0 }) {
   const starter = resolve('starter');
 
   return (
-    <div className="w-full px-4" data-testid="mystery-boxes-header">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="font-['JetBrains_Mono'] text-[11px] font-black uppercase tracking-[0.22em] text-[color:var(--gm-ink)]">Vaults</span>
-        <span className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[color:var(--gm-muted)]">· spend gems, pull cosmetics & titles</span>
-      </div>
-
+    <div className="w-full px-3 sm:px-6" data-testid="mystery-boxes-header">
+      {/* The shop's own section header ("Mystery boxes") titles this block. */}
       <div className="flex flex-col gap-3">
         <FeaturedVault box={phase} meta={IDENTITY.phase} gems={gems} onOpen={onOpenBox} />
         <div className="grid grid-cols-2 gap-3">

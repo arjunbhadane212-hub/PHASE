@@ -33,8 +33,8 @@ export default function PushPrimer({ streak = 0, onClose }) {
       <button type="button" aria-label="Close" className="absolute inset-0 bg-black/60" onClick={later} />
       <motion.div initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }} role="dialog" aria-modal="true"
         className="relative w-full sm:max-w-sm bg-[var(--gm-card)] rounded-t-3xl sm:rounded-3xl p-6 pb-9 sm:pb-6" data-testid="push-primer">
-        <span className="w-12 h-12 rounded-2xl bg-[#95DEE6] text-[#183A3F] flex items-center justify-center"><BellIcon size={24} /></span>
-        <h3 className="font-['Archivo'] font-black text-[22px] text-[var(--gm-ink)] mt-4 tracking-[-0.01em]">
+        <span className="w-12 h-12 rounded-2xl bg-[#D4F36B] text-[#2B3A06] flex items-center justify-center"><BellIcon size={24} /></span>
+        <h3 className="font-display font-black text-[25px] text-[var(--gm-ink)] mt-4 tracking-[-0.01em]">
           {streak > 0 ? `Don’t lose your ${streak}-day streak by accident` : 'Want a nudge before your streak breaks?'}
         </h3>
         {needsInstall ? (
@@ -44,11 +44,11 @@ export default function PushPrimer({ streak = 0, onClose }) {
         )}
         <div className="mt-6 space-y-2">
           {!needsInstall && (
-            <button type="button" onClick={yes} disabled={busy} className="w-full h-12 rounded-full bg-[#95DEE6] text-[#183A3F] font-['General_Sans'] font-bold disabled:opacity-50" data-testid="push-primer-yes">
+            <button type="button" onClick={yes} disabled={busy} className="w-full h-12 rounded-full bg-[#D4F36B] text-[#2B3A06] font-sans font-bold disabled:opacity-50" data-testid="push-primer-yes">
               {busy ? 'Turning on…' : 'Turn on reminders'}
             </button>
           )}
-          <button type="button" onClick={later} className="w-full h-12 rounded-full text-[var(--gm-muted)] font-['General_Sans'] font-bold" data-testid="push-primer-later">
+          <button type="button" onClick={later} className="w-full h-12 rounded-full text-[var(--gm-muted)] font-sans font-bold" data-testid="push-primer-later">
             {needsInstall ? 'Got it' : 'Not now'}
           </button>
         </div>

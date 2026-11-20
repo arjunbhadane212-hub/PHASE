@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, ArrowRight, ArrowLeft, Check } from '../components/icons';
-import { toast } from 'sonner';
+import { showAuthSplash } from '../components/auth/AuthSplashHost';
+import { friendlyAuthError, checkEmail } from '../lib/authErrors';
 import AuthShell, { AuthTitle, AuthField, AuthError, PrimaryButton, SignupPanel, eyebrow } from '../components/auth/AuthShell';
 import GoogleButton from '../components/auth/GoogleButton';
 
@@ -28,7 +29,7 @@ export default function SignupPage() {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null); // { title, detail }
   const [fieldErrors, setFieldErrors] = useState({});
 
   const passwordChecks = passwordChecksFor(formData.password);
@@ -41,21 +42,24 @@ export default function SignupPage() {
 
   const handleContinue = (e) => {
     e.preventDefault();
-    if (!isPasswordValid) {
-      setFieldErrors({ password: 'Password does not meet requirements' });
+    const emailMsg = checkEmail(formData.email);
+    const pwMsg = !formData.password ? 'Create a password.' : !isPasswordValid ? 'Your password needs everything ticked below.' : '';
+    if (emailMsg || pwMsg) {
+      setFieldErrors({ email: emailMsg, password: pwMsg });
       return;
     }
-    setError('');
+    setError(null);
     setStep(1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
 
     const errors = {};
-    if (!validateName(formData.firstName)) errors.firstName = 'Use letters (accents, hyphens and apostrophes are fine)';
-    if (!validateName(formData.lastName)) errors.lastName = 'Use letters (accents, hyphens and apostrophes are fine)';
+    const nameMsg = (v, which) => (!v.trim() ? `Enter your ${which} name.` : !validateName(v) ? 'Use letters only (accents, hyphens and apostrophes are fine).' : '');
+    if (nameMsg(formData.firstName, 'first')) errors.firstName = nameMsg(formData.firstName, 'first');
+    if (nameMsg(formData.lastName, 'last')) errors.lastName = nameMsg(formData.lastName, 'last');
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -64,11 +68,13 @@ export default function SignupPage() {
     setLoading(true);
     try {
       await register(formData.firstName, formData.lastName, formData.email, formData.password);
-      toast.success('Account created!');
+      showAuthSplash({ title: 'Account created', subtitle: `Welcome to Phase, ${formData.firstName}.`, note: "Let's set up your first habits…" });
       navigate('/onboarding', { replace: true });
     } catch (e) {
-      setError(e?.message || 'Registration failed. Please try again.');
+      const f = friendlyAuthError(e, 'signup');
+      setError({ title: f.title, detail: f.detail });
       // Most failures (email taken, weak password) belong to step one.
+      setFieldErrors({ email: f.field === 'email' || f.field === 'both' ? true : '', password: f.field === 'password' ? true : '' });
       setStep(0);
     } finally {
       setLoading(false);
@@ -81,7 +87,7 @@ export default function SignupPage() {
       <div className="flex items-center gap-3 mb-6">
         <div className="flex gap-1.5">
           {[0, 1].map((i) => (
-            <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? 'bg-[#95DEE6]' : 'bg-[var(--gm-track)]'}`} />
+            <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? 'bg-[#D4F36B]' : 'bg-[var(--gm-track)]'}`} />
           ))}
         </div>
         <span className={`${eyebrow} text-[var(--gm-muted)]`}>Step {step + 1} of 2</span>
@@ -91,10 +97,10 @@ export default function SignupPage() {
         {step === 0 ? (
           <motion.div
             key="account"
-            initial={{ opacity: 0, x: -16 }}
+            initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.22 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
             <AuthTitle title="Create your account" sub="Takes a minute. Free forever." testId="signup-title" />
             <AuthError testId="signup-error">{error}</AuthError>
@@ -103,11 +109,11 @@ export default function SignupPage() {
 
             <div className="flex items-center gap-3 my-6" aria-hidden="true">
               <div className="flex-1 h-px bg-[var(--gm-track)]" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--gm-muted)] font-['JetBrains_Mono']">or email</span>
+              <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--gm-muted)] font-label">or email</span>
               <div className="flex-1 h-px bg-[var(--gm-track)]" />
             </div>
 
-            <form onSubmit={handleContinue} className="space-y-5" data-testid="signup-form">
+            <form onSubmit={handleContinue} noValidate className="space-y-5" data-testid="signup-form">
               <AuthField
                 id="email"
                 label="Email"
@@ -117,6 +123,7 @@ export default function SignupPage() {
                 placeholder="you@example.com"
                 autoComplete="email"
                 autoFocus
+                error={fieldErrors.email}
                 testId="signup-email-input"
               />
               <AuthField
@@ -134,8 +141,8 @@ export default function SignupPage() {
                   {passwordChecks.map((c) => (
                     <span
                       key={c.key}
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                        c.ok ? 'bg-[#DBF67F] text-[#2A3B0B]' : 'bg-[var(--gm-card)] text-[var(--gm-muted)]'
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-bold transition-colors ${
+                        c.ok ? 'bg-[#D4F36B] text-[#2B3A06]' : 'bg-[var(--gm-card)] text-[var(--gm-muted)]'
                       }`}
                     >
                       {c.ok && <Check className="w-3 h-3" strokeWidth={3} />}
@@ -158,15 +165,15 @@ export default function SignupPage() {
         ) : (
           <motion.div
             key="name"
-            initial={{ opacity: 0, x: 16 }}
+            initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 16 }}
-            transition={{ duration: 0.22 }}
+            exit={{ opacity: 0, x: 50 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
             <AuthTitle title="What should we call you?" sub="This is the name on your profile." testId="signup-title" />
             <AuthError testId="signup-error">{error}</AuthError>
 
-            <form onSubmit={handleSubmit} className="space-y-5" data-testid="signup-form">
+            <form onSubmit={handleSubmit} noValidate className="space-y-5" data-testid="signup-form">
               <div className="grid grid-cols-2 gap-3">
                 <AuthField
                   id="firstName"
@@ -216,7 +223,7 @@ export default function SignupPage() {
 
       <p className="mt-8 text-center text-sm font-medium text-[var(--gm-muted)]">
         Already have an account?{' '}
-        <Link to="/login" className="font-bold text-[var(--gm-ink)] underline underline-offset-4 decoration-[#95DEE6] decoration-2" data-testid="signup-login-link">
+        <Link to="/login" className="font-bold text-[var(--gm-ink)] underline underline-offset-4 decoration-[#D4F36B] decoration-2" data-testid="signup-login-link">
           Log in
         </Link>
       </p>

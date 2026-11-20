@@ -15,11 +15,11 @@ import { PhaseMark } from '../brand/PhaseMark';
 export const C = {
   bg: '#06080F', card: '#1F2123', badge: '#2E3235', check: '#52525B',
   ink: '#F4F5F2', muted: '#9BA09C',
-  cyan: '#95DEE6', cyanInk: '#183A3F', cyanMid: '#3E6C71', cyanSoft: '#76B5BC', cyanPip: '#83C6CD',
-  lime: '#DBF67F', limeInk: '#2A3B0B', red: '#B91C1C',
+  cyan: '#D4F36B', cyanInk: '#2B3A06', cyanMid: '#4F6115', cyanSoft: '#A9C93C', cyanPip: '#B8D84A',
+  lime: '#D4F36B', limeInk: '#2B3A06', red: '#B91C1C',
 };
 
-export const eyebrow = "font-['JetBrains_Mono'] font-bold uppercase tracking-[0.08em]";
+export const eyebrow = "font-label font-bold uppercase tracking-[0.08em]";
 
 // A counter that advances every `ms` while the element is on screen.
 // Stops entirely for reduced-motion visitors and off-screen demos.
@@ -45,7 +45,7 @@ export function PhoneFrame({ children, className = '' }) {
     >
       <div className="relative rounded-[37px] overflow-hidden" style={{ background: C.bg, aspectRatio: '9 / 19' }}>
         <div className="absolute top-0 inset-x-0 h-11 flex items-center justify-between px-7 z-20">
-          <span className="font-['JetBrains_Mono'] text-[11px] font-bold" style={{ color: C.ink }}>9:41</span>
+          <span className="font-label text-[13px] font-bold" style={{ color: C.ink }}>9:41</span>
           <span className="absolute left-1/2 -translate-x-1/2 top-2.5 w-[88px] h-[24px] rounded-full bg-black" />
           <span className="flex gap-[3px] items-end">
             {[5, 7, 9, 11].map((h) => <span key={h} className="w-[3px] rounded-sm" style={{ height: h, background: C.ink }} />)}
@@ -78,10 +78,10 @@ function HabitRow({ name, xp, done, onClick, pop, sub }) {
           {done && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
         </motion.div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold truncate" style={{ color: done ? '#0F1210' : C.ink }}>{name}</div>
-          {sub && <div className="text-[10px] font-medium" style={{ color: done ? 'rgba(15,18,16,0.6)' : C.muted }}>{sub}</div>}
+          <div className="text-[15px] font-bold truncate" style={{ color: done ? '#0F1210' : C.ink }}>{name}</div>
+          {sub && <div className="text-[12px] font-medium" style={{ color: done ? 'rgba(15,18,16,0.6)' : C.muted }}>{sub}</div>}
         </div>
-        <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: done ? C.limeInk : C.muted }}>+{xp} XP</span>
+        <span className="font-label text-[12px] font-bold" style={{ color: done ? C.limeInk : C.muted }}>+{xp} XP</span>
       </motion.button>
       <AnimatePresence>
         {pop && (
@@ -90,7 +90,7 @@ function HabitRow({ name, xp, done, onClick, pop, sub }) {
             animate={{ opacity: 1, y: -26, scale: 1 }}
             exit={{ opacity: 0, y: -40 }}
             transition={{ duration: 0.45 }}
-            className="pointer-events-none absolute right-2 top-0 font-['Archivo'] font-black text-[18px]"
+            className="pointer-events-none absolute right-2 top-0 font-display font-black text-[21px]"
             style={{ color: C.lime }}
           >
             +{xp} XP
@@ -105,7 +105,7 @@ function GemPill({ gems }) {
   return (
     <span className="flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: C.cyan, color: C.cyanInk }}>
       <Gem className="w-3 h-3" />
-      <span className="font-['Archivo'] font-black text-[12px] tabular-nums">{gems.toLocaleString()}</span>
+      <span className="font-display font-black text-[14px] tabular-nums">{gems.toLocaleString()}</span>
     </span>
   );
 }
@@ -114,10 +114,10 @@ function StreakMini({ streak, pips, shield }) {
   return (
     <div className="rounded-[18px] p-4" style={{ background: C.cyan }}>
       <div className="flex items-center justify-between">
-        <span className={`${eyebrow} text-[9px]`} style={{ color: C.cyanSoft }}>Day streak · This week</span>
+        <span className={`${eyebrow} text-[11px]`} style={{ color: C.cyanSoft }}>Day streak · This week</span>
         {shield > 0 && (
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: C.cyanInk, color: C.cyan }}>
-            <Shield className="w-3 h-3" /><span className="text-[10px] font-bold">{shield}</span>
+            <Shield className="w-3 h-3" /><span className="text-[12px] font-bold">{shield}</span>
           </span>
         )}
       </div>
@@ -125,12 +125,12 @@ function StreakMini({ streak, pips, shield }) {
         key={streak}
         initial={{ y: 10, opacity: 0.2 }}
         animate={{ y: 0, opacity: 1 }}
-        className="font-['Archivo'] font-black text-[40px] leading-[0.88] tracking-[-0.02em] mt-1.5 tabular-nums"
+        className="font-display font-black text-[40px] leading-[0.88] tracking-[-0.02em] mt-1.5 tabular-nums"
         style={{ color: C.cyanInk }}
       >
         {streak}
       </motion.div>
-      <div className="text-[12px] font-bold mt-0.5" style={{ color: C.cyanMid }}>Days Strong</div>
+      <div className="text-[14px] font-bold mt-0.5" style={{ color: C.cyanMid }}>Days Strong</div>
       <div className="flex gap-1 mt-3">
         {pips.map((p, i) => (
           <motion.div key={i} className="flex-1 h-1.5 rounded-full" animate={{ backgroundColor: p ? C.cyanInk : C.cyanPip }} />
@@ -294,8 +294,8 @@ export function HeroDemo() {
               <div className="flex items-center gap-2">
                 <PhaseMark size={22} />
                 <div>
-                  <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Friday</div>
-                  <div className="font-['Archivo'] font-black text-[17px] leading-none" style={{ color: C.ink }}>Today</div>
+                  <div className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>Friday</div>
+                  <div className="font-display font-black text-[20px] leading-none" style={{ color: C.ink }}>Today</div>
                 </div>
               </div>
               <GemPill gems={gems} />
@@ -304,8 +304,8 @@ export function HeroDemo() {
             <div className="grid grid-cols-3 gap-2">
               {[[xp, 'XP today'], ['LV.4', 'Adept rank'], [`${finished ? 5 : 4}/7`, 'This week']].map(([n, l]) => (
                 <div key={l} className="rounded-[14px] p-2.5" style={{ background: C.card }}>
-                  <div className="font-['Archivo'] font-black text-[20px] leading-none tabular-nums" style={{ color: C.ink }}>{n}</div>
-                  <div className={`${eyebrow} text-[8px] mt-1.5`} style={{ color: C.muted }}>{l}</div>
+                  <div className="font-display font-black text-[23px] leading-none tabular-nums" style={{ color: C.ink }}>{n}</div>
+                  <div className={`${eyebrow} text-[10px] mt-1.5`} style={{ color: C.muted }}>{l}</div>
                 </div>
               ))}
             </div>
@@ -315,8 +315,8 @@ export function HeroDemo() {
             </div>
 
             <div className="flex items-center justify-between mt-1">
-              <span className="font-['Archivo'] font-black text-[15px]" style={{ color: C.ink }}>Habits</span>
-              <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>{shown.filter(Boolean).length}/4 done</span>
+              <span className="font-display font-black text-[17px]" style={{ color: C.ink }}>Habits</span>
+              <span className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>{shown.filter(Boolean).length}/4 done</span>
             </div>
             <div className="space-y-2">
               {HERO_HABITS.map((h, i) => (
@@ -336,7 +336,7 @@ export function HeroDemo() {
                   style={{ background: C.limeInk }}
                 >
                   <Flame className="w-4 h-4" style={{ color: C.lime }} />
-                  <span className="text-[12px] font-bold" style={{ color: C.lime }}>Day complete. 13 days strong.</span>
+                  <span className="text-[14px] font-bold" style={{ color: C.lime }}>Day complete. 13 days strong.</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -354,7 +354,7 @@ export function HeroDemo() {
 function Pill({ on, children }) {
   return (
     <motion.span
-      className="flex-1 text-center rounded-full py-2 text-[11px] font-bold"
+      className="flex-1 text-center rounded-full py-2 text-[13px] font-bold"
       animate={{ backgroundColor: on ? C.cyan : C.bg, color: on ? C.cyanInk : C.muted }}
       style={{ boxShadow: on ? 'none' : `inset 0 0 0 1px ${C.badge}` }}
     >
@@ -377,32 +377,32 @@ function CreateHabitScreen() {
       <div className="absolute inset-0 bg-black/50" />
       <div className="relative rounded-t-[26px] p-5 space-y-4" style={{ background: C.card }}>
         <div className="w-10 h-1 rounded-full mx-auto" style={{ background: C.badge }} />
-        <div className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>New habit</div>
+        <div className="font-display font-black text-[22px]" style={{ color: C.ink }}>New habit</div>
         <div>
-          <div className={`${eyebrow} text-[9px] mb-1.5`} style={{ color: C.muted }}>Name</div>
-          <div className="rounded-[12px] px-3 py-2.5 text-[13px] font-bold" style={{ background: C.bg, color: C.ink, boxShadow: `inset 0 0 0 2px ${typed ? C.cyan : C.badge}` }}>
+          <div className={`${eyebrow} text-[11px] mb-1.5`} style={{ color: C.muted }}>Name</div>
+          <div className="rounded-[12px] px-3 py-2.5 text-[15px] font-bold" style={{ background: C.bg, color: C.ink, boxShadow: `inset 0 0 0 2px ${typed ? C.cyan : C.badge}` }}>
             {typed}<span className="inline-block w-[2px] h-[14px] align-middle ml-0.5 animate-pulse" style={{ background: C.cyan }} />
           </div>
         </div>
         <div>
-          <div className={`${eyebrow} text-[9px] mb-1.5`} style={{ color: C.muted }}>Time</div>
+          <div className={`${eyebrow} text-[11px] mb-1.5`} style={{ color: C.muted }}>Time</div>
           <div className="flex gap-1.5">
             {['Morning', 'Afternoon', 'Night'].map((s, i) => <Pill key={s} on={slot === i}>{s}</Pill>)}
           </div>
         </div>
         <div>
-          <div className={`${eyebrow} text-[9px] mb-1.5`} style={{ color: C.muted }}>Difficulty</div>
+          <div className={`${eyebrow} text-[11px] mb-1.5`} style={{ color: C.muted }}>Difficulty</div>
           <div className="flex gap-1.5">
             {[['Easy', '+10'], ['Medium', '+25'], ['Hard', '+50']].map(([d, x], i) => (
               <Pill key={d} on={diff === i}>
                 <span className="block">{d}</span>
-                <span className="block font-['JetBrains_Mono'] text-[9px] opacity-80">{x} XP</span>
+                <span className="block font-label text-[11px] opacity-80">{x} XP</span>
               </Pill>
             ))}
           </div>
         </div>
         <motion.div
-          className="rounded-full py-3 text-center text-[13px] font-bold"
+          className="rounded-full py-3 text-center text-[15px] font-bold"
           animate={{ scale: pressed ? [1, 0.96, 1] : 1, opacity: diff >= 0 ? 1 : 0.4 }}
           style={{ background: C.cyan, color: C.cyanInk }}
         >
@@ -476,8 +476,8 @@ function CompleteScreen() {
       >
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Morning</span>
-            <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>{shown.filter(Boolean).length}/3 done</span>
+            <span className="font-display font-black text-[22px]" style={{ color: C.ink }}>Morning</span>
+            <span className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>{shown.filter(Boolean).length}/3 done</span>
           </div>
           {list.map((h, i) => (
             <div key={h.name} ref={(el) => { rowRefs.current[i] = el; }}>
@@ -485,8 +485,8 @@ function CompleteScreen() {
             </div>
           ))}
           <div className="rounded-[14px] p-3 flex items-center justify-between" style={{ background: C.card }}>
-            <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Earned this morning</span>
-            <span className="font-['Archivo'] font-black text-[15px] tabular-nums" style={{ color: C.lime }}>
+            <span className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>Earned this morning</span>
+            <span className="font-display font-black text-[17px] tabular-nums" style={{ color: C.lime }}>
               +{list.reduce((s, h, i) => s + (shown[i] ? h.xp : 0), 0)} XP
             </span>
           </div>
@@ -506,11 +506,11 @@ function ProgressScreen() {
   const pct = Math.round(weeks[weeks.length - 1] * t);
   return (
     <div ref={ref} className="h-full px-4 pt-3 space-y-3">
-      <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Progress</span>
+      <span className="font-display font-black text-[22px]" style={{ color: C.ink }}>Progress</span>
       <div className="rounded-[18px] p-4" style={{ background: C.card }}>
-        <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Consistency · last 7 weeks</div>
-        <div className="font-['Archivo'] font-black text-[44px] leading-[0.9] tracking-[-0.02em] mt-2 tabular-nums" style={{ color: C.ink }}>{pct}%</div>
-        <div className="text-[12px] font-medium mt-1" style={{ color: C.muted }}>Up from 38% when you started</div>
+        <div className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>Consistency · last 7 weeks</div>
+        <div className="font-display font-black text-[44px] leading-[0.9] tracking-[-0.02em] mt-2 tabular-nums" style={{ color: C.ink }}>{pct}%</div>
+        <div className="text-[14px] font-medium mt-1" style={{ color: C.muted }}>Up from 38% when you started</div>
         <div className="mt-4 h-[110px] flex items-end gap-1.5">
           {weeks.map((w, i) => (
             <div key={i} className="flex-1 rounded-[6px]" style={{
@@ -524,14 +524,14 @@ function ProgressScreen() {
       <div className="grid grid-cols-2 gap-2">
         {[['142', 'Habits done'], ['31h', 'Focused']].map(([n, l]) => (
           <div key={l} className="rounded-[14px] p-3" style={{ background: C.card }}>
-            <div className="font-['Archivo'] font-black text-[22px] leading-none" style={{ color: C.ink }}>{n}</div>
-            <div className={`${eyebrow} text-[8px] mt-1.5`} style={{ color: C.muted }}>{l}</div>
+            <div className="font-display font-black text-[25px] leading-none" style={{ color: C.ink }}>{n}</div>
+            <div className={`${eyebrow} text-[10px] mt-1.5`} style={{ color: C.muted }}>{l}</div>
           </div>
         ))}
       </div>
       <div className="rounded-[14px] p-3 flex items-center justify-between" style={{ background: C.cyan }}>
-        <span className="text-[12px] font-bold" style={{ color: C.cyanInk }}>Rank up: Expert</span>
-        <span className={`${eyebrow} text-[9px]`} style={{ color: C.cyanMid }}>LV.6</span>
+        <span className="text-[14px] font-bold" style={{ color: C.cyanInk }}>Rank up: Expert</span>
+        <span className={`${eyebrow} text-[11px]`} style={{ color: C.cyanMid }}>LV.6</span>
       </div>
     </div>
   );
@@ -547,7 +547,7 @@ function StreakScreen() {
   const streak = 20 + Math.min(step, 7);
   return (
     <div ref={ref} className="h-full px-4 pt-3 space-y-3">
-      <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Your streak</span>
+      <span className="font-display font-black text-[22px]" style={{ color: C.ink }}>Your streak</span>
       <StreakMini streak={streak} pips={pips} shield={shieldUsed ? 0 : 1} />
       <AnimatePresence mode="wait">
         {step === 5 || step === 6 ? (
@@ -563,15 +563,15 @@ function StreakScreen() {
               <Shield className="w-4 h-4" style={{ color: C.cyanInk }} />
             </div>
             <div>
-              <div className="text-[13px] font-bold" style={{ color: C.ink }}>Shield used</div>
-              <div className="text-[11px] font-medium" style={{ color: C.muted }}>You missed Friday. Streak saved.</div>
+              <div className="text-[15px] font-bold" style={{ color: C.ink }}>Shield used</div>
+              <div className="text-[13px] font-medium" style={{ color: C.muted }}>You missed Friday. Streak saved.</div>
             </div>
           </motion.div>
         ) : (
           <motion.div key="days" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-7 gap-1.5">
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
               <div key={i} className="rounded-[10px] py-2 text-center" style={{ background: pips[i] ? C.lime : C.card }}>
-                <div className={`${eyebrow} text-[9px]`} style={{ color: pips[i] ? C.limeInk : C.muted }}>{d}</div>
+                <div className={`${eyebrow} text-[11px]`} style={{ color: pips[i] ? C.limeInk : C.muted }}>{d}</div>
                 <div className="mt-1 mx-auto w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ background: pips[i] ? C.limeInk : C.badge }}>
                   {pips[i] && <Check className="w-2.5 h-2.5" style={{ color: C.lime }} strokeWidth={3} />}
                 </div>
@@ -581,10 +581,10 @@ function StreakScreen() {
         )}
       </AnimatePresence>
       <div className="rounded-[14px] p-3" style={{ background: C.card }}>
-        <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Next streak title</div>
+        <div className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>Next streak title</div>
         <div className="mt-2 flex items-center justify-between">
           <TitlePlate titleKey="streak_contender" name="Contender" tier="common" size="sm" />
-          <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: C.muted }}>{streak >= 25 ? 'Unlocked' : 'at 25 days'}</span>
+          <span className="font-label text-[12px] font-bold" style={{ color: C.muted }}>{streak >= 25 ? 'Unlocked' : 'at 25 days'}</span>
         </div>
       </div>
     </div>
@@ -629,8 +629,8 @@ export function FocusTimerScreen() {
     <div ref={ref} className="h-full flex flex-col items-center justify-between px-5 pt-4 pb-5" style={{ background: '#000' }}>
       <div className="w-full flex items-center justify-between">
         <div>
-          <div className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Session 2 of 4</div>
-          <div className="text-[14px] font-bold mt-1" style={{ color: C.ink }}>Deep work: thesis</div>
+          <div className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>Session 2 of 4</div>
+          <div className="text-[16px] font-bold mt-1" style={{ color: C.ink }}>Deep work: thesis</div>
         </div>
         <div className="flex gap-1">
           {[1, 1, 0, 0].map((v, i) => (
@@ -645,9 +645,9 @@ export function FocusTimerScreen() {
             strokeDasharray={c} strokeDashoffset={c * (1 - sec / total)} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-['Archivo'] font-black text-[48px] leading-none tabular-nums tracking-[-0.02em]" style={{ color: C.ink }}>{mm}:{ss}</span>
-          <span className={`${eyebrow} text-[9px] mt-2`} style={{ color: C.muted }}>of 25:00</span>
-          <span className="font-['JetBrains_Mono'] text-[10px] font-bold mt-3 tabular-nums" style={{ color: C.cyan }}>
+          <span className="font-display font-black text-[48px] leading-none tabular-nums tracking-[-0.02em]" style={{ color: C.ink }}>{mm}:{ss}</span>
+          <span className={`${eyebrow} text-[11px] mt-2`} style={{ color: C.muted }}>of 25:00</span>
+          <span className="font-label text-[12px] font-bold mt-3 tabular-nums" style={{ color: C.cyan }}>
             {Math.floor(elapsed / 60)}m banked
           </span>
         </div>
@@ -655,7 +655,7 @@ export function FocusTimerScreen() {
       <div className="w-full space-y-2">
         <div className="rounded-[14px] p-3 flex items-start gap-2.5" style={{ background: C.card }}>
           <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#E56B6B' }} />
-          <span className="text-[10px] font-medium" style={{ color: C.muted }}>Leaving now fails the habit and costs 30 gems.</span>
+          <span className="text-[12px] font-medium" style={{ color: C.muted }}>Leaving now fails the habit and costs 30 gems.</span>
         </div>
       </div>
     </div>
@@ -675,11 +675,11 @@ export function FocusListScreen() {
     <div className="h-full px-4 pt-3 pb-3 overflow-hidden">
       <div className="flex items-center justify-between">
         <div>
-          <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>Focus · Today</span>
-          <div className="font-['Archivo'] font-black text-[19px] leading-none mt-1" style={{ color: C.ink }}>Deep work</div>
+          <span className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>Focus · Today</span>
+          <div className="font-display font-black text-[22px] leading-none mt-1" style={{ color: C.ink }}>Deep work</div>
         </div>
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full" style={{ background: C.cyan }}>
-          <span className="font-['Archivo'] font-black text-[12px] tabular-nums" style={{ color: C.cyanInk }}>{todayMins}m</span>
+          <span className="font-display font-black text-[14px] tabular-nums" style={{ color: C.cyanInk }}>{todayMins}m</span>
         </div>
       </div>
 
@@ -687,21 +687,21 @@ export function FocusListScreen() {
       <div className="mt-3 rounded-[18px] p-4" style={{ background: C.cyan }}>
         <div className="flex items-end justify-between">
           <div>
-            <span className={`${eyebrow} text-[9px]`} style={{ color: '#76B5BC' }}>This week</span>
-            <div className="font-['Archivo'] font-black text-[36px] leading-[0.88] tracking-[-0.02em] mt-1 tabular-nums" style={{ color: C.cyanInk }}>
+            <span className={`${eyebrow} text-[11px]`} style={{ color: '#A9C93C' }}>This week</span>
+            <div className="font-display font-black text-[36px] leading-[0.88] tracking-[-0.02em] mt-1 tabular-nums" style={{ color: C.cyanInk }}>
               {Math.floor(weekMins / 60)}h {weekMins % 60}m
             </div>
           </div>
-          <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: '#3E6C71' }}>of {Math.floor(weekGoal / 60)}h goal</span>
+          <span className="font-label text-[12px] font-bold" style={{ color: '#4F6115' }}>of {Math.floor(weekGoal / 60)}h goal</span>
         </div>
-        <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: '#83C6CD' }}>
+        <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: '#B8D84A' }}>
           <div className="h-full rounded-full" style={{ width: `${(weekMins / weekGoal) * 100}%`, background: C.cyanInk }} />
         </div>
       </div>
 
       <div className="mt-3 flex items-center justify-between">
-        <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>3 sessions</span>
-        <span className={`${eyebrow} text-[9px]`} style={{ color: C.muted }}>1 done</span>
+        <span className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>3 sessions</span>
+        <span className={`${eyebrow} text-[11px]`} style={{ color: C.muted }}>1 done</span>
       </div>
 
       <div className="mt-2 space-y-1.5">
@@ -713,7 +713,7 @@ export function FocusListScreen() {
               </span>
             ) : (
               <motion.span
-                className="flex items-center gap-1 rounded-full py-1.5 px-2.5 text-[10px] font-bold flex-shrink-0"
+                className="flex items-center gap-1 rounded-full py-1.5 px-2.5 text-[12px] font-bold flex-shrink-0"
                 style={{ background: C.cyan, color: C.cyanInk }}
                 animate={i === 0 ? { scale: [1, 0.94, 1] } : {}}
                 transition={{ repeat: Infinity, duration: 2, repeatDelay: 1 }}
@@ -721,8 +721,8 @@ export function FocusListScreen() {
                 <Play className="w-2.5 h-2.5 fill-current" /> Begin
               </motion.span>
             )}
-            <span className="flex-1 text-[12px] font-bold truncate" style={{ color: h.done ? C.lime : C.ink }}>{h.name}</span>
-            <span className="font-['JetBrains_Mono'] text-[10px] font-bold" style={{ color: h.done ? '#9BC24A' : C.muted }}>{h.mins}m</span>
+            <span className="flex-1 text-[14px] font-bold truncate" style={{ color: h.done ? C.lime : C.ink }}>{h.name}</span>
+            <span className="font-label text-[12px] font-bold" style={{ color: h.done ? '#9BC24A' : C.muted }}>{h.mins}m</span>
           </div>
         ))}
       </div>
@@ -741,7 +741,7 @@ export function GameModeScreen() {
   return (
     <div ref={ref} className="h-full px-4 pt-3 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="font-['Archivo'] font-black text-[19px]" style={{ color: C.ink }}>Today</span>
+        <span className="font-display font-black text-[22px]" style={{ color: C.ink }}>Today</span>
         <GemPill gems={1240 + (step > 0 ? 20 : 0) + (step > 1 ? 10 : 0)} />
       </div>
       <StreakMini streak={34} pips={[true, true, true, step > 1, false, false, false]} shield={2} />
@@ -781,8 +781,8 @@ export function LootBox({ box }) {
       data-testid={`loot-${box.id}`}
     >
       <div className="flex items-center justify-between">
-        <span className="font-['Archivo'] font-black text-xl text-[var(--gm-ink)] uppercase">{box.name}</span>
-        <span className={`${eyebrow} text-[10px] text-[var(--gm-muted)]`}>{box.odds}</span>
+        <span className="font-display font-black text-xl text-[var(--gm-ink)] uppercase">{box.name}</span>
+        <span className={`${eyebrow} text-[12px] text-[var(--gm-muted)]`}>{box.odds}</span>
       </div>
       <div className="relative h-[170px] flex items-center justify-center my-3">
         <motion.div
@@ -802,8 +802,8 @@ export function LootBox({ box }) {
               className="absolute"
             >
               {pull[0] === 'boost' ? (
-                <span className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 bg-[var(--gm-bg)] text-[var(--gm-ink)] font-['Archivo'] font-extrabold uppercase text-[13px] tracking-[0.04em]">
-                  <Gem className="w-3.5 h-3.5 text-[#95DEE6]" /> {pull[1]}
+                <span className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 bg-[var(--gm-bg)] text-[var(--gm-ink)] font-display font-extrabold uppercase text-[15px] tracking-[0.04em]">
+                  <Gem className="w-3.5 h-3.5 text-[#D4F36B]" /> {pull[1]}
                 </span>
               ) : (
                 <TitlePlate titleKey={pull[0]} name={pull[1]} tier={pull[2]} size="lg" />
@@ -814,7 +814,7 @@ export function LootBox({ box }) {
       </div>
       <p className="text-sm font-medium text-[var(--gm-muted)]">{box.desc}</p>
       <span className={`mt-4 self-start rounded-full px-4 py-2 text-sm font-bold transition ${
-        state === 'open' ? 'bg-[var(--gm-badge)] text-[var(--gm-ink)]' : 'bg-[#95DEE6] text-[#183A3F]'
+        state === 'open' ? 'bg-[var(--gm-badge)] text-[var(--gm-ink)]' : 'bg-[#D4F36B] text-[#2B3A06]'
       }`}>
         {state === 'open' ? 'Close' : state === 'opening' ? 'Opening…' : 'Tap to open'}
       </span>
@@ -828,31 +828,31 @@ export function ProfilePreview() {
   return (
     <div className="rounded-[28px] p-5 sm:p-6 w-full max-w-[400px]" style={{ background: C.bg, boxShadow: '0 0 0 1px #2E3235, 0 30px 60px -30px rgba(0,0,0,0.6)' }}>
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center font-['Archivo'] font-black text-xl" style={{ background: C.card, color: C.ink, boxShadow: `0 0 0 3px ${C.cyan}` }}>MR</div>
+        <div className="w-16 h-16 rounded-full flex items-center justify-center font-display font-black text-xl" style={{ background: C.card, color: C.ink, boxShadow: `0 0 0 3px ${C.cyan}` }}>MR</div>
         <div className="min-w-0">
-          <div className="font-['Archivo'] font-black text-xl" style={{ color: C.ink }}>Maya Reyes</div>
+          <div className="font-display font-black text-xl" style={{ color: C.ink }}>Maya Reyes</div>
           <div className="text-sm font-medium" style={{ color: C.muted }}>@mayareyes</div>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <TitlePlate titleKey="title_paragon" name="Eternalflame" tier="legendary" />
-        <span className={`${eyebrow} text-[10px] px-2.5 py-1.5 rounded-lg`} style={{ background: C.card, color: C.ink }}>LV.9 Champion</span>
+        <span className={`${eyebrow} text-[12px] px-2.5 py-1.5 rounded-lg`} style={{ background: C.card, color: C.ink }}>LV.9 Champion</span>
       </div>
       <div className="mt-4 rounded-[20px] p-5" style={{ background: C.cyan }}>
-        <div className={`${eyebrow} text-[10px]`} style={{ color: C.cyanSoft }}>Day streak</div>
-        <div className="font-['Archivo'] font-black text-[52px] leading-[0.88] tracking-[-0.02em] mt-2" style={{ color: C.cyanInk }}>212</div>
+        <div className={`${eyebrow} text-[12px]`} style={{ color: C.cyanSoft }}>Day streak</div>
+        <div className="font-display font-black text-[52px] leading-[0.88] tracking-[-0.02em] mt-2" style={{ color: C.cyanInk }}>212</div>
         <div className="text-sm font-bold mt-1" style={{ color: C.cyanMid }}>Days Strong</div>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {[['5,140', 'Total XP'], ['212', 'Best streak'], ['1,388', 'Habits']].map(([n, l]) => (
           <div key={l} className="rounded-[14px] p-3" style={{ background: C.card }}>
-            <div className="font-['Archivo'] font-black text-lg leading-none" style={{ color: C.ink }}>{n}</div>
-            <div className={`${eyebrow} text-[8px] mt-1.5`} style={{ color: C.muted }}>{l}</div>
+            <div className="font-display font-black text-lg leading-none" style={{ color: C.ink }}>{n}</div>
+            <div className={`${eyebrow} text-[10px] mt-1.5`} style={{ color: C.muted }}>{l}</div>
           </div>
         ))}
       </div>
       <div className="mt-4 flex items-center justify-between">
-        <span className="font-['JetBrains_Mono'] text-[11px] font-bold" style={{ color: C.muted }}>phase.app/@mayareyes</span>
+        <span className="font-label text-[13px] font-bold" style={{ color: C.muted }}>phase.app/@mayareyes</span>
         <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: C.cyan, color: C.cyanInk }}>Share</span>
       </div>
     </div>
@@ -884,11 +884,11 @@ export function RoastDemo() {
     <div ref={ref} className="rounded-[28px] bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-6 sm:p-8 h-full flex flex-col">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <span className={`${eyebrow} text-[11px] text-[var(--gm-muted)]`}>Reminders that talk back</span>
-          <h3 className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em] mt-2">A nudge when you need it.</h3>
+          <span className={`${eyebrow} text-[13px] text-[var(--gm-muted)]`}>Reminders that talk back</span>
+          <h3 className="font-display font-black text-[var(--gm-ink)] text-[28px] sm:text-[34px] leading-[0.95] tracking-[-0.02em] mt-2">A nudge when you need it.</h3>
         </div>
       </div>
-      <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3">
+      <p className="text-[17px] font-medium text-[var(--gm-muted)] mt-3">
         Slip up and Phase notices. Choose tough love or a gentle word. Two a day at most, and you can switch them off any time.
       </p>
       <div className="mt-5 inline-flex self-start rounded-full bg-[var(--gm-bg)] p-1">
@@ -896,7 +896,7 @@ export function RoastDemo() {
           <button
             key={k}
             onClick={() => setTone(k)}
-            className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${tone === k ? 'bg-[#95DEE6] text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}
+            className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${tone === k ? 'bg-[#D4F36B] text-[#2B3A06]' : 'text-[var(--gm-muted)]'}`}
           >
             {k === 'game' ? 'Tough love' : 'Gentle'}
           </button>
@@ -916,10 +916,10 @@ export function RoastDemo() {
               <PhaseMark size={30} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-bold text-[var(--gm-ink)]">Phase</span>
-                  <span className="font-['JetBrains_Mono'] text-[10px] font-bold text-[var(--gm-muted)]">{n.t}</span>
+                  <span className="text-[15px] font-bold text-[var(--gm-ink)]">Phase</span>
+                  <span className="font-label text-[12px] font-bold text-[var(--gm-muted)]">{n.t}</span>
                 </div>
-                <p className="text-[13px] font-medium text-[var(--gm-muted)] mt-0.5">{n.m}</p>
+                <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-0.5">{n.m}</p>
               </div>
             </motion.div>
           ))}
@@ -927,7 +927,7 @@ export function RoastDemo() {
       </div>
       <div className="mt-5 flex items-center gap-2 text-[var(--gm-muted)]">
         <Bell className="w-4 h-4" />
-        <span className={`${eyebrow} text-[10px]`}>Max 2 a day · never the same one twice</span>
+        <span className={`${eyebrow} text-[12px]`}>Max 2 a day · never the same one twice</span>
       </div>
     </div>
   );
@@ -946,8 +946,8 @@ export function MiniLevel() {
   return (
     <div ref={ref} className="rounded-2xl bg-[var(--gm-bg)] p-5">
       <div className="flex items-center justify-between">
-        <span className={`${eyebrow} text-[10px] text-[var(--gm-muted)]`}>Level {rank.level}</span>
-        <span className="font-['JetBrains_Mono'] text-[11px] font-bold text-[var(--gm-muted)] tabular-nums">
+        <span className={`${eyebrow} text-[12px] text-[var(--gm-muted)]`}>Level {rank.level}</span>
+        <span className="font-label text-[13px] font-bold text-[var(--gm-muted)] tabular-nums">
           {Math.round(rank.min_xp + (rank.max_xp - rank.min_xp) * t).toLocaleString()} XP
         </span>
       </div>
@@ -957,13 +957,13 @@ export function MiniLevel() {
           initial={{ y: 14, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -14, opacity: 0 }}
-          className="font-['Archivo'] font-black uppercase text-[var(--gm-ink)] text-[34px] leading-none tracking-[-0.02em] mt-3"
+          className="font-display font-black uppercase text-[var(--gm-ink)] text-[34px] leading-none tracking-[-0.02em] mt-3"
         >
           {rank.name}
         </motion.div>
       </AnimatePresence>
       <div className="mt-4 h-2.5 rounded-full bg-[var(--gm-track)] overflow-hidden">
-        <div className="h-full rounded-full bg-[#95DEE6]" style={{ width: `${t * 100}%`, transition: 'width 90ms linear' }} />
+        <div className="h-full rounded-full bg-[#D4F36B]" style={{ width: `${t * 100}%`, transition: 'width 90ms linear' }} />
       </div>
     </div>
   );
@@ -990,11 +990,11 @@ export function MiniLeague() {
           layout
           key={r.name}
           transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2 ${r.you ? 'bg-[#95DEE6]' : 'bg-[var(--gm-card)]'}`}
+          className={`flex items-center gap-3 rounded-xl px-3 py-2 ${r.you ? 'bg-[#D4F36B]' : 'bg-[var(--gm-card)]'}`}
         >
-          <span className={`font-['Archivo'] font-black w-4 text-sm ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>{i + 1}</span>
-          <span className={`flex-1 text-sm font-bold ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-ink)]'}`}>{r.name}</span>
-          <span className={`font-['JetBrains_Mono'] text-[11px] font-bold tabular-nums ${r.you ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>{r.xp.toLocaleString()}</span>
+          <span className={`font-display font-black w-4 text-sm ${r.you ? 'text-[#2B3A06]' : 'text-[var(--gm-muted)]'}`}>{i + 1}</span>
+          <span className={`flex-1 text-sm font-bold ${r.you ? 'text-[#2B3A06]' : 'text-[var(--gm-ink)]'}`}>{r.name}</span>
+          <span className={`font-label text-[13px] font-bold tabular-nums ${r.you ? 'text-[#2B3A06]' : 'text-[var(--gm-muted)]'}`}>{r.xp.toLocaleString()}</span>
         </motion.div>
       ))}
     </div>

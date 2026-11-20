@@ -17,7 +17,7 @@
 // =============================================================================
 import { useId, useMemo } from 'react';
 
-const C = { cyan: '#95DEE6', cyanDim: '#5FB8C4', lime: '#DBF67F', white: '#EAFCFF' };
+const C = { cyan: '#9DD3F7', cyanDim: '#6FB4E0', lime: '#D4F36B', white: '#F8FCE8' };
 
 // Flat pass (Nov 2026): the soft-bloom vignettes and Gaussian "glow" filters
 // read as generic AI art, so they are stripped here, once, for every banner.
@@ -142,6 +142,53 @@ function singularity() {
   let rings = ''; for (let i = 1; i <= 9; i++) { rings += `<ellipse cx="187" cy="80" rx="${i * 26}" ry="${i * 9}" fill="none" stroke="${i === 3 ? C.lime : C.cyan}" stroke-opacity="${i === 3 ? 0.9 : 0.5 - i * 0.04}" stroke-width="${i === 3 ? 2.4 : 1.2}" transform="rotate(-12 187 80)"/>`; }
   return svg(`${bg('#040607')}${stars('s', 50, 41, 0.25)}${rings}<circle cx="187" cy="80" r="22" fill="#040607" stroke="${C.white}" stroke-width="2"/>`);
 }
+// ── EPIC (Shop v3, Nov 2026) — flat, structural, a step up from rare ─────
+function halftone() {
+  // A dot field that swells left→right, with one lime column breaking it.
+  let d = '';
+  for (let cx = 0; cx < 26; cx++) {
+    for (let cy = 0; cy < 12; cy++) {
+      const x = 8 + cx * 14.4 + (cy % 2) * 7.2, y = 8 + cy * 13.4;
+      const t = Math.pow(x / 375, 1.6) * (0.75 + 0.25 * Math.sin(cy / 1.7 + cx / 4));
+      const r = Math.max(0.4, t * 5.6);
+      const lime = cx === 18;
+      d += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" fill="${lime ? C.lime : C.cyan}" fill-opacity="${lime ? 0.95 : (0.25 + t * 0.6).toFixed(2)}"/>`;
+    }
+  }
+  return svg(`${bg('#06090B')}${d}`);
+}
+function strata() {
+  // Stacked rock-layer curves; the eighth stratum is the lime vein.
+  const line = (y, a, p, k) => { let d = `M0 ${y}`; for (let x = 0; x <= 375; x += 9) d += ` L${x} ${(y + Math.sin(x / k + p) * a + Math.sin(x / 23 + p * 2) * a * 0.25).toFixed(1)}`; return d; };
+  let l = '';
+  for (let i = 0; i < 12; i++) {
+    const vein = i === 7;
+    l += `<path d="${line(14 + i * 12.5, 4 + i * 0.7, i * 0.45, 64 - i * 1.5)}" fill="none" stroke="${vein ? C.lime : C.cyan}" stroke-opacity="${vein ? 0.95 : (0.1 + i * 0.045).toFixed(2)}" stroke-width="${vein ? 2.6 : 1.3}" stroke-linejoin="round"/>`;
+  }
+  return svg(`${bg('#05080A')}${l}`);
+}
+function bloc() {
+  // Brutalist colour blocks: tonal slabs, one solid cyan bar, one lime square.
+  return svg(`${bg('#06090B')}`
+    + `<rect x="0" y="0" width="138" height="160" fill="${C.cyan}" fill-opacity=".07"/>`
+    + `<rect x="138" y="62" width="124" height="98" fill="${C.cyan}" fill-opacity=".15"/>`
+    + `<rect x="262" y="0" width="113" height="94" fill="${C.lime}" fill-opacity=".09"/>`
+    + `<rect x="138" y="52" width="124" height="10" fill="${C.cyan}"/>`
+    + `<rect x="300" y="110" width="30" height="30" fill="${C.lime}"/>`
+    + `<rect x="30" y="118" width="70" height="2" fill="${C.cyan}" fill-opacity=".5"/>`
+    + `<rect x="30" y="126" width="44" height="2" fill="${C.cyan}" fill-opacity=".3"/>`
+    + `<line x1="138" y1="0" x2="138" y2="160" stroke="${C.cyan}" stroke-opacity=".35"/>`
+    + `<line x1="262" y1="0" x2="262" y2="160" stroke="${C.cyan}" stroke-opacity=".35"/>`);
+}
+function broadcast() {
+  // Signal arcs radiating from a mast in the corner; every fourth arc is lime.
+  let a = '';
+  for (let i = 1; i <= 13; i++) {
+    const r = 20 + i * 26, lime = i % 4 === 0;
+    a += `<circle cx="56" cy="168" r="${r}" fill="none" stroke="${lime ? C.lime : C.cyan}" stroke-opacity="${lime ? 0.8 : Math.max(0.08, 0.5 - i * 0.032).toFixed(2)}" stroke-width="${lime ? 2.2 : 1.2}" stroke-dasharray="${i % 2 ? 'none' : '3 6'}"/>`;
+  }
+  return svg(`${bg('#05080A')}${a}<path d="M56 168 L56 104 M46 120 L56 104 L66 120" fill="none" stroke="${C.white}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="56" cy="100" r="4" fill="${C.lime}"/>`);
+}
 function defaultArt(u) {
   return svg(`<defs>${bloom(u, 50, 40, C.cyan, .12)}</defs>${bg('#070B0D')}<rect width="375" height="160" fill="url(#${u}bl)"/><text x="340" y="150" fill="${C.cyan}" fill-opacity=".1" font-size="11" font-weight="700" letter-spacing="3" text-anchor="end" font-family="inherit">PHASE</text>`);
 }
@@ -171,6 +218,10 @@ const ART = {
   banner_monolith: monolith,
   banner_solstice: solstice,
   banner_singularity: singularity,
+  banner_halftone: halftone,
+  banner_strata: strata,
+  banner_bloc: bloc,
+  banner_signal: broadcast,
   // legacy internal-name aliases (kept so old callers still resolve)
   starter_circuit: circuit,
   starter_grid: grid,
@@ -205,6 +256,10 @@ export const BANNER_META = [
   { key: 'banner_monolith', name: 'Monolith', rarity: 'legendary' },
   { key: 'banner_solstice', name: 'Solstice', rarity: 'legendary' },
   { key: 'banner_singularity', name: 'Singularity', rarity: 'mythic' },
+  { key: 'banner_halftone', name: 'Halftone', rarity: 'epic' },
+  { key: 'banner_strata', name: 'Strata', rarity: 'epic' },
+  { key: 'banner_bloc', name: 'Bloc', rarity: 'epic' },
+  { key: 'banner_signal', name: 'Broadcast', rarity: 'epic' },
 ];
 
 // Render helper — resolve by key, fall back to the neutral default. Fills its

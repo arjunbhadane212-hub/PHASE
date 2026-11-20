@@ -26,13 +26,13 @@ export default function XpPopAnimation({ xpEvents }) {
           className="absolute animate-xp-pop"
           style={{ top: `calc(40% - ${i * 30}px)` }}
         >
-          <span className={`text-2xl sm:text-3xl font-black font-['Archivo',sans-serif] tracking-tight ${
+          <span className={`text-2xl sm:text-3xl font-black font-display tracking-tight ${
             pop.boost
-              ? 'text-[#DBF67F]'
-              : 'text-[#95DEE6]'
+              ? 'text-[#D4F36B]'
+              : 'text-[#D4F36B]'
           }`}>
             +{pop.amount} XP
-            {pop.boost && <span className="text-base ml-1 text-[#DBF67F]">2x</span>}
+            {pop.boost && <span className="text-base ml-1 text-[#D4F36B]">2x</span>}
           </span>
         </div>
       ))}

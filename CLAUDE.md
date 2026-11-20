@@ -25,7 +25,45 @@ Every feature decision filters through this lens. If a feature doesn't reinforce
 
 ---
 
-## Color System v2 — CRITICAL, READ FIRST (supersedes all earlier color rules in this file and in design_guidelines.json)
+## UI v3 — CURRENT DESIGN SYSTEM (Nov 2026). Supersedes "Color System v2", "Typography v2" and "Visual Style Direction" below.
+
+Approved by Sachin after a full localhost lab pass (lab copy: `~/PHASE UI LAB`). **Full spec — colours, type scale, spacing, radii, components, motion, screen layouts: `docs/UI_DESIGN_SYSTEM.md`. Read it before any UI work.** Applied to every screen at once — there is no per-screen rollout any more.
+
+**Palette — colourful flat blocks, NO purple anywhere.**
+```
+Paper (light bg)      #F5F4EF   — light mode is the DEFAULT
+Ink                   #141416   — text, primary buttons, active pills/nav disc
+Lime  #D4F36B / ink #2B3A06     — brand, done/success, gains
+Sun   #FFD25E / ink #4A3500     — category block (Morning, XP, Titles, Legendary)
+Coral #FF9F82 / ink #4D1A0B     — category block (Afternoon, Level, Animations)
+Sky   #9DD3F7 / ink #0B2E45     — category block (Night, Focus, Banners, Rare)
+Pink  #F6B3CE / ink #4B1530     — category block (Effects, Epic, deal, FAB)
+Red   #B91C1C                   — destructive only
+```
+- Pastels are SURFACES with their dark ink on top — never text on paper.
+- Cards: white (`--gm-card`) on paper, separated by tone, radius 24–28px, no shadows, no glow, no glass (see memory "no neon glow").
+- Dark mode = same blocks on #0E0E10 / #1A1A1D. Nav follows the theme (white pill on light, charcoal on dark).
+- Rank ladder (`data/levels.js`) and league tiers (`data/leaderboardTiers.js`) were RECOLOURED onto this palette — no purple. Mythic = ink/inverse, not purple.
+
+**Type** — Bricolage Grotesque (display: `.font-display`, weight 800) + Figtree (everything else, weights 500–900). Nothing thin; Tailwind `fontSize` scale is enlarged in `tailwind.config.js`. Labels are sentence case, not mono/uppercase. Archivo / JetBrains Mono / General Sans / Satoshi are retired.
+
+**Icons** — Phosphor (`@phosphor-icons/react`), wrapped in `components/icons/index.js` (bold by default, `variant="solid"` → fill). ALWAYS import Phosphor per icon (`@phosphor-icons/react/dist/csr/Name`) — a root/namespace import bloats the bundle. Never import icons into the first-load bundle (App.js, contexts, ErrorBoundary).
+
+**Motion** — `framer-motion` + shared tokens in `src/lib/motion.js` (ease-out-quint, ~0.5s). Nothing teleports:
+- Dashboard pages glide 14px in nav order (no exit wait). Top-level routes use the CSS `.route-fade` (keeps framer out of the first-load bundle — keep it that way).
+- Active nav / tab pills slide via `layoutId`. Tiles grow INTO the section they open (shared `layoutId`), e.g. Shop Browse tiles → section hero, box card → box detail.
+- Lists stagger in; bars and rings fill from zero; panels slide in and out.
+- Sign-in / sign-up / Google return play the success screen (`components/auth/AuthSplashHost` + `showAuthSplash()`).
+- The full-screen "Game/Focus Mode" wipe plays ONLY on a real `switchMode()` (event `phase:mode-switched`).
+- `MotionConfig reducedMotion="user"` wraps the dashboard.
+
+**Organisation**
+- Every non-root screen/modal has the one-tap `components/BackButton` (top-left). In the shops Back steps section → shop home → app home.
+- Shop (v3 Drops): "Today" is the shop home (drop + Browse tiles + how it works); every other section opens on its own.
+- Focus Shop owns ALL Focus customisation: "Your setup" (timer screen + sound, equipped inline) + shelves. Nothing to equip in Settings.
+- Focus Home leads with the "Today's focus" dashboard (minutes, ring, Up next + Start).
+
+## (Superseded by UI v3 above) Color System v2 — CRITICAL, READ FIRST (supersedes all earlier color rules in this file and in design_guidelines.json)
 
 Phase's UI is being rebuilt screen-by-screen from a new design reference ("Phase Game Mode Guide"). This section is the current and only source of truth for color and type. Ignore any earlier text in this file, or in design_guidelines.json, that says blue is the only brand color or that purple must always be removed on sight — that rule is retired as of this update.
 
@@ -80,7 +118,7 @@ This is being rolled out ONE SCREEN AT A TIME. Only the screen(s) named in the c
 
 ---
 
-## Visual Style Direction
+## (Superseded by UI v3) Visual Style Direction
 
 Phase is NOT a generic productivity SaaS app. Every interactive element must feel like it belongs to a gamified RPG.
 
@@ -110,14 +148,13 @@ The deep-work, distraction-free experience. Completely separate emotional tone.
 - **No XP. No levels. No leaderboards. No shop.**
 - Replaces habit checkbox with a "Begin" button
 - Tapping "Begin" triggers a **full-screen timer takeover:**
-  - Black background
-  - Blue pulse glow
+  - Full-screen in the user's equipped **Timer Screen** (aura from `data/focusAuras.js`, chosen in Focus Shop → Your setup)
   - Large countdown display
   - Circular draining progress ring
   - Session duration: 5–60 minutes per habit, default 15 minutes
 - Platform behavior: Live Activity (iOS), Foreground Service (Android), persistent top bar (browser)
-- **Only in-Focus-Mode purchase:** Streak Shield button on home screen (500 gems) — NOT inside the timer, NOT in a shop screen
-- **OVERRIDE (Sachin, Step 6): Focus Mode keeps a shop screen, REVIVE-ONLY (Streak Revive via purchase_shop_item). XP doublers remain banned in Focus. This intentionally overrides the 'No shop in Focus' locked rule — do not revert.**
+- **Streak Shield (500 gems):** buyable from the Focus Home tile AND Focus Shop → Essentials (UI v3) — never inside the timer
+- **OVERRIDE (Sachin, Step 6): Focus Mode keeps a shop screen.** XP doublers remain banned in Focus. Since UI v3 the Focus Shop is the ONE place for all Focus customisation: "Your setup" (timer screen + session sound, equipped inline) + shelves (Timer screens · Sounds · Upgrades/grace · Essentials: Revive + Shield). Nothing Focus-related is equipped in Settings. Do not revert.
 - Roast notifications: **quiet, personal, disappointed tone** (never trash-talk in Focus Mode)
 
 ### Focus Mode Abandonment Penalty
@@ -201,7 +238,7 @@ The public profile is the **core flex screen and the primary organic growth driv
 
 **Secondary Stat Grid (smaller, quieter):**
 - Total XP, Longest Streak, Habits Done
-- Blue iconography only — no purple, no green, no yellow
+- Icons per UI v3 (Phosphor, bold) — colour comes from the block they sit on, never purple
 
 **Footer:** "Member since [date]" — small, muted, low visual priority
 
@@ -279,7 +316,7 @@ Update 4:             Seasonal drops
 **Status exception — Weekly League (leaderboard) is BUILT** (Arjun-approved, July 2026). Backend + UI are live: `get_leaderboard()` / `get_period_result()` RPCs, `pg_cron` weekly reset (Mon 00:00 UTC), League nav item in Game Mode. See `supabase/migrations/README_leaderboard.md`. Notes:
 - It is **Game Mode only** — Focus Mode earns no league XP and is never grouped.
 - It uses its **own** 10-tier ladder (Bronze→Prime) in `users.leaderboard_tier`, separate from the XP-level ladder in `users.rank`. Tier 9 "Apex" here is a name collision with rank 10 "Apex" — unrelated systems.
-- Tier badges use a **per-tier saturated palette** (incl. purples/pinks) from the leaderboard design spec. This is a deliberate, approved exception to the no-purple rule, scoped to league tier emblems only — the rest of the app stays blue.
+- Tier badges (UI v3, Nov 2026): flat `components/TierEmblem.js` — shape by family (circle → hexagon → shield → star), Phosphor glyph (crown/diamond/fire/trophy), 1–3 pips. Tier colours in `data/leaderboardTiers.js` were recoloured onto the UI v3 palette — **no purple** (Eclipse is pink, Prime is ink + gold). The old purple-tier exception is retired.
 - Standings are Pro-gated (`users.is_pro`); free users see the blurred upsell.
 
 ---
@@ -304,7 +341,7 @@ mythic     solid + one slow, low-contrast sheen
 ```
 The solid pastel surface is the app's most premium gesture (same treatment as
 the shop's primary CTA pills), so it is **withheld until legendary**. There is
-**no glow anywhere** in the title system. Type is Archivo 800 uppercase.
+**no glow anywhere** in the title system. Display type follows UI v3 (Bricolage Grotesque).
 
 **Acquisition:** 24 shop titles are buyable (`box_only=false` + `price_gems`:
 common 400 / rare 900 / epic 1800 / legendary 3200 / mythic 6000). The 32 earned
@@ -369,12 +406,9 @@ deliberate — it makes an equipped title the thing your eye lands on.
 ⚠️ **`shop_items` reads must filter `.eq('is_active', true)`** or retired
 categories reappear in the shop.
 
-> **NOTE — the "Color System" section above is pre-v2 and partly stale.** The app
-> migrated to the v2 palette (cyan `#95DEE6`/ink `#183A3F`, lime `#DBF67F`/ink
-> `#2A3B0B`, purple accent `#A59BCC`, destructive `#B91C1C`). **Blue is gone —
-> do not reintroduce `#3B82F6`/`#60A5FA`/`#4D8EF0`.** The rank ladder in
-> `data/levels.js` is still the old blue/purple palette and is no longer used on
-> the profile; it has not been migrated elsewhere yet.
+> **NOTE — colour/type rules live in the "UI v3" section at the top and in
+> `docs/UI_DESIGN_SYSTEM.md`.** Every older palette note (blue-only, cyan
+> `#95DEE6` / lime `#DBF67F` / purple `#A59BCC` v2) is retired.
 
 ---
 
@@ -383,12 +417,10 @@ categories reappear in the shop.
 ### Critical (Blocks Launch)
 - **Public profile is broken.** This is the #1 priority fix. Blocks all marketing, social proof, and launch. Fix this before anything else social-facing.
 
-### Color Bugs (Purple Contamination — Fix on Sight)
-Purple still exists in:
-- Level screen XP bar → replace with #3B82F6
-- Shop banner → replace with blue palette
-- Progress charts (also has yellow) → full blue unification needed
-- Create Habit modal: input focus ring + "Create Habit" button are both solid purple → replace with blue
+### Colour bugs — fix on sight
+Any purple, any leftover v2 cyan `#95DEE6` / lime `#DBF67F`, or any thin font
+(Archivo / JetBrains Mono / General Sans / Satoshi) is a bug. Replace it with the
+UI v3 token for that role (see `docs/UI_DESIGN_SYSTEM.md`) — NOT with blue.
 
 ### Deployment Bug
 - Vercel deployment fails: SHA mismatch / lockfile conflict between package.json and package-lock.json. Root cause is CRACO/Create React App dependency desync. Fix: sync lockfile or migrate build system to Vite.
@@ -402,28 +434,32 @@ Purple still exists in:
 
 - **Pill badge rank style:** "🏆 Level 4 — Achiever" pill + segmented XP bar underneath
 - NOT the big-number / dot-row style
-- Streak Shield button visible on home screen in Focus Mode (not in a shop)
+- Focus Mode home leads with the "Today's focus" dashboard (UI v3); the Shield tile lives there
 
 ---
 
-## Icon System (UNIFIED — Nov 2026)
+## Icon System (UI v3 — Nov 2026)
 
-- **Import icons ONLY from `components/icons`** — never from `lucide-react` directly.
-  Game/nav concepts (gem, flame, XP, shield, box, crown, clock, nav…) are
-  Phase-drawn in `components/icons/paths.js`; plain UI affordances (chevrons,
-  close, check) re-export lucide on the same grid.
-- "Facet" rule: 24px grid, **2px stroke**, round caps/joins, straight-cut
-  shapes, at most ONE inner cut line. XP / Loot box / Settings share the hexagon.
-- League emblems: `data/tierEmblemArt.js` (flat two-tone crests, rank by
-  structure). Title glyphs render at the equivalent weight (≈3.6 on 48 grid).
-- No emoji as UI icons. Preview every icon at `/dev/icons` (dev builds only).
+- **Import icons ONLY from `components/icons`** — never from `lucide-react` or the
+  Phosphor root directly. Every name (Gem, Flame, Crown, Check, ChevronRight…) maps
+  to a **Phosphor** glyph, bold by default, `variant="solid"` → fill.
+- Adding an icon: deep-import it in `components/icons/index.js`
+  (`@phosphor-icons/react/dist/csr/Name`) and wrap with `ph()`. Never
+  `import * from '@phosphor-icons/react'` — it bundles every icon.
+- League emblems: `components/TierEmblem.js` (flat badges; `data/tierEmblemArt.js`
+  is no longer used by it). No emoji as UI icons. Preview at `/dev/icons`.
 
 ## Shop, quests, rewards, push (Nov 2026) — see docs/RETENTION_AND_SHOP.md
 
-- Shop **rotates daily at 00:00 UTC** (`get_shop_rotation`, enforced in
-  `purchase_shop_item`): titles 4 · banners 3 · animations 2 · effects 3 +
-  featured + 30%-off deal. Boxes and Essentials always stocked. Earned titles
-  are never sold.
+- Shop v3 **"Drops"** (2026-11-19): a numbered daily drop at 00:00 UTC
+  (titles 4 · banners 3 · animations 3 · effects 3, each slot rolls a rarity
+  40/32/18/10, 3-drop cooldown, ≥1 epic guaranteed, featured + 30% deal) and
+  the weekly **Sanctum** (Mon 00:00 UTC, 1 mythic + 1 legendary — the ONLY
+  place mythics are sold; DB name `shop_vault`). Enforced in
+  `purchase_shop_item`. Full sheet: `docs/SHOP_CATALOG.md`. UI lives in
+  `components/shop/` (preview `/dev/shop`). New items need art in
+  titleGlyphs / PhaseBanners / motionVariants or they render a fallback.
+  Boxes and Essentials always stocked. Earned titles are never sold.
 - **Daily quests** (`get_daily_quests` / `claim_daily_quest`) replace the old
   placeholder quest cards. Never reintroduce placeholder/fake data in the UI.
 - Level-up pays `25*level+25` gems **once ever** per level; streak milestones
@@ -438,15 +474,15 @@ Purple still exists in:
 
 ## What Claude Code Should Never Do
 
-1. **Add purple anywhere.** Every purple element in the codebase is a bug. Replace, never preserve.
+1. **Add purple anywhere.** Every purple element is a bug. Replace it with the UI v3 palette (`docs/UI_DESIGN_SYSTEM.md`), never preserve.
 2. **Add real-money gem purchases.** Gems are earned through habits only.
 3. **Add XP or leaderboards to Focus Mode.** Focus Mode is gamification-free by design.
 4. **Gate the public profile behind Pro.** It is always free — it is the growth engine.
 5. **Ship Update 1–4 features** (titles, friends, leaderboards, battles, seasonal drops) unless explicitly instructed. These are not v1.
 6. **Use diagonal linear gradients.** They look like generic AI-generated UI.
-7. **Use emoji as UI icons.** Use the custom outline icon set.
+7. **Use emoji as UI icons.** Use the Phosphor set via `components/icons`.
 8. **Change the loot box naming system.** Names are locked: Starter / Delta / Phase.
-9. **Confuse Elite rank red (#EF4444) with destructive red (#B91C1C).** Different intent, different shade.
+9. **Confuse Elite rank red (#E5484D since UI v3) with destructive red (#B91C1C).** Different intent, different shade.
 10. **Ask me to re-litigate locked decisions.** If it says LOCKED in this file, it is locked.
 
 ---
@@ -455,7 +491,7 @@ Purple still exists in:
 
 - **Always read this file before touching any code.**
 - **Always work on one scoped task per session.** Never try to build an entire system in one prompt.
-- **If you are about to touch a file that contains purple,** replace the purple as part of the task — don't leave it.
+- **If you are about to touch a file that contains purple or old v2 colours/fonts,** convert it to UI v3 as part of the task — don't leave it.
 - **If a bug takes more than 3 attempts to fix,** stop and report back with what you found instead of looping.
 - **Commit after every completed task** so changes are never lost mid-session.
 - **Do not scan the entire codebase unless explicitly asked.** Target specific files to avoid burning session tokens.

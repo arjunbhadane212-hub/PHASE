@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion';
+import { reveal } from '../lib/motion';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,18 +11,16 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '../components/ui/dialog';
 import { Separator } from '../components/ui/separator';
-import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, Check, ExternalLink, Sun, Moon, Trash2 } from '../components/icons';
+import { Lock, Bell, HelpCircle, FileText, LogOut, Eye, Gamepad2, Loader2, Edit2, ChevronRight, ExternalLink, Sun, Moon, Trash2, Globe, Ban } from '../components/icons';
 import { pushSupport, permission as pushPermission, currentSubscription, enablePush, disablePush, sendTestPush } from '../lib/push';
 import { toast } from 'sonner';
 import { rankInfo } from '../data/levels';
-import { PLANS, SAVE_PCT, money, startCheckout, openBillingPortal } from '../lib/billing';
-import { AURA_ORDER, getAura, hexA } from '../data/focusAuras';
-import { SOUND_ORDER, getSound } from '../data/focusSounds';
+import { PLANS, SAVE_PCT, money, startCheckout, openBillingPortal, PAYWALL_ENABLED } from '../lib/billing';
 
 // v2 design system — shared with Progress / Level / Home.
-// cyan #95DEE6 = active/selected, lime #DBF67F = progress, purple #A59BCC =
+// cyan #D4F36B = active/selected, lime #D4F36B = progress, purple #141416 =
 // outline-pill accent, red #B91C1C = destructive (all inlined below).
-const LIME = '#DBF67F';
+const LIME = '#D4F36B';
 // Focus-time counter (users.total_focus_minutes) -> a readable all-time figure.
 // Accrues only in Focus Mode; this is the number the hours titles unlock against.
 function formatFocusHours(mins) {
@@ -31,7 +31,7 @@ function formatFocusHours(mins) {
   return r === 0 ? `${h}h` : `${h}h ${r}m`;
 }
 
-const SECTION_LABEL = "font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
+const SECTION_LABEL = "font-label text-[13px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
 const CARD = 'rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)]';
 const DIALOG = 'bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0';
 
@@ -60,11 +60,11 @@ function PlanSection({ user }) {
   };
 
   return (
-    <section className="mb-6 sm:mb-8" data-testid="plan-section">
+    <motion.section {...reveal} className="mb-6 sm:mb-8" data-testid="plan-section">
       <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Plan</h2>
       <div className={`${CARD} p-3 sm:p-4 flex items-center gap-3 sm:gap-4`}>
         <div className="flex-1 min-w-0">
-          <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] text-sm sm:text-base">
+          <p className="font-sans font-semibold text-[color:var(--gm-ink)] text-sm sm:text-base">
             {isPro ? 'Phase Pro' : 'Free plan'}
           </p>
           <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">
@@ -77,14 +77,116 @@ function PlanSection({ user }) {
           onClick={handle}
           disabled={busy}
           className={`h-10 px-4 rounded-full text-sm font-bold flex-shrink-0 transition disabled:opacity-50 ${
-            isPro ? 'bg-[var(--gm-badge)] text-[var(--gm-ink)] hover:opacity-90' : 'bg-[#95DEE6] text-[#183A3F] shadow-[var(--gm-shadow-cyan)] hover:opacity-90'
+            isPro ? 'bg-[var(--gm-badge)] text-[var(--gm-ink)] hover:opacity-90' : 'bg-[#D4F36B] text-[#2B3A06] shadow-[var(--gm-shadow-cyan)] hover:opacity-90'
           }`}
           data-testid="plan-action-btn"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : isPro ? 'Manage billing' : 'Upgrade'}
         </button>
       </div>
-    </section>
+    </motion.section>
+  );
+}
+
+// Profile visibility + blocked accounts. The server already respects
+// users.is_public and the block list inside get_public_profile (a block hides
+// the profile both ways); this is the UI that writes them. Required by the
+// Google Play / App Store user-generated-content rules alongside Report.
+function PrivacySafetySection({ user }) {
+  const { updateUser } = useAuth();
+  const [isPublic, setIsPublic] = useState(user?.is_public !== false);
+  const [savingVis, setSavingVis] = useState(false);
+  const [blocks, setBlocks] = useState(null); // null = loading, [] = none
+  const [unblocking, setUnblocking] = useState('');
+
+  useEffect(() => { setIsPublic(user?.is_public !== false); }, [user?.is_public]);
+
+  const loadBlocks = useCallback(async () => {
+    const { data, error } = await supabase.rpc('list_my_blocks');
+    setBlocks(!error && Array.isArray(data) ? data : []);
+  }, []);
+  useEffect(() => { loadBlocks(); }, [loadBlocks]);
+
+  const toggleVisibility = async (next) => {
+    setSavingVis(true);
+    setIsPublic(next); // optimistic
+    try {
+      const { error } = await supabase.rpc('set_profile_visibility', { p_is_public: next });
+      if (error) throw error;
+      updateUser({ is_public: next });
+      toast.success(next ? 'Your profile is public' : 'Your profile is private');
+    } catch (e) {
+      setIsPublic(!next);
+      toast.error("Couldn't update profile visibility.");
+    } finally {
+      setSavingVis(false);
+    }
+  };
+
+  const unblock = async (username) => {
+    setUnblocking(username);
+    try {
+      const { error } = await supabase.rpc('unblock_user', { p_username: username });
+      if (error) throw error;
+      setBlocks((b) => (b || []).filter((x) => x.username !== username));
+      toast.success(`Unblocked @${username}`);
+    } catch (e) {
+      toast.error("Couldn't unblock. Try again.");
+    } finally {
+      setUnblocking('');
+    }
+  };
+
+  return (
+    <motion.section {...reveal} className="mb-6 sm:mb-8" data-testid="privacy-safety-section">
+      <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Privacy &amp; Safety</h2>
+
+      {/* Public profile visibility */}
+      <div className={`${CARD} p-4 flex items-center justify-between gap-3`} data-testid="profile-visibility-toggle">
+        <div className="flex items-center gap-3 min-w-0">
+          <Globe className="w-5 h-5 text-[color:var(--gm-muted)] flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-sans font-semibold text-[color:var(--gm-ink)]">Public profile</p>
+            <p className="text-xs text-[color:var(--gm-muted)]">
+              {isPublic ? 'Anyone with your link can view your profile.' : 'Private — only you can view your profile.'}
+            </p>
+          </div>
+        </div>
+        <Switch checked={isPublic} disabled={savingVis} onCheckedChange={toggleVisibility} data-testid="profile-visibility-switch" />
+      </div>
+
+      {/* Blocked accounts */}
+      <div className={`${CARD} mt-3 p-4`} data-testid="blocked-accounts">
+        <div className="flex items-center gap-3 mb-1">
+          <Ban className="w-5 h-5 text-[color:var(--gm-muted)] flex-shrink-0" />
+          <p className="text-sm font-sans font-semibold text-[color:var(--gm-ink)]">Blocked accounts</p>
+        </div>
+        {blocks === null ? (
+          <p className="text-xs text-[color:var(--gm-muted)] pl-8">Loading…</p>
+        ) : blocks.length === 0 ? (
+          <p className="text-xs text-[color:var(--gm-muted)] pl-8">You haven't blocked anyone. A blocked account can't see your profile and you won't see theirs.</p>
+        ) : (
+          <ul className="mt-2 space-y-2">
+            {blocks.map((b) => (
+              <li key={b.username} className="flex items-center justify-between gap-3 pl-8" data-testid={`blocked-row-${b.username}`}>
+                <div className="min-w-0">
+                  <p className="text-sm text-[color:var(--gm-ink)] truncate">{[b.first_name, b.last_name].filter(Boolean).join(' ') || `@${b.username}`}</p>
+                  <p className="text-xs text-[color:var(--gm-muted)] truncate">@{b.username}</p>
+                </div>
+                <button
+                  onClick={() => unblock(b.username)}
+                  disabled={unblocking === b.username}
+                  className="h-8 px-3 rounded-full text-xs font-bold flex-shrink-0 bg-[var(--gm-badge)] text-[var(--gm-ink)] hover:opacity-90 disabled:opacity-50"
+                  data-testid={`unblock-${b.username}`}
+                >
+                  {unblocking === b.username ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Unblock'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </motion.section>
   );
 }
 
@@ -144,20 +246,20 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 pb-24 md:pb-8" data-testid="settings-page">
       <div className="max-w-2xl mx-auto animate-slide-up">
-        <h1 className="text-xl sm:text-2xl font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em] mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-display font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em] mb-4 sm:mb-6">
           Settings
         </h1>
 
         {/* Profile Section */}
-        <section className="mb-6 sm:mb-8">
+        <motion.section {...reveal} className="mb-6 sm:mb-8">
           <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Profile</h2>
           <div className={CARD}>
             <div className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-['Archivo'] font-black bg-[#DBF67F] text-[#2A3B0B]">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-display font-black bg-[#D4F36B] text-[#2B3A06]">
                 {user?.first_name?.[0]}{user?.last_name?.[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)] text-sm sm:text-base truncate">{user?.first_name} {user?.last_name}</p>
+                <p className="font-sans font-semibold text-[color:var(--gm-ink)] text-sm sm:text-base truncate">{user?.first_name} {user?.last_name}</p>
                 <p className="text-xs sm:text-sm text-[color:var(--gm-muted)] truncate">{user?.email}</p>
               </div>
               <EditProfileDialog
@@ -173,16 +275,16 @@ export default function SettingsPage() {
               onOpenChange={setChangePasswordOpen}
             />
           </div>
-        </section>
+        </motion.section>
 
-        {/* Plan */}
-        <PlanSection user={user} />
+        {/* Plan — hidden for v1 (billing/Pro UI off; see lib/billing.js) */}
+        {PAYWALL_ENABLED && <PlanSection user={user} />}
 
         {/* Progress */}
         <ProgressSection isGameMode={isGameMode} />
 
         {/* All-Time Stats */}
-        <section className="mb-6 sm:mb-8">
+        <motion.section {...reveal} className="mb-6 sm:mb-8">
           <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>All-Time Stats</h2>
           <div className={`${CARD} p-3 sm:p-4`}>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -190,27 +292,27 @@ export default function SettingsPage() {
                 <>
                   <div>
                     <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Total XP</p>
-                    <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">
+                    <p className="text-lg sm:text-xl font-display font-black text-[color:var(--gm-ink)]">
                       {user?.total_xp_all_time || 0}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Highest Level</p>
-                    <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{user?.highest_level_reached || 1} — {rankInfo(user?.highest_level_reached || 1).name}</p>
+                    <p className="text-lg sm:text-xl font-display font-black text-[color:var(--gm-ink)]">{user?.highest_level_reached || 1} — {rankInfo(user?.highest_level_reached || 1).name}</p>
                   </div>
                 </>
               )}
               <div>
                 <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Longest Streak</p>
-                <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{user?.longest_streak_ever || 0} days</p>
+                <p className="text-lg sm:text-xl font-display font-black text-[color:var(--gm-ink)]">{user?.longest_streak_ever || 0} days</p>
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Habits Completed</p>
-                <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{user?.total_habits_completed || 0}</p>
+                <p className="text-lg sm:text-xl font-display font-black text-[color:var(--gm-ink)]">{user?.total_habits_completed || 0}</p>
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Focus Hours</p>
-                <p className="text-lg sm:text-xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{formatFocusHours(user?.total_focus_minutes)}</p>
+                <p className="text-lg sm:text-xl font-display font-black text-[color:var(--gm-ink)]">{formatFocusHours(user?.total_focus_minutes)}</p>
               </div>
               <div className="col-span-2">
                 <p className="text-xs sm:text-sm text-[color:var(--gm-muted)]">Member Since</p>
@@ -224,11 +326,11 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Public Profile Link */}
         {user?.username && (
-          <section className="mb-6">
+          <motion.section {...reveal} className="mb-6">
             <Link
               to={`/profile/${user.username}`}
               className={`${CARD} p-4 flex items-center justify-between transition-colors hover:brightness-[0.97] block`}
@@ -237,24 +339,37 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <ExternalLink className="w-5 h-5 text-[color:var(--gm-muted)]" />
                 <div>
-                  <p className="text-sm font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">View Public Profile</p>
+                  <p className="text-sm font-sans font-semibold text-[color:var(--gm-ink)]">View Public Profile</p>
                   <p className="text-xs text-[color:var(--gm-muted)]">@{user.username}</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-[color:var(--gm-muted)]" />
             </Link>
-          </section>
+          </motion.section>
         )}
+
+        {/* Privacy & Safety — profile visibility + blocked accounts */}
+        <PrivacySafetySection user={user} />
 
         {/* Profile customization now lives in ONE place — the Profile panel
             (game mode). It used to be duplicated here, which is what made
             cosmetics feel scattered across Settings and the profile. */}
 
         {/* Timer Screen - Focus Mode Only (Focus has no profile panel) */}
-        {!isGameMode && <TimerScreenSection />}
+        {!isGameMode && (
+          <motion.section {...reveal} className="mb-6 sm:mb-8">
+            <Link to="/dashboard/focus-shop" className="rounded-[24px] p-4 flex items-center gap-4 bg-[#9DD3F7] text-[#0B2E45]" data-testid="timer-screen-moved">
+              <div className="flex-1">
+                <p className="font-display text-[19px] leading-tight">Timer screen & sound</p>
+                <p className="text-[14px] font-semibold opacity-75 mt-0.5">Now in Shop → Your setup</p>
+              </div>
+              <ChevronRight className="w-5 h-5" />
+            </Link>
+          </motion.section>
+        )}
 
         {/* App Experience */}
-        <section className="mb-8">
+        <motion.section {...reveal} className="mb-8">
           <h2 className={`${SECTION_LABEL} mb-4`}>App Experience</h2>
           <div className={CARD}>
             <div className="p-4 flex items-center justify-between">
@@ -265,7 +380,7 @@ export default function SettingsPage() {
                   <Eye className="w-5 h-5 text-[color:var(--gm-ink)]" />
                 )}
                 <div>
-                  <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">
+                  <p className="font-sans font-semibold text-[color:var(--gm-ink)]">
                     {isGameMode ? 'Game Mode' : 'Focus Mode'}
                   </p>
                   <p className="text-sm text-[color:var(--gm-muted)]">
@@ -275,13 +390,13 @@ export default function SettingsPage() {
               </div>
               <Dialog open={switchModeDialogOpen} onOpenChange={setSwitchModeDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="rounded-full border-[#A59BCC] bg-transparent text-[color:var(--gm-ink)] hover:bg-[color:var(--gm-badge)]" data-testid="switch-mode-btn">
+                  <Button variant="outline" className="rounded-full border-[#141416] bg-transparent text-[color:var(--gm-ink)] hover:bg-[color:var(--gm-badge)]" data-testid="switch-mode-btn">
                     Switch
                   </Button>
                 </DialogTrigger>
                 <DialogContent className={DIALOG}>
                   <DialogHeader>
-                    <DialogTitle className="font-['Archivo'] font-extrabold">Switch Mode?</DialogTitle>
+                    <DialogTitle className="font-display font-extrabold">Switch Mode?</DialogTitle>
                   </DialogHeader>
                   <p className="text-[color:var(--gm-muted)]">
                     Are you sure you want to switch to {isGameMode ? 'Focus' : 'Game'} Mode?
@@ -294,7 +409,7 @@ export default function SettingsPage() {
                     <Button
                       onClick={handleSwitchMode}
                       disabled={loading}
-                      className="bg-[#95DEE6] text-[#183A3F] hover:brightness-95"
+                      className="bg-[#D4F36B] text-[#2B3A06] hover:brightness-95"
                       data-testid="confirm-switch-mode-btn"
                     >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Switch Mode'}
@@ -304,39 +419,39 @@ export default function SettingsPage() {
               </Dialog>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Appearance */}
-        <section className="mb-6 sm:mb-8">
+        <motion.section {...reveal} className="mb-6 sm:mb-8">
           <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Appearance</h2>
           <LightModeToggle />
-        </section>
+        </motion.section>
 
         {/* Notifications */}
-        <section className="mb-6 sm:mb-8">
+        <motion.section {...reveal} className="mb-6 sm:mb-8">
           <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Notifications</h2>
           <NotificationSettings user={user} isGameMode={isGameMode} />
-        </section>
+        </motion.section>
 
         {/* Help & Support */}
-        <section className="mb-6 sm:mb-8">
+        <motion.section {...reveal} className="mb-6 sm:mb-8">
           <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Help & Support</h2>
           <div className={CARD}>
             <SettingsLink icon={<HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />} label="Help Center" href="/help" />
             <Separator className="bg-[color:var(--gm-track)]" />
             <SettingsLink icon={<FileText className="w-4 h-4 sm:w-5 sm:h-5" />} label="FAQ" href="/faq" />
           </div>
-        </section>
+        </motion.section>
 
         {/* Legal */}
-        <section className="mb-6 sm:mb-8">
+        <motion.section {...reveal} className="mb-6 sm:mb-8">
           <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Legal</h2>
           <div className={CARD}>
             <SettingsLink icon={<FileText className="w-4 h-4 sm:w-5 sm:h-5" />} label="Terms & Rights" href="/terms" />
             <Separator className="bg-[color:var(--gm-track)]" />
             <SettingsLink icon={<Lock className="w-4 h-4 sm:w-5 sm:h-5" />} label="Privacy Policy" href="/privacy" />
           </div>
-        </section>
+        </motion.section>
 
         {/* Log out */}
         <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
@@ -352,7 +467,7 @@ export default function SettingsPage() {
           </DialogTrigger>
           <DialogContent className={DIALOG}>
             <DialogHeader>
-              <DialogTitle className="font-['Archivo'] font-extrabold">Log Out?</DialogTitle>
+              <DialogTitle className="font-display font-extrabold">Log Out?</DialogTitle>
             </DialogHeader>
             <p className="text-[color:var(--gm-muted)]">
               Are you sure you want to log out?
@@ -386,7 +501,7 @@ export default function SettingsPage() {
           </DialogTrigger>
           <DialogContent className={DIALOG}>
             <DialogHeader>
-              <DialogTitle className="font-['Archivo'] font-extrabold">Delete your account?</DialogTitle>
+              <DialogTitle className="font-display font-extrabold">Delete your account?</DialogTitle>
             </DialogHeader>
             <p className="text-[color:var(--gm-muted)] text-sm">
               This permanently deletes your account, habits, streaks, XP, gems and items. It can't be undone.
@@ -428,7 +543,7 @@ function SettingsLink({ icon, label, href }) {
     >
       <div className="flex items-center gap-2 sm:gap-3 text-[color:var(--gm-ink)]">
         {icon}
-        <span className="text-sm sm:text-base font-['General_Sans']">{label}</span>
+        <span className="text-sm sm:text-base font-sans">{label}</span>
       </div>
       <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-[color:var(--gm-muted)]" />
     </a>
@@ -468,7 +583,7 @@ function EditProfileDialog({ user, open, onOpenChange, onSuccess }) {
       </DialogTrigger>
       <DialogContent className="bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0">
         <DialogHeader>
-          <DialogTitle className="font-['Archivo'] font-extrabold">Edit Profile</DialogTitle>
+          <DialogTitle className="font-display font-extrabold">Edit Profile</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -496,7 +611,7 @@ function EditProfileDialog({ user, open, onOpenChange, onSuccess }) {
             <Button
               type="submit"
               disabled={loading}
-              className="bg-[#95DEE6] text-[#183A3F] hover:brightness-95"
+              className="bg-[#D4F36B] text-[#2B3A06] hover:brightness-95"
               data-testid="save-profile-btn"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
@@ -541,14 +656,14 @@ function ChangePasswordDialog({ open, onOpenChange }) {
         <button className="w-full flex items-center justify-between p-4 hover:bg-[color:var(--gm-badge)] transition-colors text-left" data-testid="change-password-btn">
           <div className="flex items-center gap-3 text-[color:var(--gm-ink)]">
             <Lock className="w-5 h-5" />
-            <span className="font-['General_Sans']">Change Password</span>
+            <span className="font-sans">Change Password</span>
           </div>
           <ChevronRight className="w-5 h-5 text-[color:var(--gm-muted)]" />
         </button>
       </DialogTrigger>
       <DialogContent className="bg-[color:var(--gm-card)] text-[color:var(--gm-ink)] border-0">
         <DialogHeader>
-          <DialogTitle className="font-['Archivo'] font-extrabold">Change Password</DialogTitle>
+          <DialogTitle className="font-display font-extrabold">Change Password</DialogTitle>
         </DialogHeader>
         {error && (
           <div className="p-3 rounded-lg bg-[#B91C1C]/10 text-[#B91C1C] text-sm">
@@ -583,7 +698,7 @@ function ChangePasswordDialog({ open, onOpenChange }) {
             <Button
               type="submit"
               disabled={loading || !currentPassword || !newPassword}
-              className="bg-[#95DEE6] text-[#183A3F] hover:brightness-95"
+              className="bg-[#D4F36B] text-[#2B3A06] hover:brightness-95"
               data-testid="save-password-btn"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Change Password'}
@@ -666,7 +781,7 @@ function NotificationSettings({ user, isGameMode }) {
         <div className="flex items-center gap-3 min-w-0">
           <Bell className="w-5 h-5 text-[color:var(--gm-ink)] flex-none" />
           <div className="min-w-0">
-            <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Phone notifications</p>
+            <p className="font-sans font-semibold text-[color:var(--gm-ink)]">Phone notifications</p>
             <p className="text-sm text-[color:var(--gm-muted)]" data-testid="push-device-status">{deviceCopy}</p>
           </div>
         </div>
@@ -674,7 +789,7 @@ function NotificationSettings({ user, isGameMode }) {
           checked={device === 'on'}
           disabled={busy || !['on', 'off'].includes(device)}
           onCheckedChange={toggleDevice}
-          className="data-[state=checked]:bg-[#95DEE6] flex-none"
+          className="data-[state=checked]:bg-[#D4F36B] flex-none"
           data-testid="push-toggle"
         />
       </div>
@@ -684,13 +799,13 @@ function NotificationSettings({ user, isGameMode }) {
           <Separator className="bg-[color:var(--gm-track)]" />
           <div className="p-4 flex items-center justify-between gap-3">
             <div>
-              <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Streak reminders</p>
+              <p className="font-sans font-semibold text-[color:var(--gm-ink)]">Streak reminders</p>
               <p className="text-sm text-[color:var(--gm-muted)]">Around when you usually check in, and before your streak ends. Max 2 a day, 8am–10pm.</p>
             </div>
             <Switch
               checked={settings.reminders_enabled !== false}
               onCheckedChange={() => save({ ...settings, reminders_enabled: !(settings.reminders_enabled !== false) })}
-              className="data-[state=checked]:bg-[#95DEE6] flex-none"
+              className="data-[state=checked]:bg-[#D4F36B] flex-none"
               data-testid="reminders-toggle"
             />
           </div>
@@ -698,7 +813,7 @@ function NotificationSettings({ user, isGameMode }) {
           <div className="p-4 flex items-center justify-between gap-3">
             <p className="text-sm text-[color:var(--gm-muted)]">Not sure it works? Send one now.</p>
             <button type="button" onClick={test} disabled={testing}
-              className="h-9 px-4 rounded-full bg-[#95DEE6] text-[#183A3F] text-sm font-bold flex-none disabled:opacity-50" data-testid="push-test">
+              className="h-9 px-4 rounded-full bg-[#D4F36B] text-[#2B3A06] text-sm font-bold flex-none disabled:opacity-50" data-testid="push-test">
               {testing ? 'Sending…' : 'Send test'}
             </button>
           </div>
@@ -708,13 +823,13 @@ function NotificationSettings({ user, isGameMode }) {
       <Separator className="bg-[color:var(--gm-track)]" />
       <div className="p-4 flex items-center justify-between gap-3">
         <div>
-          <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Roast Mode</p>
+          <p className="font-sans font-semibold text-[color:var(--gm-ink)]">Roast Mode</p>
           <p className="text-sm text-[color:var(--gm-muted)]">{isGameMode ? 'In-app trash talk when you slack' : 'Quiet in-app nudges when you miss sessions'}</p>
         </div>
         <Switch
           checked={settings.roast_enabled !== false}
           onCheckedChange={() => save({ ...settings, roast_enabled: !(settings.roast_enabled !== false) })}
-          className="data-[state=checked]:bg-[#95DEE6] flex-none"
+          className="data-[state=checked]:bg-[#D4F36B] flex-none"
           data-testid="roast-toggle"
         />
       </div>
@@ -723,7 +838,7 @@ function NotificationSettings({ user, isGameMode }) {
 }
 
 function LightModeToggle() {
-  const [lightMode, setLightMode] = useState(() => localStorage.getItem('lightMode') === 'true');
+  const [lightMode, setLightMode] = useState(() => localStorage.getItem('lightMode') !== 'false');
 
   useEffect(() => {
     if (lightMode) {
@@ -734,6 +849,10 @@ function LightModeToggle() {
   }, [lightMode]);
 
   const handleToggle = () => {
+    // UI v3: cross-fade every colour instead of snapping between themes.
+    const root = document.documentElement;
+    root.classList.add('theme-anim');
+    setTimeout(() => root.classList.remove('theme-anim'), 800);
     const next = !lightMode;
     setLightMode(next);
     localStorage.setItem('lightMode', String(next));
@@ -744,14 +863,14 @@ function LightModeToggle() {
       <div className="flex items-center gap-3">
         {lightMode ? <Sun className="w-5 h-5 text-[color:var(--gm-ink)]" /> : <Moon className="w-5 h-5 text-[color:var(--gm-ink)]" />}
         <div>
-          <p className="font-['General_Sans'] font-semibold text-[color:var(--gm-ink)]">Light Mode</p>
+          <p className="font-sans font-semibold text-[color:var(--gm-ink)]">Light Mode</p>
           <p className="text-sm text-[color:var(--gm-muted)]">{lightMode ? 'Light theme active' : 'Dark theme active'}</p>
         </div>
       </div>
       <Switch
         checked={lightMode}
         onCheckedChange={handleToggle}
-        className="data-[state=checked]:bg-[#95DEE6]"
+        className="data-[state=checked]:bg-[#D4F36B]"
         data-testid="light-mode-switch"
       />
     </div>
@@ -816,18 +935,19 @@ function ProgressSection({ isGameMode }) {
     : 0;
 
   return (
-    <section className="mb-6 sm:mb-8" data-testid="progress-section">
+    <motion.section {...reveal} className="mb-6 sm:mb-8" data-testid="progress-section">
       <h2 className={`${SECTION_LABEL} mb-3 sm:mb-4`}>Progress</h2>
       <div className="rounded-2xl bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-lime)] p-4">
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-2">
             <span className="text-[color:var(--gm-muted)]">Today</span>
-            <span className="font-['JetBrains_Mono'] font-bold text-[color:var(--gm-ink)]">{daily.completed_habits}/{daily.total_habits}</span>
+            <span className="font-label font-bold text-[color:var(--gm-ink)]">{daily.completed_habits}/{daily.total_habits}</span>
           </div>
           <div className="h-2 bg-[color:var(--gm-track)] rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${todayPct}%`, backgroundColor: LIME }}
+            <motion.div
+              className="h-full rounded-full"
+              initial={{ width: 0 }} whileInView={{ width: `${todayPct}%` }} viewport={{ once: true }} transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+              style={{ backgroundColor: LIME }}
               data-testid="progress-today-bar"
             />
           </div>
@@ -837,164 +957,21 @@ function ProgressSection({ isGameMode }) {
           <div className={`grid ${isGameMode ? 'grid-cols-3' : 'grid-cols-2'} gap-3 pt-3 border-t border-[color:var(--gm-track)]`}>
             <div>
               <p className="text-xs text-[color:var(--gm-muted)]">Completion Rate</p>
-              <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)]">{weekly.completion_rate}%</p>
+              <p className="text-lg font-display font-black text-[color:var(--gm-ink)]">{weekly.completion_rate}%</p>
             </div>
             {isGameMode && (
               <div>
                 <p className="text-xs text-[color:var(--gm-muted)]">XP This Week</p>
-                <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)]">{weekly.total_xp}</p>
+                <p className="text-lg font-display font-black text-[color:var(--gm-ink)]">{weekly.total_xp}</p>
               </div>
             )}
             <div>
               <p className="text-xs text-[color:var(--gm-muted)]">Full Days</p>
-              <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)]">{weekly.full_days}/7</p>
+              <p className="text-lg font-display font-black text-[color:var(--gm-ink)]">{weekly.full_days}/7</p>
             </div>
           </div>
         )}
       </div>
-    </section>
+    </motion.section>
   );
 }
-
-// Focus Mode: pick which purchased Timer Screen the full-screen session uses.
-// Buying happens in the Focus shop; equipping lives here. Cyan Pulse is the
-// free default (a 0-gem row), so selecting it claims it first if needed.
-function TimerScreenSection() {
-  const { user, refreshUser } = useAuth();
-  const [items, setItems] = useState(null);
-  const [ownedIds, setOwnedIds] = useState(new Set());
-  const [busy, setBusy] = useState(null);
-  const equippedKey = user?.equipped_focus_aura || 'focus_aura_cyan_pulse';
-  const equippedSound = user?.equipped_focus_sound || null;
-
-  const load = useCallback(async () => {
-    try {
-      const { data: rows } = await supabase.from('shop_items')
-        .select('id,key,name,price_gems,category')
-        .eq('is_active', true)
-        .in('category', ['focus_aura', 'focus_sound']);
-      const ids = (rows || []).map((r) => r.id);
-      const { data: inv } = ids.length
-        ? await supabase.from('user_inventory').select('shop_item_id,quantity').in('shop_item_id', ids)
-        : { data: [] };
-      setOwnedIds(new Set((inv || []).filter((r) => r.quantity > 0).map((r) => r.shop_item_id)));
-      setItems(rows || []);
-    } catch { /* section stays hidden */ }
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const equip = async (item) => {
-    setBusy(item.key);
-    try {
-      if (!ownedIds.has(item.id)) {
-        if ((item.price_gems ?? 0) > 0) return;
-        const { error: claimErr } = await supabase.rpc('purchase_shop_item', { p_shop_item_id: item.id });
-        if (claimErr) throw claimErr;
-      }
-      const { error } = await supabase.rpc('equip_item', { p_shop_item_id: item.id });
-      if (error) throw error;
-      await Promise.all([refreshUser(), load()]);
-      toast.success(`${item.name} equipped`);
-    } catch (e) {
-      toast.error(e?.message || 'Could not equip');
-    } finally { setBusy(null); }
-  };
-
-  const equipSound = async (item) => {
-    setBusy(item ? item.key : 'sound-off');
-    try {
-      const { error } = item
-        ? await supabase.rpc('equip_item', { p_shop_item_id: item.id })
-        : await supabase.rpc('unequip_item', { p_category: 'focus_sound' });
-      if (error) throw error;
-      await Promise.all([refreshUser(), load()]);
-      toast.success(item ? `${item.name} equipped` : 'Session sound off');
-    } catch (e) {
-      toast.error(e?.message || 'Could not update');
-    } finally { setBusy(null); }
-  };
-
-  if (!items) return null;
-
-  return (
-    <section className="mb-6 sm:mb-8" data-testid="timer-screen-settings">
-      <div className="flex items-baseline justify-between gap-3 mb-3">
-        <h2 className={SECTION_LABEL}>Timer Screen</h2>
-        <Link to="/dashboard/focus-shop?tab=screens" className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#95DEE6] hover:underline">Get more in Shop</Link>
-      </div>
-      <div className={`${CARD} p-4`}>
-        <p className="text-sm text-[color:var(--gm-muted)] mb-3">The look of your full-screen focus session.</p>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {AURA_ORDER.map((key) => {
-            const aura = getAura(key);
-            const item = items.find((r) => r.key === key);
-            if (!item) return null;
-            const isEquipped = key === equippedKey;
-            const canUse = ownedIds.has(item.id) || (item.price_gems ?? 0) === 0;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => canUse && !isEquipped && equip(item)}
-                disabled={!canUse || isEquipped || busy === key}
-                title={canUse ? aura.name : `${aura.name} (Unlock in Shop)`}
-                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${isEquipped ? 'bg-[color:var(--gm-track)]' : ''} ${canUse ? '' : 'opacity-45 cursor-not-allowed'} disabled:cursor-default`}
-                data-testid={`timer-screen-${key}`}
-              >
-                <span
-                  className="w-10 h-10 rounded-full flex items-center justify-center relative"
-                  style={{
-                    background: aura.bg,
-                    boxShadow: [
-                      aura.style === 'glow' ? `0 0 10px 2px ${hexA(aura.accent, 0.45)}` : null,
-                      isEquipped ? `0 0 0 2px ${aura.ink}` : `inset 0 0 0 1px ${hexA(aura.ink, 0.18)}`,
-                    ].filter(Boolean).join(', '),
-                  }}
-                >
-                  {busy === key ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: aura.ink }} />
-                    : isEquipped ? <Check className="w-4 h-4" style={{ color: aura.ink }} strokeWidth={3} />
-                    : !canUse ? <Lock className="w-3.5 h-3.5" style={{ color: aura.ink, opacity: 0.7 }} /> : null}
-                </span>
-                <span className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-[0.04em] text-[color:var(--gm-muted)] text-center leading-tight">{aura.name}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-[color:var(--gm-track)]" data-testid="session-sound-settings">
-          <div className="flex items-baseline justify-between gap-3 mb-3">
-            <p className="text-sm text-[color:var(--gm-muted)]">Session sound — plays quietly during a focus session.</p>
-            <Link to="/dashboard/focus-shop?tab=sounds" className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#95DEE6] hover:underline flex-shrink-0">Get more</Link>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {[null, ...SOUND_ORDER].map((key) => {
-              const sound = key ? getSound(key) : null;
-              const item = key ? items.find((r) => r.key === key) : null;
-              if (key && !item) return null;
-              const isEquipped = (equippedSound || null) === key;
-              const canUse = !key || ownedIds.has(item.id);
-              return (
-                <button
-                  key={key || 'off'}
-                  type="button"
-                  onClick={() => canUse && !isEquipped && equipSound(item)}
-                  disabled={!canUse || isEquipped || busy === (item ? item.key : 'sound-off')}
-                  title={canUse ? (sound ? sound.name : 'Off') : `${sound.name} (Unlock in Shop)`}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.06em] transition-colors ${
-                    isEquipped ? 'bg-[#95DEE6] text-[#183A3F]' : canUse ? 'bg-[color:var(--gm-bg)] text-[color:var(--gm-ink)] hover:brightness-125' : 'bg-[color:var(--gm-bg)] text-[color:var(--gm-muted)] opacity-50 cursor-not-allowed'
-                  } disabled:cursor-default`}
-                  data-testid={`session-sound-${key || 'off'}`}
-                >
-                  {!canUse && <Lock className="w-3 h-3" />}
-                  {isEquipped && <Check className="w-3 h-3" strokeWidth={3} />}
-                  {sound ? sound.name : 'Off'}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-

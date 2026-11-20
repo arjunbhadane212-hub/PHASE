@@ -47,7 +47,7 @@ export default function RoastNotification() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(185,28,28,0.15)' }}>
                 <Flame className="w-4 h-4 text-[#B91C1C]" />
               </div>
-              <p className="text-sm font-['General_Sans',sans-serif] text-[color:var(--gm-ink)] leading-snug flex-1 pt-0.5">{roast.text}</p>
+              <p className="text-sm font-sans text-[color:var(--gm-ink)] leading-snug flex-1 pt-0.5">{roast.text}</p>
               <button onClick={() => dismiss(roast.id)} className="p-1 text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)] transition-colors flex-shrink-0" data-testid="roast-dismiss">
                 <X className="w-4 h-4" />
               </button>
@@ -94,7 +94,7 @@ export function RoastListener() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(185,28,28,0.15)' }}>
                 <Zap className="w-4 h-4 text-[#B91C1C]" />
               </div>
-              <p className="text-sm font-['General_Sans',sans-serif] text-[color:var(--gm-ink)] leading-snug flex-1 pt-0.5">{roast.text}</p>
+              <p className="text-sm font-sans text-[color:var(--gm-ink)] leading-snug flex-1 pt-0.5">{roast.text}</p>
               <button onClick={() => dismiss(roast.id)} className="p-1 text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)] flex-shrink-0">
                 <X className="w-4 h-4" />
               </button>

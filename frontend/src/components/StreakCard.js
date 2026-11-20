@@ -67,8 +67,10 @@ export default function StreakCard({ streak = 0, shieldsActive = 0, doneToday = 
   const atRisk = !doneToday && streak > 0;
   const todayIdx = (now.getDay() + 6) % 7;
 
-  const ink = lit ? '#183A3F' : 'var(--gm-ink)';
-  const sub = lit ? '#3E6C71' : 'var(--gm-muted)';
+  // UI v3: done = lavender card; not done = ink-black card (ref "dark feature card").
+  const ink = lit ? '#2B3A06' : '#FFFFFF';
+  const sub = lit ? '#4F6115' : 'rgba(255,255,255,0.6)';
+  const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   let status;
   if (lit) status = streak === 1 ? 'Day one done. Come back tomorrow.' : 'Done for today. Your streak is safe.';
@@ -78,42 +80,48 @@ export default function StreakCard({ streak = 0, shieldsActive = 0, doneToday = 
   else status = isGameMode ? 'Complete one habit to start a streak.' : 'Finish one session to start a streak.';
 
   return (
-    <div className={`w-full rounded-[22px] p-5 sm:p-6 ${lit ? 'bg-[#95DEE6]' : 'bg-[var(--gm-card)]'} shadow-[var(--gm-shadow-card)]`}
+    <div className={`w-full rounded-[28px] p-5 sm:p-6 ${lit ? 'bg-[#D4F36B]' : 'bg-[color:var(--ph-hero)]'}`}
       data-testid="streak-card" data-state={lit ? 'done' : atRisk ? 'at-risk' : 'none'}>
       <div className="flex items-start justify-between gap-3">
-        <span className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] sm:text-[11px] tracking-[0.08em]" style={{ color: lit ? '#3E6C71' : 'var(--gm-muted)' }}>
+        <span className="font-label text-[15px]" style={{ color: sub }}>
           Day streak
         </span>
         {shieldsActive > 0 && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: lit ? '#183A3F' : 'var(--gm-badge)', color: lit ? '#95DEE6' : 'var(--gm-ink)' }} data-testid="streak-shield-badge">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: lit ? '#2B3A06' : 'rgba(255,255,255,0.12)', color: lit ? '#D4F36B' : '#FFFFFF' }} data-testid="streak-shield-badge">
             <ShieldIcon size={14} />
-            <span className="text-xs font-bold">{shieldsActive}</span>
+            <span className="text-xs font-semibold">{shieldsActive}</span>
           </div>
         )}
       </div>
 
-      <div className="flex items-end gap-2 mt-2">
-        <span className="font-['Archivo'] font-black text-[48px] sm:text-[56px] leading-[0.88] tracking-[-0.02em] tabular-nums" style={{ color: lit ? '#183A3F' : (atRisk ? '#95DEE6' : 'var(--gm-ink)') }} data-testid="streak-count">
+      <div className="flex items-end gap-2 mt-1">
+        <span className="font-display text-[60px] leading-[0.95] tabular-nums" style={{ color: lit ? '#2B3A06' : (atRisk ? '#D4F36B' : '#FFFFFF') }} data-testid="streak-count">
           {streak}
         </span>
-        <FlameIcon size={30} variant={lit ? 'solid' : 'outline'} color={lit ? '#183A3F' : (atRisk ? '#95DEE6' : 'var(--gm-muted)')} className="mb-1" />
+        <span className="font-sans text-[17px] font-medium mb-2" style={{ color: sub }}>{streak === 1 ? 'day' : 'days'}</span>
+        <FlameIcon size={26} variant={lit ? 'solid' : 'outline'} color={lit ? '#2B3A06' : (atRisk ? '#D4F36B' : 'rgba(255,255,255,0.5)')} className="mb-2 ml-auto" />
       </div>
 
-      <p className="font-['General_Sans'] font-bold text-sm mt-2" style={{ color: atRisk ? 'var(--gm-ink)' : sub }} data-testid="streak-status">{status}</p>
+      <p className="font-sans font-medium text-[16px] mt-1" style={{ color: atRisk ? '#FFFFFF' : sub }} data-testid="streak-status">{status}</p>
 
-      <div className="flex gap-1.5 mt-4" data-testid="streak-week-pips">
-        {weekPips.map((filled, i) => (
-          <div key={i} className="flex-1 h-2 rounded-full" style={{
-            backgroundColor: filled ? (lit ? '#183A3F' : '#95DEE6') : (lit ? '#83C6CD' : 'var(--gm-track)'),
-            outline: i === todayIdx && !filled ? `1.5px solid ${lit ? '#183A3F' : '#95DEE6'}` : 'none', outlineOffset: 1,
-          }} />
-        ))}
+      <div className="grid grid-cols-7 gap-1.5 mt-4" data-testid="streak-week-pips">
+        {weekPips.map((filled, i) => {
+          const today = i === todayIdx;
+          const bg = filled ? (lit ? '#2B3A06' : '#D4F36B') : (lit ? 'rgba(31,26,69,0.12)' : 'rgba(255,255,255,0.08)');
+          const fg = filled ? (lit ? '#D4F36B' : '#2B3A06') : (lit ? '#4F6115' : 'rgba(255,255,255,0.45)');
+          return (
+            <div key={i} className="aspect-square rounded-full flex items-center justify-center text-[14px] font-semibold"
+              style={{ backgroundColor: bg, color: fg, boxShadow: today && !filled ? `inset 0 0 0 1.5px ${lit ? '#2B3A06' : '#FFFFFF'}` : 'none' }}>
+              {DAYS[i]}
+            </div>
+          );
+        })}
       </div>
 
       {next && (
-        <div className="flex items-center justify-between gap-2 mt-3 text-xs font-bold" style={{ color: sub }} data-testid="streak-next-milestone">
+        <div className="flex items-center justify-between gap-2 mt-4 pt-3 text-[15px] font-medium" style={{ color: sub, borderTop: `1px solid ${lit ? 'rgba(31,26,69,0.15)' : 'rgba(255,255,255,0.1)'}` }} data-testid="streak-next-milestone">
           <span>{next[0] - streak} {next[0] - streak === 1 ? 'day' : 'days'} to the {next[0]}-day milestone</span>
-          <span className="inline-flex items-center gap-1" style={{ color: ink }}><GemIcon size={12} /> +{next[1]}</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ color: lit ? '#D4F36B' : '#2B3A06', background: lit ? '#2B3A06' : '#D4F36B' }}><GemIcon size={12} /> +{next[1]}</span>
         </div>
       )}
     </div>

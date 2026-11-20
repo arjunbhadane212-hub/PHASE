@@ -15,7 +15,7 @@ import { supabase } from '../lib/supabaseClient';
 import ProfileCard from '../components/profile/ProfileCard';
 import Inventory from '../components/Inventory';
 
-const SECTION_LABEL = "font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
+const SECTION_LABEL = "font-label text-[13px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)]";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -40,10 +40,10 @@ export default function ProfilePage() {
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 pb-28 md:pb-8" data-testid="profile-page">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-5">
-          <h1 className="text-xl sm:text-2xl font-['Archivo'] font-black text-[color:var(--gm-ink)] tracking-[-0.01em]">Profile</h1>
+          <h1 className="text-xl sm:text-2xl font-display font-black text-[color:var(--gm-ink)] tracking-[-0.01em]">Profile</h1>
           {user?.username && (
             <Link to={`/profile/${user.username}`}
-              className="inline-flex items-center gap-1.5 text-[11px] font-['General_Sans'] font-semibold text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)] transition-colors"
+              className="inline-flex items-center gap-1.5 text-[13px] font-sans font-semibold text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)] transition-colors"
               data-testid="profile-page-public-link">
               <ExternalLink className="w-3.5 h-3.5" /> View as public
             </Link>
@@ -55,7 +55,7 @@ export default function ProfilePage() {
         <div className="rounded-3xl overflow-hidden bg-[color:var(--gm-card)] shadow-[var(--gm-shadow-card)] mb-8" data-testid="profile-page-preview">
           {loading ? (
             <div className="h-64 flex items-center justify-center">
-              <div className="w-7 h-7 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin" />
+              <div className="w-7 h-7 border-2 border-[#D4F36B] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : profile ? (
             <ProfileCard profile={profile} variant="page" />

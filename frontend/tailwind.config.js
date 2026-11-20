@@ -7,7 +7,23 @@ module.exports = {
   ],
   theme: {
   	extend: {
+  		fontSize: {
+  			xs:   ['13px', { lineHeight: '18px' }],
+  			sm:   ['15px', { lineHeight: '21px' }],
+  			base: ['17px', { lineHeight: '25px' }],
+  			lg:   ['19px', { lineHeight: '27px' }],
+  			xl:   ['22px', { lineHeight: '29px' }],
+  			'2xl':['27px', { lineHeight: '33px' }],
+  			'3xl':['32px', { lineHeight: '38px' }],
+  			'4xl':['40px', { lineHeight: '44px' }],
+  		},
+  		fontFamily: {
+  			sans: ['Figtree', 'sans-serif'],
+  		},
   		borderRadius: {
+  			xl: '1.125rem',
+  			'2xl': '1.5rem',
+  			'3xl': '2rem',
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'

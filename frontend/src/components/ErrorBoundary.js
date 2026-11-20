@@ -1,5 +1,6 @@
 import { Component } from 'react';
-import { AlertTriangle, RotateCw } from './icons';
+import { Warning as AlertTriangle } from '@phosphor-icons/react/dist/csr/Warning';
+import { ArrowClockwise as RotateCw } from '@phosphor-icons/react/dist/csr/ArrowClockwise';
 
 /**
  * Top-level safety net. Catches render/runtime errors from any child screen so
@@ -42,17 +43,17 @@ export default class ErrorBoundary extends Component {
       <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--gm-bg)]" data-testid="error-boundary-fallback">
         <div className="w-full max-w-md text-center">
           <div className="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center bg-[var(--gm-card)]">
-            <AlertTriangle className="w-7 h-7 text-[var(--gm-ink)]" strokeWidth={2} />
+            <AlertTriangle className="w-7 h-7 text-[var(--gm-ink)]" weight="bold" />
           </div>
-          <h1 className="text-2xl font-black font-['Archivo'] text-[var(--gm-ink)] mb-2">Something went wrong</h1>
+          <h1 className="text-2xl font-black font-display text-[var(--gm-ink)] mb-2">Something went wrong</h1>
           <p className="text-sm text-[var(--gm-muted)] mb-6">
             This screen hit an unexpected error. Your streak and progress are safe — try again or head back home.
           </p>
           <div className="flex items-center justify-center gap-3">
             <button onClick={this.handleReload}
-              className="inline-flex items-center gap-2 px-5 h-11 rounded-full bg-[#95DEE6] text-[#183A3F] text-sm font-bold"
+              className="inline-flex items-center gap-2 px-5 h-11 rounded-full bg-[#D4F36B] text-[#2B3A06] text-sm font-bold"
               data-testid="error-boundary-retry">
-              <RotateCw className="w-4 h-4" /> Try again
+              <RotateCw className="w-4 h-4" weight="bold" /> Try again
             </button>
             <a href="/dashboard" className="inline-flex items-center px-5 h-11 rounded-full bg-[var(--gm-card)] text-[var(--gm-ink)] text-sm font-bold">
               Go home

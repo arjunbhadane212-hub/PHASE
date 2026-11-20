@@ -31,40 +31,40 @@ export default function StreakCelebration({ before = 0, after = 1, milestone = n
     : (after === 1 ? 'The first day is the hardest one. Done.' : 'Another day kept. Quietly, it adds up.');
 
   return (
-    <motion.div className="fixed inset-0 z-[9998] flex flex-col items-center justify-center px-8 text-center bg-[#95DEE6]"
+    <motion.div className="fixed inset-0 z-[9998] flex flex-col items-center justify-center px-8 text-center bg-[#D4F36B]"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} data-testid="streak-celebration">
       <motion.div initial={{ scale: 0.6, y: 10 }} animate={{ scale: 1, y: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 16 }}>
-        <FlameIcon size={92} color="#183A3F" variant="solid" strokeWidth={1.6} />
+        <FlameIcon size={92} color="#2B3A06" variant="solid" strokeWidth={1.6} />
       </motion.div>
       <motion.div key={shown} initial={{ scale: 1.35, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.35 }}
-        className="font-['Archivo'] font-black text-[#09181C] text-[112px] leading-[0.85] tracking-[-0.04em] mt-3 tabular-nums" data-testid="streak-celebration-count">
+        className="font-display font-black text-[#2B3A06] text-[112px] leading-[0.85] tracking-[-0.04em] mt-3 tabular-nums" data-testid="streak-celebration-count">
         {shown}
       </motion.div>
-      <h2 className="font-['Archivo'] font-black uppercase text-[#09181C] text-2xl tracking-[-0.01em] mt-3">{headline}</h2>
-      <p className="font-['General_Sans'] font-semibold text-[#183A3F] text-base mt-2 max-w-xs">{sub}</p>
+      <h2 className="font-display font-black uppercase text-[#2B3A06] text-2xl tracking-[-0.01em] mt-3">{headline}</h2>
+      <p className="font-sans font-semibold text-[#2B3A06] text-base mt-2 max-w-xs">{sub}</p>
 
       <div className="flex gap-2 mt-7">
         {days.map((d, i) => (
           <div key={i} className="flex flex-col items-center gap-1.5">
             <motion.span initial={false} animate={{ scale: d.today && shown === after ? [1, 1.25, 1] : 1 }}
               className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: d.filled ? '#183A3F' : 'transparent', boxShadow: d.filled ? 'none' : 'inset 0 0 0 2px #5FB8C4' }}>
-              {d.filled && <FlameIcon size={14} color="#95DEE6" variant="solid" />}
+              style={{ background: d.filled ? '#2B3A06' : 'transparent', boxShadow: d.filled ? 'none' : 'inset 0 0 0 2px #A9C93C' }}>
+              {d.filled && <FlameIcon size={14} color="#D4F36B" variant="solid" />}
             </motion.span>
-            <span className="font-['JetBrains_Mono'] text-[10px] font-bold text-[#183A3F]">{d.label}</span>
+            <span className="font-label text-[12px] font-bold text-[#2B3A06]">{d.label}</span>
           </div>
         ))}
       </div>
 
       {milestone?.gems > 0 && (
         <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.9 }}
-          className="mt-7 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#09181C] text-[#F4F5F2]" data-testid="streak-milestone">
-          <span className="font-['JetBrains_Mono'] text-xs font-bold uppercase tracking-[0.06em]">{milestone.days}-day milestone</span>
-          <span className="inline-flex items-center gap-1 font-['Archivo'] font-black"><GemIcon size={14} color="#95DEE6" /> +{milestone.gems}</span>
+          className="mt-7 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#2B3A06] text-[#F4F5F2]" data-testid="streak-milestone">
+          <span className="font-label text-xs font-bold uppercase tracking-[0.06em]">{milestone.days}-day milestone</span>
+          <span className="inline-flex items-center gap-1 font-display font-black"><GemIcon size={14} color="#D4F36B" /> +{milestone.gems}</span>
         </motion.div>
       )}
 
-      <button type="button" onClick={onDone} className="mt-10 w-full max-w-xs py-3.5 rounded-full bg-[#09181C] text-[#F4F5F2] font-['General_Sans'] font-bold text-base" data-testid="streak-celebration-continue">
+      <button type="button" onClick={onDone} className="mt-10 w-full max-w-xs py-3.5 rounded-full bg-[#2B3A06] text-[#F4F5F2] font-sans font-bold text-base" data-testid="streak-celebration-continue">
         Continue
       </button>
     </motion.div>

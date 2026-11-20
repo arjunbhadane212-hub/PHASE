@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import BackButton from './BackButton';
 import { X, ChevronDown, Gem, Star, Lock } from './icons';
 import { groupPoolByTier, TIER_META, tierOdds } from '../data/boxDrops';
 import PhaseBoxArt from './PhaseBoxArt';
@@ -26,7 +27,7 @@ function OddsBar({ box }) {
         {odds.map((o) => (
           <span key={o.tier} className="flex items-center gap-1.5">
             <span style={{ width: 7, height: 7, borderRadius: 7, background: o.color }} />
-            <span className="font-['JetBrains_Mono'] text-[10px] font-bold tabular-nums text-[color:var(--gm-muted)]">
+            <span className="font-label text-[12px] font-bold tabular-nums text-[color:var(--gm-muted)]">
               {o.label} {o.pct.toFixed(0)}%
             </span>
           </span>
@@ -60,15 +61,15 @@ function DropRow({ item }) {
       className="flex items-center justify-between py-1.5"
       data-testid={`drop-row-${item.id}`}
     >
-      <span className="text-[13px] font-['General_Sans'] font-medium tracking-wide text-[color:var(--gm-ink)]">
+      <span className="text-[15px] font-sans font-medium tracking-wide text-[color:var(--gm-ink)]">
         {item.name}
         {item.shared && (
-          <span className="ml-1.5 text-[10px] text-[color:var(--gm-muted)] font-bold tracking-widest uppercase">
+          <span className="ml-1.5 text-[12px] text-[color:var(--gm-muted)] font-bold tracking-widest uppercase">
             · shared
           </span>
         )}
       </span>
-      <span className="text-[13px] font-['JetBrains_Mono'] font-bold tabular-nums text-[color:var(--gm-muted)]">
+      <span className="text-[15px] font-label font-bold tabular-nums text-[color:var(--gm-muted)]">
         {item.percent.toFixed(1)}%
       </span>
     </div>
@@ -87,10 +88,10 @@ function DropRatesSection({ box }) {
         return (
           <div key={tier} data-testid={`drop-tier-${tier}`}>
             <div className="flex items-baseline justify-between mb-2 pb-1.5 border-b border-[color:var(--gm-track)]">
-              <span className="text-[11px] font-['JetBrains_Mono'] font-black uppercase tracking-[0.22em]" style={{ color: TIER_META[tier]?.color || 'var(--gm-ink)' }}>
+              <span className="text-[13px] font-label font-black uppercase tracking-[0.22em]" style={{ color: TIER_META[tier]?.color || 'var(--gm-ink)' }}>
                 {TIER_META[tier].label}
               </span>
-              <span className="text-[11px] font-['JetBrains_Mono'] font-bold tabular-nums text-[color:var(--gm-muted)]">
+              <span className="text-[13px] font-label font-bold tabular-nums text-[color:var(--gm-muted)]">
                 {tierTotal.toFixed(1)}%
               </span>
             </div>
@@ -102,7 +103,7 @@ function DropRatesSection({ box }) {
       })}
 
       {/* Disclosure footer — Apple/Google loot box compliance */}
-      <div className="pt-4 mt-2 border-t border-[color:var(--gm-track)] text-[11px] leading-relaxed text-[color:var(--gm-muted)]">
+      <div className="pt-4 mt-2 border-t border-[color:var(--gm-track)] text-[13px] leading-relaxed text-[color:var(--gm-muted)]">
         <p>
           Drop rates are exact and apply to every box opened. Each item in this
           box has an independent chance to drop based on the rate shown above.
@@ -150,7 +151,7 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.45 }}
             onClick={onClose}
             style={{
               position: 'fixed',
@@ -159,7 +160,7 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
               width: '100vw',
               height: '100vh',
               background: 'rgba(0, 0, 0, 0.75)',
-              zIndex: 1000,
+              zIndex: 10010,
               cursor: 'pointer',
               pointerEvents: 'auto',
             }}
@@ -179,16 +180,14 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              zIndex: 1001,
+              zIndex: 10011,
               pointerEvents: 'none', // let taps around the card fall through to scrim
             }}
             data-testid="box-detail-modal"
           >
             <motion.div
-              initial={{ y: 24, opacity: 0, scale: 0.96 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 24, opacity: 0, scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+              layoutId={`box-${box.id}`}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="relative flex flex-col"
               style={{
                 width: '85%',
@@ -203,7 +202,8 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
               onClick={(e) => e.stopPropagation()}
               data-testid={`box-detail-modal-${box?.id}`}
             >
-            {/* Close button */}
+            {/* UI v3: one-tap back pill, top-left. The X on the right still works. */}
+            <div className="absolute top-4 left-4 z-10"><BackButton onClick={onClose} label="Back" testId="box-back" /></div>
             <button
               onClick={onClose}
               className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-colors bg-[color:var(--gm-badge)] hover:brightness-95"
@@ -223,16 +223,16 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
                   <Star className="w-3.5 h-3.5 text-[color:var(--gm-muted)]" fill="currentColor" strokeWidth={0} />
                 )}
                 <h2
-                  className="text-[11px] font-['JetBrains_Mono'] font-black uppercase leading-none text-[color:var(--gm-muted)]"
+                  className="text-[13px] font-label font-black uppercase leading-none text-[color:var(--gm-muted)]"
                   style={{ letterSpacing: '0.22em' }}
                 >
                   {box.label}
                 </h2>
               </div>
-              <h1 className="mt-2 text-2xl font-['Archivo'] font-black text-[color:var(--gm-ink)] text-center">
+              <h1 className="mt-2 text-2xl font-display font-black text-[color:var(--gm-ink)] text-center">
                 {box.name}
               </h1>
-              <p className="mt-1 text-[12px] text-[color:var(--gm-muted)] text-center">
+              <p className="mt-1 text-[14px] text-[color:var(--gm-muted)] text-center">
                 Drops {box.dropsPerOpen} items per open
               </p>
 
@@ -241,8 +241,8 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
                 className="mt-5 flex items-center gap-1.5 px-4 py-2 rounded-full bg-[color:var(--gm-badge)]"
                 data-testid="box-modal-cost"
               >
-                <Gem className="w-4 h-4 text-[#95DEE6]" strokeWidth={2.4} />
-                <span className="text-[15px] font-['JetBrains_Mono'] font-bold text-[color:var(--gm-ink)] tabular-nums leading-none">
+                <Gem className="w-4 h-4 text-[#D4F36B]" strokeWidth={2.4} />
+                <span className="text-[17px] font-label font-bold text-[color:var(--gm-ink)] tabular-nums leading-none">
                   {box.cost}
                 </span>
               </div>
@@ -252,7 +252,7 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
                 <OddsBar box={box} />
               </div>
               {GUARANTEE[box.id] && (
-                <p className="mt-3 text-[11px] font-['JetBrains_Mono'] font-bold uppercase tracking-[0.08em] text-center" style={{ color: box.id === 'phase' ? '#DBF67F' : '#95DEE6' }}>
+                <p className="mt-3 text-[13px] font-label font-bold uppercase tracking-[0.08em] text-center" style={{ color: box.id === 'phase' ? '#D4F36B' : '#D4F36B' }}>
                   ✓ {GUARANTEE[box.id]}
                 </p>
               )}
@@ -263,8 +263,8 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
               <button
                 onClick={() => onOpen?.(box.id)}
                 disabled={!canAfford}
-                className={`w-full py-3.5 rounded-2xl font-['General_Sans'] font-bold text-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                  canAfford ? 'bg-[#95DEE6] text-[#183A3F]' : 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)]'
+                className={`w-full py-3.5 rounded-2xl font-sans font-bold text-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                  canAfford ? 'bg-[#D4F36B] text-[#2B3A06]' : 'bg-[color:var(--gm-badge)] text-[color:var(--gm-muted)]'
                 }`}
                 style={{ letterSpacing: '0.04em' }}
                 data-testid="box-modal-open-btn"
@@ -288,7 +288,7 @@ export default function BoxDetailModal({ box, onClose, onOpen, userGems = 0 }) {
                 data-testid="drop-rates-toggle"
                 aria-expanded={showRates}
               >
-                <span className="text-[12px] font-['JetBrains_Mono'] font-bold text-[color:var(--gm-ink)] uppercase tracking-[0.16em]">
+                <span className="text-[14px] font-label font-bold text-[color:var(--gm-ink)] uppercase tracking-[0.16em]">
                   View Drop Rates
                 </span>
                 <motion.span

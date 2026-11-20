@@ -7,7 +7,7 @@ Build a full-stack gamified life improvement web app (HabitRPG style). Turn real
 - Frontend: React + Tailwind CSS + Shadcn/UI + Lucide Icons + Framer Motion + Recharts
 - Backend: FastAPI + MongoDB (motor async)
 - Auth: JWT Bearer tokens (localStorage + Axios interceptors)
-- Fonts: Satoshi / General Sans
+- Fonts: Bricolage Grotesque / Figtree (UI v3, Nov 2026 — see docs/UI_DESIGN_SYSTEM.md)
 - Sound: Web Audio API (non-continuous, one-shot)
 
 ## What's Been Implemented

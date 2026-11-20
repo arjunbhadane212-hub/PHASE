@@ -6,10 +6,10 @@
 // no particles, no shimmer (memory: feedback-no-neon-glow). Prestige-neutral:
 // these are cosmetic skins, mapped per shop key below.
 
-export const CYAN = '#95DEE6';
-export const LIME = '#DBF67F';
-export const WHITE = '#EAFCFF';
-export const PURPLE = '#A59BCC';
+export const CYAN = '#9DD3F7';
+export const LIME = '#D4F36B';
+export const WHITE = '#F8FCE8';
+export const PURPLE = '#F6B3CE';
 export const PEACH = '#F0C9A8';
 const C = 125.7; // circumference at r=20, for the "draw" dash
 
@@ -26,6 +26,22 @@ export const VARIANTS = {
   quad:    [{ r: 20, dash: '6 25.4', cls: 'mr-spin', sw: 3 }],
   comet:   [{ r: 20, dash: '31 200', cls: 'mr-spin', sw: 3.5 }],
   breathe: [{ r: 20, cls: 'mr-op', stroke: LIME }],
+  // Shop v3 drop (Nov 2026) — same flat language: dots are zero-length dashes
+  // with round caps, so they're still a single stroked circle.
+  tick:      [{ r: 20, dash: '1.5 4.78', cls: 'mr-spins' }],
+  orbit:     [{ r: 20, dash: '0.01 125.65', cls: 'mr-spin', sw: 6 }],
+  twinDot:   [{ r: 20, dash: '0.01 62.82', cls: 'mr-spin', sw: 5 }],
+  beat:      [{ r: 20, cls: 'mr-beat' }],
+  blink:     [{ r: 20, dash: '20 11.4', cls: 'mr-blink' }],
+  swing:     [{ r: 20, dash: '40 200', cls: 'mr-swing', sw: 3 }],
+  counter:   [{ r: 20, dash: '30 32.8', cls: 'mr-spin' }, { r: 15.5, dash: '24 24.7', cls: 'mr-spin2' }],
+  gear:      [{ r: 19, dash: '4 4', cls: 'mr-spins', sw: 5 }],
+  triple:    [{ r: 20, dash: '40 22.8', cls: 'mr-spin' }, { r: 15, dash: '30 17.1', cls: 'mr-spin2', stroke: WHITE }, { r: 10, dash: '20 11.4', cls: 'mr-spin', stroke: LIME }],
+  satellite: [{ r: 16, cls: 'mr-op' }, { r: 21, dash: '0.01 131.9', cls: 'mr-spin', sw: 6, stroke: WHITE }],
+  // mythic — three moving parts each, the most structure any ring gets
+  stack:     [{ r: 21, dash: '0.01 6.6', cls: 'mr-spins', sw: 3 }, { r: 16, dash: '50 50.5', cls: 'mr-spin2', sw: 3, stroke: CYAN }, { r: 11, cls: 'mr-beat', stroke: LIME }],
+  zero:      [{ r: 20, cls: 'mr-pulse' }, { r: 20, dash: '0.01 62.82', cls: 'mr-fast', sw: 5, stroke: WHITE }, { r: 8, cls: 'mr-op', stroke: LIME }],
+  continuum: [{ r: 21, dash: '0.01 10.99', cls: 'mr-spin2', sw: 3 }, { r: 16, dash: '0.01 25.12', cls: 'mr-spin', sw: 4, stroke: WHITE }, { r: 11, dash: '17.3 17.3', cls: 'mr-spins', stroke: LIME }],
 };
 
 // shop key -> [variant, primary colour]. Every key gets a DISTINCT pair, so two
@@ -45,6 +61,13 @@ const MAP = {
   flame_ring: ['half', CYAN], frost_ring: ['dashed', WHITE], galaxy_spiral: ['dual', LIME], lightning_arc: ['comet', WHITE],
   fx_draw_ring: ['draw', CYAN], fx_quad_ticks: ['quad', CYAN], fx_dual_orbit: ['dual', PEACH],
   fx_segment_ring: ['segment', CYAN], fx_half_arc: ['half', WHITE], fx_breathe_ring: ['breathe', CYAN],
+  // Shop v3 drop — animations: common / rare / epic
+  anim_drift: ['orbit', WHITE], anim_fine_tick: ['tick', CYAN], anim_heartbeat: ['beat', LIME], anim_signal: ['blink', WHITE],
+  anim_pendulum: ['swing', CYAN], anim_binary: ['twinDot', LIME], anim_counterspin: ['counter', CYAN], anim_gearwork: ['gear', PEACH],
+  anim_triple_lock: ['triple', CYAN], anim_satellite: ['satellite', LIME], anim_redline: ['swing', PEACH],
+  // Shop v3 drop — effects: epic / mythic (mythic = Vault only)
+  fx_gear_ring: ['gear', CYAN], fx_triple_ring: ['triple', PEACH], fx_orbital: ['orbit', CYAN], fx_beacon: ['blink', LIME],
+  fx_counter_ring: ['counter', PURPLE], fx_event_horizon: ['stack', WHITE], fx_zero_point: ['zero', PURPLE], fx_continuum: ['continuum', CYAN],
 };
 
 export function motionVariantFor(key) {

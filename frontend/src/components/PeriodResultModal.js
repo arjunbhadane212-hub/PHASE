@@ -3,15 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useMode } from '../contexts/ModeContext';
+import { useAuth } from '../contexts/AuthContext';
 import TierEmblem from '../components/TierEmblem';
 import { tierInfo } from '../data/leaderboardTiers';
 
-const SEEN_KEY = 'phase_lb_result_seen';
+// The "seen" flag is scoped per user id so that, on a shared device, one
+// account dismissing its result never suppresses the modal for the next
+// account that signs in.
+const seenKeyFor = (userId) => `phase_lb_result_seen:${userId || 'anon'}`;
 
 // Shown once, the next time the app opens after a period closes. The "seen"
 // state is tracked client-side per period_id so it never re-shows.
 export default function PeriodResultModal() {
   const { isGameMode } = useMode();
+  const { user } = useAuth();
+  const userId = user && typeof user === 'object' ? user.id : null;
   const navigate = useNavigate();
   const [res, setRes] = useState(null);
 
@@ -23,15 +29,15 @@ export default function PeriodResultModal() {
         const { data, error } = await supabase.rpc('get_period_result');
         if (error || !data || data.status !== 'ok') return;
         let seen = null;
-        try { seen = window.localStorage.getItem(SEEN_KEY); } catch { /* ignore */ }
+        try { seen = window.localStorage.getItem(seenKeyFor(userId)); } catch { /* ignore */ }
         if (active && String(seen) !== String(data.period_id)) setRes(data);
       } catch { /* non-fatal */ }
     })();
     return () => { active = false; };
-  }, [isGameMode]);
+  }, [isGameMode, userId]);
 
   const dismiss = () => {
-    if (res) { try { window.localStorage.setItem(SEEN_KEY, String(res.period_id)); } catch { /* ignore */ } }
+    if (res) { try { window.localStorage.setItem(seenKeyFor(userId), String(res.period_id)); } catch { /* ignore */ } }
     setRes(null);
   };
 
@@ -66,11 +72,11 @@ export default function PeriodResultModal() {
           {/* Flat tier-colour accent bar instead of an ambient glow bloom */}
           <div className="absolute inset-x-0 top-0 h-1" style={{ background: tier.a }} />
           <div className="relative text-center px-6 pt-8 pb-6">
-            <p className="font-['JetBrains_Mono'] text-[11px] font-bold tracking-[0.2em] uppercase text-[color:var(--gm-muted)] mb-4">Weekly League · Results</p>
+            <p className="font-label text-[13px] font-bold tracking-[0.2em] uppercase text-[color:var(--gm-muted)] mb-4">Weekly League · Results</p>
             <div className="mx-auto mb-3" style={{ width: 132 }}>
               <TierEmblem tier={res.current_tier} size={132} />
             </div>
-            <h2 className="text-2xl font-['Archivo'] font-black text-[color:var(--gm-ink)]">{headline}</h2>
+            <h2 className="text-2xl font-display font-black text-[color:var(--gm-ink)]">{headline}</h2>
             <p className="text-sm text-[color:var(--gm-muted)] mt-1">{sub}</p>
 
             <div className="flex items-stretch gap-3 mt-5">
@@ -80,8 +86,8 @@ export default function PeriodResultModal() {
 
             <button
               onClick={() => { dismiss(); navigate('/dashboard/leaderboard'); }}
-              className="mt-6 w-full py-3 rounded-2xl text-sm font-['General_Sans'] font-bold"
-              style={promoted ? { background: '#DBF67F', color: '#2A3B0B' } : { background: '#95DEE6', color: '#183A3F' }}
+              className="mt-6 w-full py-3 rounded-2xl text-sm font-sans font-bold"
+              style={promoted ? { background: '#D4F36B', color: '#2B3A06' } : { background: '#D4F36B', color: '#2B3A06' }}
               data-testid="period-result-cta"
             >
               {promoted ? 'Enter your new league' : 'View your league'}
@@ -99,8 +105,8 @@ export default function PeriodResultModal() {
 function Stat({ label, value }) {
   return (
     <div className="flex-1 rounded-2xl bg-[color:var(--gm-badge)] py-3">
-      <p className="text-lg font-['Archivo'] font-black text-[color:var(--gm-ink)] tabular-nums">{value}</p>
-      <p className="font-['JetBrains_Mono'] text-[10px] text-[color:var(--gm-muted)] font-bold mt-0.5 uppercase tracking-[0.06em]">{label}</p>
+      <p className="text-lg font-display font-black text-[color:var(--gm-ink)] tabular-nums">{value}</p>
+      <p className="font-label text-[12px] text-[color:var(--gm-muted)] font-bold mt-0.5 uppercase tracking-[0.06em]">{label}</p>
     </div>
   );
 }

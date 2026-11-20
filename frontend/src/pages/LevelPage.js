@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion';
+import { reveal } from '../lib/motion';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Target, Star, Swords, Shield, Flame, Trophy, Crown, Zap, Award, Gem,
@@ -77,20 +79,20 @@ export default function LevelPage() {
         <div className="flex items-center gap-5">
           <Emblem level={currentLevel} color={accent} size="hero" solid />
           <div className="min-w-0">
-            <p className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.16em] text-[color:var(--gm-muted)] mb-1.5 flex items-center gap-1.5">
+            <p className="font-label text-[12px] font-bold uppercase tracking-[0.16em] text-[color:var(--gm-muted)] mb-1.5 flex items-center gap-1.5">
               {isPrestigeNow && <ChevronsUp className="w-3 h-3" strokeWidth={2.5} style={{ color: accent }} />}
               {isPrestigeNow ? 'Prestige Rank' : 'Current Rank'}
             </p>
             <div className="flex items-baseline gap-2">
-              <span className="font-['JetBrains_Mono'] text-[12px] font-bold tracking-[0.1em] text-[color:var(--gm-muted)]">LVL</span>
-              <h2 className="text-5xl font-['Archivo'] font-black text-[color:var(--gm-ink)] leading-none tracking-[-0.03em]" data-testid="current-level-display">
+              <span className="font-label text-[14px] font-bold tracking-[0.1em] text-[color:var(--gm-muted)]">LVL</span>
+              <h2 className="text-5xl font-display font-black text-[color:var(--gm-ink)] leading-none tracking-[-0.03em]" data-testid="current-level-display">
                 {currentLevel}
               </h2>
             </div>
-            <p className="font-['Archivo'] font-black text-xl mt-1.5 leading-none" style={{ color: accent }}>
+            <p className="font-display font-black text-xl mt-1.5 leading-none" style={{ color: accent }}>
               {info.name}
             </p>
-            <p className="font-['General_Sans'] text-[13px] text-[color:var(--gm-muted)] mt-2 leading-snug max-w-xs">
+            <p className="font-sans text-[15px] text-[color:var(--gm-muted)] mt-2 leading-snug max-w-xs">
               {info.tagline}
             </p>
           </div>
@@ -98,15 +100,16 @@ export default function LevelPage() {
 
         {/* XP meter (approved) */}
         <div className="mt-6" data-testid="level-xp-progress">
-          <div className="flex justify-between items-end font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.06em] mb-2">
+          <div className="flex justify-between items-end font-label text-[13px] font-bold uppercase tracking-[0.06em] mb-2">
             <span className="text-[color:var(--gm-ink)]">{currentXP.toLocaleString()} XP</span>
             <span className="text-[color:var(--gm-muted)]">{isMaxLevel ? 'MAX' : `${nextThreshold.toLocaleString()} XP`}</span>
           </div>
           <div className="relative h-3.5 rounded-full overflow-hidden" style={{ background: 'var(--gm-track)' }}>
-            <div className="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
-              style={{ width: `${xpProgress}%`, background: accent }} />
+            <motion.div className="h-full rounded-full relative overflow-hidden"
+              initial={{ width: 0 }} animate={{ width: `${xpProgress}%` }} transition={{ duration: 1.3, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+              style={{ background: accent }} />
           </div>
-          <p className="font-['General_Sans'] text-sm text-[color:var(--gm-muted)] mt-2.5">
+          <p className="font-sans text-sm text-[color:var(--gm-muted)] mt-2.5">
             {isMaxLevel ? (
               <span className="font-semibold" style={{ color: accent }}>You've reached Eternal — the final form. Legend.</span>
             ) : (
@@ -122,13 +125,13 @@ export default function LevelPage() {
       {/* ── STAT STRIP ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 mb-7">
         {[
-          { label: 'Total XP', value: totalXP.toLocaleString() },
-          { label: 'Ranks Unlocked', value: `${unlockedCount}/${MAX_LEVEL}` },
-          { label: 'Tier', value: isPrestigeNow ? 'Prestige' : 'Standard' },
+          { label: 'Total XP', value: totalXP.toLocaleString(), bg: '#FFD25E', ink: '#4A3500' },
+          { label: 'Ranks Unlocked', value: `${unlockedCount}/${MAX_LEVEL}`, bg: '#9DD3F7', ink: '#0B2E45' },
+          { label: 'Tier', value: isPrestigeNow ? 'Prestige' : 'Standard', bg: '#F6B3CE', ink: '#4B1530' },
         ].map((s) => (
-          <div key={s.label} className="rounded-2xl p-3 text-center" style={{ background: 'var(--gm-card)' }}>
-            <p className="font-['Archivo'] font-black text-lg text-[color:var(--gm-ink)] leading-none truncate">{s.value}</p>
-            <p className="font-['JetBrains_Mono'] text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">{s.label}</p>
+          <div key={s.label} className="rounded-2xl p-3 text-center" style={{ background: s.bg, '--gm-ink': s.ink, '--gm-muted': `${s.ink}B3` }}>
+            <p className="font-display font-black text-lg text-[color:var(--gm-ink)] leading-none truncate">{s.value}</p>
+            <p className="font-label text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-1.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -136,7 +139,7 @@ export default function LevelPage() {
       {/* ── ROADMAP ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 mb-5">
         <Trophy className="w-4 h-4 text-[color:var(--gm-muted)]" strokeWidth={2} />
-        <h2 className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.12em] text-[color:var(--gm-muted)]">The Climb</h2>
+        <h2 className="font-label text-[13px] font-bold uppercase tracking-[0.12em] text-[color:var(--gm-muted)]">The Climb</h2>
       </div>
 
       <div>
@@ -152,11 +155,11 @@ export default function LevelPage() {
           const firstPrestige = level.level === PRESTIGE_LEVEL;
 
           return (
-            <div key={level.level}>
+            <motion.div key={level.level} {...reveal}>
               {firstPrestige && (
                 <div className="flex items-center gap-3 my-5">
                   <span className="h-px flex-1" style={{ background: 'var(--gm-track)' }} />
-                  <span className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--gm-muted)]">
+                  <span className="font-label text-[12px] font-bold uppercase tracking-[0.18em] text-[color:var(--gm-muted)]">
                     Beyond Apex
                   </span>
                   <span className="h-px flex-1" style={{ background: 'var(--gm-track)' }} />
@@ -197,37 +200,37 @@ export default function LevelPage() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-['JetBrains_Mono'] text-[10px] font-bold tracking-[0.08em]"
+                        <span className="font-label text-[12px] font-bold tracking-[0.08em]"
                           style={{ color: isLocked ? 'var(--gm-muted)' : level.color }}>
                           LVL {level.level}
                         </span>
-                        <h3 className={`font-['Archivo'] font-black text-[15px] leading-none ${isLocked ? 'text-[color:var(--gm-muted)]' : 'text-[color:var(--gm-ink)]'}`}>
+                        <h3 className={`font-display font-black text-[17px] leading-none ${isLocked ? 'text-[color:var(--gm-muted)]' : 'text-[color:var(--gm-ink)]'}`}>
                           {revealed ? level.name : '? ? ? ?'}
                         </h3>
                         {isCurrent && (
-                          <span className="font-['JetBrains_Mono'] text-[9px] font-bold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full"
+                          <span className="font-label text-[11px] font-bold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full"
                             style={{ background: level.color, color: inkOn(level.color) }}>
                             You
                           </span>
                         )}
                         {isPrestige && !isLocked && (
-                          <span className="font-['JetBrains_Mono'] text-[9px] font-bold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full"
+                          <span className="font-label text-[11px] font-bold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full"
                             style={{ background: `rgba(${c},0.14)`, color: level.color }}>
                             Prestige
                           </span>
                         )}
                       </div>
-                      <p className="font-['General_Sans'] text-[12px] mt-1.5 leading-snug text-[color:var(--gm-muted)]">
+                      <p className="font-sans text-[14px] mt-1.5 leading-snug text-[color:var(--gm-muted)]">
                         {revealed ? level.tagline : 'Locked beyond Apex — keep climbing to reveal.'}
                       </p>
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
-                        <p className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.04em] text-[color:var(--gm-muted)] opacity-80">
+                        <p className="font-label text-[12px] uppercase tracking-[0.04em] text-[color:var(--gm-muted)] opacity-80">
                           {level.min_xp.toLocaleString()} — {level.max_xp === 999999 ? 'MAX' : level.max_xp.toLocaleString()} XP
                         </p>
                         {level.level > 1 && (
-                          <span className={`inline-flex items-center gap-1 font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.04em] ${isLocked ? 'text-[color:var(--gm-ink)]' : 'text-[color:var(--gm-muted)]'}`}
+                          <span className={`inline-flex items-center gap-1 font-label text-[12px] font-bold uppercase tracking-[0.04em] ${isLocked ? 'text-[color:var(--gm-ink)]' : 'text-[color:var(--gm-muted)]'}`}
                             data-testid={`level-reward-${level.level}`}>
-                            {isLocked ? null : <Check className="w-3 h-3" />}<Gem className="w-3 h-3 text-[#95DEE6]" /> +{25 * level.level + 25}
+                            {isLocked ? null : <Check className="w-3 h-3" />}<Gem className="w-3 h-3 text-[#D4F36B]" /> +{25 * level.level + 25}
                           </span>
                         )}
                       </div>
@@ -243,7 +246,7 @@ export default function LevelPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

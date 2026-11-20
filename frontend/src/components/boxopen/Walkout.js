@@ -19,8 +19,8 @@ import { soundEngine } from '../../utils/SoundEngine';
 import { Hero, tierOf, kindOf, displayName, KIND_LABEL } from './Hero';
 import { Marquee, SpeedLines, Confetti, useShake } from './fx';
 
-const FONT_DISPLAY = "'Archivo', sans-serif";
-const FONT_MONO = "'JetBrains Mono', monospace";
+const FONT_DISPLAY = "'Bricolage Grotesque', sans-serif";
+const FONT_MONO = "'Bricolage Grotesque', sans-serif";
 const alpha = (hex, a) => `${hex}${Math.round(a * 255).toString(16).padStart(2, '0')}`;
 const haptic = (p) => { try { navigator.vibrate?.(p); } catch { /* unsupported */ } };
 

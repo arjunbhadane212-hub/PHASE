@@ -9,7 +9,7 @@ const pascal = (n) => n.charAt(0).toUpperCase() + n.slice(1) + 'Icon';
 export default function DevIconsPage() {
   return (
     <div className="min-h-screen bg-[var(--gm-bg)] text-[var(--gm-ink)] p-6">
-      <h1 className="font-['Archivo'] font-black text-2xl mb-4">Phase icon set</h1>
+      <h1 className="font-display font-black text-2xl mb-4">Phase icon set</h1>
       <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
         {ICON_NAMES.map((n) => {
           const I = Icons[pascal(n)];
@@ -19,15 +19,15 @@ export default function DevIconsPage() {
                 <I size={16} /><I size={20} /><I size={28} />
               </div>
               <div className="flex gap-2">
-                <span className="w-9 h-9 rounded-xl bg-[#95DEE6] text-[#183A3F] flex items-center justify-center"><I size={20} /></span>
-                <span className="w-9 h-9 rounded-xl bg-[#DBF67F] text-[#2A3B0B] flex items-center justify-center"><I size={20} variant="solid" /></span>
+                <span className="w-9 h-9 rounded-xl bg-[#D4F36B] text-[#2B3A06] flex items-center justify-center"><I size={20} /></span>
+                <span className="w-9 h-9 rounded-xl bg-[#D4F36B] text-[#2B3A06] flex items-center justify-center"><I size={20} variant="solid" /></span>
               </div>
-              <span className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[var(--gm-muted)]">{n}</span>
+              <span className="font-label text-[12px] uppercase tracking-[0.08em] text-[var(--gm-muted)]">{n}</span>
             </div>
           );
         })}
       </div>
-      <h2 className="font-['Archivo'] font-black text-xl mt-8 mb-3">League emblems</h2>
+      <h2 className="font-display font-black text-xl mt-8 mb-3">League emblems</h2>
       <div className="flex flex-wrap gap-4">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((t) => (
           <div key={t} className="flex flex-col items-center gap-1">

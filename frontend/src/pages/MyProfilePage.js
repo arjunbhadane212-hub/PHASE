@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { EASE } from '../lib/motion';
 import { useAuth } from '../contexts/AuthContext';
 import Inventory from '../components/Inventory';
 import { useMode } from '../contexts/ModeContext';
@@ -52,18 +54,26 @@ export default function ProfilePanel({ open, onClose }) {
     '--panel-line': 'var(--gm-track)',
   };
 
-  if (!open) return null;
 
+  const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches;
   return (
+    <AnimatePresence>
+      {open && (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 z-[9990] bg-black/60" onClick={onClose} data-testid="profile-overlay" />
+      <motion.div key="pp-overlay" className="fixed inset-0 z-[9990] bg-black/60" onClick={onClose} data-testid="profile-overlay"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.45 }} />
 
       {/* Panel */}
-      <div
+      <motion.div
+        key="pp-panel"
+        initial={isDesktop ? { x: '100%' } : { y: '100%' }}
+        animate={isDesktop ? { x: 0 } : { y: 0 }}
+        exit={isDesktop ? { x: '100%' } : { y: '100%' }}
+        transition={{ duration: 0.6, ease: EASE }}
         className="fixed z-[9991] overflow-y-auto overflow-x-hidden
-          sm:right-0 sm:top-0 sm:h-full sm:w-[420px] sm:animate-slide-in-right
-          max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:h-[90vh] max-sm:rounded-t-[20px] max-sm:animate-slide-in-up"
+          sm:right-0 sm:top-0 sm:h-full sm:w-[420px]
+          max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:h-[90vh] max-sm:rounded-t-[28px]"
         style={{ backgroundColor: 'var(--gm-bg)' }}
         data-testid="profile-panel"
       >
@@ -92,7 +102,7 @@ export default function ProfilePanel({ open, onClose }) {
           {/* Avatar */}
           <div className="flex items-end gap-4 mb-4 -mt-6">
             <div
-              className="relative w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-['Archivo'] font-black text-[color:var(--panel-ink)]"
+              className="relative w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-display font-black text-[color:var(--panel-ink)]"
               style={{ backgroundColor: avatarBg, color: 'var(--gm-ink)', border: `4px solid ${lowerBg}`, boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}
               data-testid="panel-avatar"
             >
@@ -100,7 +110,7 @@ export default function ProfilePanel({ open, onClose }) {
               {user?.equipped_animation && <MotionRing itemKey={user.equipped_animation} />}
             </div>
             <div className="pb-1 flex-1 min-w-0">
-              <h2 className="text-lg font-['Archivo'] font-extrabold text-[color:var(--panel-ink)] truncate">{user?.first_name} {user?.last_name}</h2>
+              <h2 className="text-lg font-display font-extrabold text-[color:var(--panel-ink)] truncate">{user?.first_name} {user?.last_name}</h2>
               <p className="text-xs text-[color:var(--panel-muted)]">@{user?.username}</p>
             </div>
           </div>
@@ -121,12 +131,12 @@ export default function ProfilePanel({ open, onClose }) {
           {/* Links: full Profile page (the whole section) + public view */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-5">
             <Link to="/dashboard/profile" onClick={onClose}
-              className="inline-flex items-center gap-1.5 text-[11px] font-['General_Sans'] font-semibold text-[color:var(--panel-ink)] hover:opacity-80 transition-opacity">
+              className="inline-flex items-center gap-1.5 text-[13px] font-sans font-semibold text-[color:var(--panel-ink)] hover:opacity-80 transition-opacity">
               <ExternalLink className="w-3 h-3" /> Open full Profile page
             </Link>
             {user?.username && (
               <Link to={`/profile/${user.username}`} onClick={onClose}
-                className="inline-flex items-center gap-1.5 text-[11px] text-[color:var(--panel-muted)] hover:opacity-80 transition-opacity">
+                className="inline-flex items-center gap-1.5 text-[13px] text-[color:var(--panel-muted)] hover:opacity-80 transition-opacity">
                 View public profile
               </Link>
             )}
@@ -146,27 +156,28 @@ export default function ProfilePanel({ open, onClose }) {
               copy of the equip UI, which drifted from the one in Settings (that
               one had no Effects section at all). Both now render the same
               component, so every owned category shows up on both surfaces. */}
-          <p className="font-['JetBrains_Mono'] text-[10px] text-[color:var(--panel-muted)] uppercase tracking-[0.08em] font-bold mb-4">Customize Profile</p>
+          <p className="font-label text-[12px] text-[color:var(--panel-muted)] uppercase tracking-[0.08em] font-bold mb-4">Customize Profile</p>
           <Inventory onNavigate={onClose} />
 
           {/* Shop link */}
           {isGameMode && (
-            <p className="text-[10px] text-[color:var(--panel-muted)] text-center mt-6">
-              <Gem className="w-3 h-3 inline text-[color:var(--panel-muted)]" /> More in <Link to="/dashboard/shop" onClick={onClose} className="font-['General_Sans'] font-semibold text-[color:var(--panel-ink)] hover:opacity-80">Shop</Link>
+            <p className="text-[12px] text-[color:var(--panel-muted)] text-center mt-6">
+              <Gem className="w-3 h-3 inline text-[color:var(--panel-muted)]" /> More in <Link to="/dashboard/shop" onClick={onClose} className="font-sans font-semibold text-[color:var(--panel-ink)] hover:opacity-80">Shop</Link>
             </p>
           )}
         </div>
-      </div>
+      </motion.div>
     </>
+      )}
+    </AnimatePresence>
   );
 }
-
 function StatBox({ icon, value, label }) {
   return (
     <div className="p-2.5 rounded-xl text-center" style={{ background: 'var(--panel-tile)', border: '1px solid var(--panel-line)' }}>
       <div className="flex justify-center mb-1">{icon}</div>
-      <p className="text-base font-['Archivo'] font-black text-[color:var(--panel-ink)]">{typeof value === 'number' ? value.toLocaleString() : value}</p>
-      <p className="font-['JetBrains_Mono'] text-[8px] text-[color:var(--panel-muted)] uppercase tracking-[0.08em]">{label}</p>
+      <p className="text-base font-display font-black text-[color:var(--panel-ink)]">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+      <p className="font-label text-[10px] text-[color:var(--panel-muted)] uppercase tracking-[0.08em]">{label}</p>
     </div>
   );
 }

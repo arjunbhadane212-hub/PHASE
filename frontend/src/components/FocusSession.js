@@ -299,7 +299,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6"
-        style={{ backgroundColor: '#DBF67F' }}
+        style={{ backgroundColor: '#D4F36B' }}
         data-testid="session-complete"
       >
         <motion.div
@@ -307,9 +307,9 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
           className="w-16 h-16 rounded-[20px] flex items-center justify-center mb-6"
-          style={{ background: '#2A3B0B' }}
+          style={{ background: '#2B3A06' }}
         >
-          <Check className="w-[30px] h-[30px] text-[#DBF67F]" strokeWidth={3} />
+          <Check className="w-[30px] h-[30px] text-[#D4F36B]" strokeWidth={3} />
         </motion.div>
 
         <motion.h1
@@ -317,7 +317,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="text-[26px] text-[#0F1210] text-center"
-          style={{ fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif", fontWeight: 900, letterSpacing: '-0.01em' }}
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 900, letterSpacing: '-0.01em' }}
         >
           {duration} minutes, done.
         </motion.h1>
@@ -327,7 +327,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="text-sm text-center mt-3 max-w-[280px]"
-          style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 500, color: 'rgba(15,18,16,0.75)' }}
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 500, color: 'rgba(15,18,16,0.75)' }}
         >
           {COMPLETE_LINES[lineIndex]}
         </motion.p>
@@ -342,14 +342,14 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           {stats.map((s) => (
             <div key={s.label} className="flex flex-col items-center">
               <span
-                className="text-[22px] text-[#0F1210] leading-none"
-                style={{ fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif", fontWeight: 900 }}
+                className="text-[25px] text-[#0F1210] leading-none"
+                style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 900 }}
               >
                 {s.value}
               </span>
               <span
-                className="text-[9px] uppercase mt-1.5"
-                style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', color: 'rgba(15,18,16,0.65)' }}
+                className="text-[11px] uppercase mt-1.5"
+                style={{ fontFamily: "'Bricolage Grotesque', sans-serif", letterSpacing: '0.1em', color: 'rgba(15,18,16,0.65)' }}
               >
                 {s.label}
               </span>
@@ -362,8 +362,8 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
           onClick={onComplete}
-          className="mt-10 rounded-[14px] bg-[#0F1210] text-[#DBF67F]"
-          style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, padding: '15px 28px' }}
+          className="mt-10 rounded-[14px] bg-[#0F1210] text-[#D4F36B]"
+          style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, padding: '15px 28px' }}
           data-testid="back-to-phase-btn"
         >
           Back
@@ -379,7 +379,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
     <span
       className="font-black leading-none select-none"
       style={{
-        fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif",
+        fontFamily: "'Bricolage Grotesque', sans-serif",
         fontVariantNumeric: 'tabular-nums',
         letterSpacing: '-0.02em',
         color,
@@ -398,7 +398,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
     <span
       className="uppercase"
       style={{
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "'Bricolage Grotesque', sans-serif",
         fontSize: '11px',
         fontWeight: 700,
         letterSpacing: '0.15em',
@@ -422,7 +422,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         <span
           className="font-black leading-none select-none text-center"
           style={{
-            fontFamily: "'Archivo', 'Helvetica Neue', Arial, sans-serif",
+            fontFamily: "'Bricolage Grotesque', sans-serif",
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.02em',
             color: aura.ink,
@@ -617,7 +617,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
         className="text-center mt-8 max-w-[300px] z-10"
-        style={{ fontFamily: "'General Sans', sans-serif", fontSize: '15px', fontWeight: 600, color: aura.ink, opacity: 0.85 }}
+        style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '15px', fontWeight: 600, color: aura.ink, opacity: 0.85 }}
         data-testid="session-motivation"
       >
         {ACTIVE_LINES[lineIndex]}
@@ -629,7 +629,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9 }}
         className="uppercase text-center absolute bottom-6 px-6 z-10"
-        style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.05em', color: aura.ink, opacity: 0.5 }}
+        style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: '10px', letterSpacing: '0.05em', color: aura.ink, opacity: 0.5 }}
       >
         Stay on this screen · you'll be notified when time's up
       </motion.p>
@@ -667,7 +667,7 @@ export default function FocusSession({ habit, duration, onComplete, onAbandon })
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => setShowAbandonModal(false)}
-                  className="w-full py-3 rounded-xl font-bold text-[#183A3F] text-sm bg-[#95DEE6]"
+                  className="w-full py-3 rounded-xl font-bold text-[#2B3A06] text-sm bg-[#D4F36B]"
                   data-testid="keep-going-btn"
                 >
                   Keep Going
@@ -699,7 +699,7 @@ export function FocusSessionBar({ habitName, secondsLeft }) {
       style={{ background: '#4ECDDE', borderLeft: '3px solid #0F1210' }}
       data-testid="focus-session-bar"
     >
-      <span className="text-[#183A3F]">Focus Session in progress —</span>
+      <span className="text-[#2B3A06]">Focus Session in progress —</span>
       <span className="text-[#0F1210] font-medium ml-1.5">{habitName}</span>
       <span className="text-[#0F1210] font-bold ml-auto">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>
     </div>

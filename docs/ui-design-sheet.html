@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Phase — UI v3 design sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:#F5F4EF; --card:#FFFFFF; --badge:#F0EFE9; --track:#E3E3DF; --ink:#141416; --muted:#86868B;
+    --lime:#D4F36B; --lime-ink:#2B3A06; --sun:#FFD25E; --sun-ink:#4A3500; --coral:#FF9F82; --coral-ink:#4D1A0B;
+    --sky:#9DD3F7; --sky-ink:#0B2E45; --pink:#F6B3CE; --pink-ink:#4B1530; --red:#B91C1C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Figtree', sans-serif; font-weight: 600; background: var(--paper); color: var(--ink); line-height: 1.45; }
+  .d { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: -0.03em; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 40px; }
+  header h1 { font-size: 64px; line-height: .95; }
+  header p { color: var(--muted); font-size: 17px; max-width: 520px; margin-top: 10px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; font-weight: 800; font-size: 15px; }
+  section { margin-top: 56px; }
+  h2 { font-size: 32px; margin-bottom: 6px; }
+  .sub { color: var(--muted); font-size: 15px; margin-bottom: 20px; }
+  .grid { display: grid; gap: 12px; }
+  .g4 { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .card { background: var(--card); border-radius: 24px; padding: 20px; }
+  .sw { border-radius: 24px; padding: 18px; min-height: 150px; display: flex; flex-direction: column; justify-content: space-between; }
+  .sw .n { font-size: 24px; }
+  .sw code, code { font-family: 'Figtree', sans-serif; font-weight: 800; font-size: 13px; }
+  .sw small { display: block; font-size: 13px; opacity: .75; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  td, th { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--track); vertical-align: top; }
+  th { color: var(--muted); font-size: 13px; font-weight: 700; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .spec { display: flex; align-items: baseline; gap: 18px; padding: 10px 0; border-bottom: 1px solid var(--track); }
+  .spec .meta { width: 190px; flex: none; color: var(--muted); font-size: 13px; font-weight: 700; }
+  .box { background: var(--sky); height: 22px; border-radius: 6px; }
+  .phone { width: 340px; background: var(--paper); border-radius: 40px; padding: 18px 16px 90px; position: relative; border: 10px solid #1d1d20; flex: none; }
+  .tile { border-radius: 24px; padding: 14px; min-height: 104px; display: flex; flex-direction: column; justify-content: space-between; }
+  .navpill { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; border-radius: 999px; padding: 6px; display: flex; gap: 4px; box-shadow: 0 14px 28px -12px rgba(20,20,22,.45), 0 0 0 1px var(--track); }
+  .navpill span { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; color: var(--muted); font-size: 18px; }
+  .navpill .on { background: var(--ink); color: var(--paper); }
+  .dot { width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+  .ease { height: 120px; background: var(--card); border-radius: 24px; position: relative; overflow: hidden; }
+  .ball { width: 36px; height: 36px; border-radius: 999px; background: var(--lime); position: absolute; top: 42px; left: 20px; animation: slide 2.4s cubic-bezier(.22,1,.36,1) infinite alternate; }
+  @keyframes slide { to { left: calc(100% - 56px); } }
+  .rad { display: grid; place-items: center; background: var(--sun); color: var(--sun-ink); height: 90px; font-size: 14px; font-weight: 800; }
+  .do { background: var(--lime); color: var(--lime-ink); }
+  .dont { background: #FCE4E4; color: #6B0F0F; }
+  ul.l { padding-left: 18px; } ul.l li { margin: 4px 0; }
+  @media (prefers-reduced-motion: reduce) { .ball { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <span class="pill" style="background:var(--lime);color:var(--lime-ink)">UI v3 · Nov 2026</span>
+    <h1 class="d" style="margin-top:14px">Phase design sheet</h1>
+    <p>Colourful flat blocks, big bold type, pill shapes and slow, purposeful motion. No glow, no glass, no purple. Full written spec: <code>docs/UI_DESIGN_SYSTEM.md</code>.</p>
+  </div>
+  <div class="row">
+    <span class="pill" style="background:var(--ink);color:var(--paper)">Primary</span>
+    <span class="pill" style="background:var(--badge)">Secondary</span>
+    <span class="pill" style="background:var(--lime);color:var(--lime-ink)">✓ In use</span>
+  </div>
+</header>
+
+<!-- COLOUR -->
+<section>
+  <h2 class="d">Colour</h2>
+  <p class="sub">Pastels are surfaces with their own ink. Same thing, same colour, everywhere.</p>
+  <div class="grid g4">
+    <div class="sw" style="background:var(--lime);color:var(--lime-ink)"><div class="n d">Lime</div><div><code>#D4F36B · ink #2B3A06</code><small>Brand · done · success · gains</small></div></div>
+    <div class="sw" style="background:var(--sun);color:var(--sun-ink)"><div class="n d">Sun</div><div><code>#FFD25E · ink #4A3500</code><small>Morning · XP · Titles · Legendary</small></div></div>
+    <div class="sw" style="background:var(--coral);color:var(--coral-ink)"><div class="n d">Coral</div><div><code>#FF9F82 · ink #4D1A0B</code><small>Afternoon · Level · Animations</small></div></div>
+    <div class="sw" style="background:var(--sky);color:var(--sky-ink)"><div class="n d">Sky</div><div><code>#9DD3F7 · ink #0B2E45</code><small>Night · Focus · Banners · Rare</small></div></div>
+    <div class="sw" style="background:var(--pink);color:var(--pink-ink)"><div class="n d">Pink</div><div><code>#F6B3CE · ink #4B1530</code><small>Effects · Epic · Deal · + button</small></div></div>
+    <div class="sw" style="background:var(--ink);color:#fff"><div class="n d">Ink</div><div><code>#141416 · on it #FFFFFF</code><small>Top action · selected · Mythic · Sanctum</small></div></div>
+    <div class="sw" style="background:var(--red);color:#fff"><div class="n d">Red</div><div><code>#B91C1C</code><small>Destructive only</small></div></div>
+    <div class="sw" style="background:var(--card);border:1px solid var(--track)"><div class="n d">Paper + card</div><div><code>#F5F4EF · #FFFFFF</code><small>Page · cards (no shadow, tone only)</small></div></div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <table>
+      <tr><th>Token</th><th>Light (default)</th><th>Dark</th><th>Use</th></tr>
+      <tr><td><code>--gm-bg</code></td><td>#F5F4EF</td><td>#0E0E10</td><td>Page</td></tr>
+      <tr><td><code>--gm-card</code></td><td>#FFFFFF</td><td>#1A1A1D</td><td>Cards, inputs, tab pills</td></tr>
+      <tr><td><code>--gm-badge</code></td><td>#F0EFE9</td><td>#26262A</td><td>Wells, secondary buttons</td></tr>
+      <tr><td><code>--gm-track</code></td><td>#E3E3DF</td><td>#2A2A2F</td><td>Tracks, dividers</td></tr>
+      <tr><td><code>--gm-ink</code></td><td>#141416</td><td>#F3F3F0</td><td>Text, icons</td></tr>
+      <tr><td><code>--gm-muted</code></td><td>#86868B</td><td>#8E8E93</td><td>Secondary text</td></tr>
+    </table>
+  </div>
+
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card">
+      <div class="d" style="font-size:20px;margin-bottom:10px">Rarity</div>
+      <div class="row">
+        <span class="pill" style="background:var(--badge);color:var(--muted)">Common</span>
+        <span class="pill" style="background:var(--sky);color:var(--sky-ink)">Rare</span>
+        <span class="pill" style="background:var(--pink);color:var(--pink-ink)">Epic</span>
+        <span class="pill" style="background:var(--sun);color:var(--sun-ink)">Legendary</span>
+        <span class="pill" style="background:var(--ink);color:var(--paper)">Mythic</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="d" style="font-size:20px;margin-bottom:10px">League tiers</div>
+      <div class="row" style="gap:6px">
+        <span class="dot" style="background:#D9915F;color:#3D1F0A">1</span><span class="dot" style="background:#C3C8D2;color:#262A33">2</span><span class="dot" style="background:#FFD25E;color:#4A3500">3</span><span class="dot" style="background:#9DD3F7;color:#0B2E45">4</span><span class="dot" style="background:#7FE0C4;color:#0B3A2E">5</span><span class="dot" style="background:#F6B3CE;color:#4B1530">6</span><span class="dot" style="background:#FF9F82;color:#4D1A0B">7</span><span class="dot" style="background:#FF6B6B;color:#4A0B0B">8</span><span class="dot" style="background:#D4F36B;color:#2B3A06">9</span><span class="dot" style="background:#141416;color:#FFD25E">10</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="d" style="font-size:20px;margin-bottom:10px">Rank ladder</div>
+      <div class="row" style="gap:6px">
+        <span class="dot" style="background:#8C8C84"></span><span class="dot" style="background:#4FAEE6"></span><span class="dot" style="background:#2FA89A"></span><span class="dot" style="background:#7DBE3C"></span><span class="dot" style="background:#E6B422"></span><span class="dot" style="background:#F2843A"></span><span class="dot" style="background:#F06B5B"></span><span class="dot" style="background:#E5484D"></span><span class="dot" style="background:#E85A9C"></span><span class="dot" style="background:#FFC23D"></span><span class="dot" style="background:#FF8FB8"></span><span class="dot" style="background:#3D9BE9"></span><span class="dot" style="background:#22C1D6"></span><span class="dot" style="background:#FF7A3D"></span><span class="dot" style="background:#EDEFF5;border:1px solid var(--track)"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TYPE -->
+<section>
+  <h2 class="d">Typography</h2>
+  <p class="sub">Bricolage Grotesque 800 for display, Figtree 500–900 for everything else. Nothing thin. Labels in sentence case.</p>
+  <div class="card">
+    <div class="spec"><span class="meta">Streak number · 60px display</span><span class="d" style="font-size:60px;line-height:.95">12</span></div>
+    <div class="spec"><span class="meta">Hero · 52px display</span><span class="d" style="font-size:52px;line-height:1">15 min</span></div>
+    <div class="spec"><span class="meta">Page title · 32px display</span><span class="d" style="font-size:32px">League</span></div>
+    <div class="spec"><span class="meta">Section · 22px display</span><span class="d" style="font-size:22px">Morning</span></div>
+    <div class="spec"><span class="meta">Habit / row · 17px Figtree 800</span><span style="font-size:17px;font-weight:800">30 minute run</span></div>
+    <div class="spec"><span class="meta">Body · 17px Figtree 600</span><span style="font-size:17px">Complete one habit to start a streak.</span></div>
+    <div class="spec"><span class="meta">Secondary · 15px Figtree 600</span><span style="font-size:15px;color:var(--muted)">Break into the top 7 to climb toward Platinum.</span></div>
+    <div class="spec" style="border:0"><span class="meta">Label · 13px Figtree 700</span><span style="font-size:13px;font-weight:700;color:var(--muted)">XP today</span></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <table>
+      <tr><th>Tailwind</th><th>Size / line</th><th>Tailwind</th><th>Size / line</th></tr>
+      <tr><td>text-xs</td><td>13 / 18</td><td>text-xl</td><td>22 / 29</td></tr>
+      <tr><td>text-sm</td><td>15 / 21</td><td>text-2xl</td><td>27 / 33</td></tr>
+      <tr><td>text-base</td><td>17 / 25</td><td>text-3xl</td><td>32 / 38</td></tr>
+      <tr><td>text-lg</td><td>19 / 27</td><td>text-4xl</td><td>40 / 44</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- SPACING -->
+<section>
+  <h2 class="d">Spacing & shape</h2>
+  <p class="sub">4px grid. Generous, round, tone-separated.</p>
+  <div class="grid g3">
+    <div class="card">
+      <div class="d" style="font-size:20px;margin-bottom:12px">Spacing</div>
+      <table>
+        <tr><td>Page sides</td><td><b>16px</b> · 24px from sm</td></tr>
+        <tr><td>Page bottom (mobile)</td><td><b>128px</b> clears the nav</td></tr>
+        <tr><td>Between sections</td><td><b>24–36px</b></td></tr>
+        <tr><td>Title → content</td><td><b>12px</b></td></tr>
+        <tr><td>Card padding</td><td><b>16px</b> · heroes 20px</td></tr>
+        <tr><td>Tile grid gap</td><td><b>10px</b> · stat rows 12px</td></tr>
+        <tr><td>Tap target</td><td><b>≥ 40px</b> · primary 48px</td></tr>
+        <tr><td>Max width</td><td><b>672 / 768px</b></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="d" style="font-size:20px;margin-bottom:12px">Scale</div>
+      <div class="row" style="align-items:flex-end;gap:10px">
+        <div style="text-align:center"><div class="box" style="width:8px;height:8px"></div><small>8</small></div>
+        <div style="text-align:center"><div class="box" style="width:10px;height:10px"></div><small>10</small></div>
+        <div style="text-align:center"><div class="box" style="width:12px;height:12px"></div><small>12</small></div>
+        <div style="text-align:center"><div class="box" style="width:16px;height:16px"></div><small>16</small></div>
+        <div style="text-align:center"><div class="box" style="width:20px;height:20px"></div><small>20</small></div>
+        <div style="text-align:center"><div class="box" style="width:24px;height:24px"></div><small>24</small></div>
+        <div style="text-align:center"><div class="box" style="width:36px;height:36px"></div><small>36</small></div>
+        <div style="text-align:center"><div class="box" style="width:48px;height:48px"></div><small>48</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="d" style="font-size:20px;margin-bottom:12px">Radii</div>
+      <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:8px">
+        <div class="rad" style="border-radius:18px">18 · rows</div>
+        <div class="rad" style="border-radius:24px">24 · cards</div>
+        <div class="rad" style="border-radius:28px">28 · heroes</div>
+      </div>
+      <div class="row" style="margin-top:10px"><span class="pill" style="background:var(--badge)">Full pill · buttons, chips, nav</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPONENTS -->
+<section>
+  <h2 class="d">Components on a screen</h2>
+  <p class="sub">Home in Game Mode and the Shop home, built from the tokens above.</p>
+  <div class="row" style="align-items:flex-start;gap:24px">
+    <div class="phone">
+      <div class="row" style="justify-content:space-between">
+        <div class="row" style="gap:10px"><span class="dot" style="width:42px;height:42px;background:var(--pink);color:var(--pink-ink)">T</span><div><div style="font-size:12px;color:var(--muted)">Friday, Nov 20</div><div class="d" style="font-size:19px">Hi, Sachin</div></div></div>
+        <span class="pill" style="background:var(--ink);color:#fff;padding:7px 12px;font-size:13px">◆ 1,240</span>
+      </div>
+      <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">
+        <div class="tile" style="background:var(--sun);color:var(--sun-ink)"><div class="d" style="font-size:24px">25</div><small style="font-size:12px">XP today</small></div>
+        <div class="tile" style="background:var(--sky);color:var(--sky-ink)"><div class="d" style="font-size:18px">40%</div><small style="font-size:12px">This week</small></div>
+        <div class="tile" style="background:var(--coral);color:var(--coral-ink)"><div class="d" style="font-size:24px">Lv 9</div><small style="font-size:12px">Champion</small></div>
+      </div>
+      <div style="background:var(--ink);color:#fff;border-radius:28px;padding:16px;margin-top:10px">
+        <div style="font-size:12px;opacity:.6">Day streak</div>
+        <div class="d" style="font-size:48px;line-height:1">12 <span style="font-size:14px;opacity:.6">days</span></div>
+        <div class="row" style="gap:5px;margin-top:10px">
+          <span class="dot" style="width:30px;height:30px;background:var(--lime);color:var(--lime-ink)">M</span><span class="dot" style="width:30px;height:30px;background:var(--lime);color:var(--lime-ink)">T</span><span class="dot" style="width:30px;height:30px;background:var(--lime);color:var(--lime-ink)">W</span><span class="dot" style="width:30px;height:30px;background:var(--lime);color:var(--lime-ink)">T</span><span class="dot" style="width:30px;height:30px;box-shadow:inset 0 0 0 1.5px #fff;color:#fff">F</span><span class="dot" style="width:30px;height:30px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.45)">S</span><span class="dot" style="width:30px;height:30px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.45)">S</span>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:16px"><div class="row" style="gap:8px"><span class="dot" style="background:var(--sun);color:var(--sun-ink)">☀</span><span class="d" style="font-size:20px">Morning</span></div><span class="pill" style="background:var(--ink);color:#fff;padding:6px 12px;font-size:13px">+ Add</span></div>
+      <div style="background:var(--sun);color:var(--sun-ink);border-radius:24px;padding:12px;margin-top:8px" class="row"><span class="dot" style="width:36px;height:36px;border:2px solid rgba(74,53,0,.4)"></span><div><div style="font-weight:800;font-size:16px">Gym</div><div style="font-size:12px;opacity:.75">+25 XP · Medium · ◆ +10</div></div></div>
+      <div style="background:var(--lime);color:var(--lime-ink);border-radius:24px;padding:12px;margin-top:8px" class="row"><span class="dot" style="width:36px;height:36px;background:var(--ink);color:var(--lime)">✓</span><div><div style="font-weight:800;font-size:16px">Read 20 pages</div><div style="font-size:12px;opacity:.75">Done today</div></div></div>
+      <div class="navpill"><span>☺</span><span class="on">⌂</span><span>▥</span><span>⛰</span><span>♛</span><span>▢</span><span>⚙</span></div>
+    </div>
+
+    <div class="phone">
+      <span class="pill" style="padding:6px 0;font-size:14px">← Back</span>
+      <div class="row" style="justify-content:space-between;margin-top:6px"><div><div style="font-size:12px;color:var(--muted);font-weight:700">Drop #009 · same shop for everyone</div><div class="d" style="font-size:44px;line-height:1">Shop</div></div><span class="pill" style="background:var(--lime);color:var(--lime-ink);font-size:14px;padding:7px 12px">◆ 4,200</span></div>
+      <div class="row" style="gap:6px;margin-top:12px"><span class="pill" style="background:var(--ink);color:var(--paper);font-size:13px;padding:7px 12px">Today</span><span class="pill" style="background:#fff;color:var(--muted);font-size:13px;padding:7px 12px">Sanctum</span><span class="pill" style="background:#fff;color:var(--muted);font-size:13px;padding:7px 12px">Boxes</span></div>
+      <div class="d" style="font-size:22px;margin-top:16px">Browse</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <div class="tile" style="grid-column:span 2;background:var(--ink);color:#fff"><span>♛</span><div><div class="d" style="font-size:19px">The Sanctum</div><small style="opacity:.75;font-size:12px">Mythic: Divine Light</small></div></div>
+        <div class="tile" style="background:var(--lime);color:var(--lime-ink)"><span>▣</span><div><div class="d" style="font-size:17px">Mystery boxes</div><small style="opacity:.75;font-size:12px">Open for a surprise</small></div></div>
+        <div class="tile" style="background:var(--sun);color:var(--sun-ink)"><span>⬡</span><div><div class="d" style="font-size:17px">Titles</div><small style="opacity:.75;font-size:12px">4 today</small></div></div>
+        <div class="tile" style="background:var(--sky);color:var(--sky-ink)"><span>⚑</span><div><div class="d" style="font-size:17px">Banners</div><small style="opacity:.75;font-size:12px">3 today</small></div></div>
+        <div class="tile" style="background:var(--coral);color:var(--coral-ink)"><span>✺</span><div><div class="d" style="font-size:17px">Animations</div><small style="opacity:.75;font-size:12px">3 today</small></div></div>
+      </div>
+      <div class="navpill"><span>☺</span><span>⌂</span><span>▥</span><span>⛰</span><span>♛</span><span class="on">▢</span><span>⚙</span></div>
+    </div>
+
+    <div style="flex:1;min-width:280px" class="grid">
+      <div class="card">
+        <div class="d" style="font-size:20px;margin-bottom:8px">Component rules</div>
+        <ul class="l" style="font-size:15px">
+          <li><b>Back button</b> — 40px pill, top-left of every sub-screen and modal.</li>
+          <li><b>Colour tile</b> — 24px radius, min 128px, icon top, name bottom.</li>
+          <li><b>Section hero</b> — the tile grows into it (28px radius, 32px title).</li>
+          <li><b>Tabs</b> — card pills; the ink pill slides to the active one.</li>
+          <li><b>Habit row</b> — slot colour block → lime when done, check pops in.</li>
+          <li><b>Rings / bars</b> — fill from zero, round caps, on the track colour.</li>
+          <li><b>Motion rings</b> — always previewed on a dark stage.</li>
+          <li><b>Nav</b> — floating pill, white (light) / charcoal (dark), ink disc slides.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="d" style="font-size:20px;margin-bottom:8px">Icons</div>
+        <p style="font-size:15px;color:var(--muted)">Phosphor, bold by default, fill when active. 18–22px in rows, 30px in tiles, 42–44px in heroes. Import through <code>components/icons</code>, one icon per deep import. No emoji in the real UI (the emoji above are only stand-ins on this sheet).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ERRORS -->
+<section>
+  <h2 class="d">Errors</h2>
+  <p class="sub">Say what happened and what to do. Soft red block, solid red icon, bold title. Never a browser bubble.</p>
+  <div class="grid g3">
+    <div class="card">
+      <div style="background:#FFDAD4;color:#6B0F0F;border-radius:22px;padding:16px;display:flex;gap:12px;align-items:flex-start">
+        <span class="dot" style="width:36px;height:36px;background:#B91C1C;color:#fff;flex:none">!</span>
+        <div><div style="font-weight:800;font-size:16px">Wrong email or password</div><div style="font-size:14px;opacity:.8;margin-top:4px">One of them doesn’t match an account. Check both for typos — or tap “Forgot?” to reset your password.</div></div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:10px">Banner · <code>#FFDAD4</code> · ink <code>#6B0F0F</code> · disc <code>#B91C1C</code></div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px">Email</div>
+      <div style="height:52px;border-radius:24px;border:2px solid #B91C1C;background:#FFF4F2;display:flex;align-items:center;padding:0 16px;font-size:17px">sachin.gmail</div>
+      <div style="color:#B91C1C;font-size:14px;font-weight:800;margin-top:8px">▲ This email is missing an @.</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:10px">Field error · red ring + wash · 14px bold line</div>
+    </div>
+    <div class="card">
+      <div style="background:#FFDAD4;color:#6B0F0F;border-radius:22px;padding:12px 16px">
+        <div style="font-weight:800">Can’t reach Phase right now</div><div style="font-size:14px;opacity:.8">Check your internet connection and try again.</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:10px">Error toast · same block as the banner</div>
+    </div>
+  </div>
+</section>
+
+<!-- MOTION -->
+<section>
+  <h2 class="d">Motion</h2>
+  <p class="sub">ease-out-quint <code>cubic-bezier(.22,1,.36,1)</code> · 0.3 / 0.5 / 0.65s · spring 260/30 for sliding pills. Nothing teleports, nothing glows.</p>
+  <div class="ease"><div class="ball"></div></div>
+  <div class="card" style="margin-top:12px">
+    <table>
+      <tr><th>Moment</th><th>What happens</th></tr>
+      <tr><td>Switch tab (nav)</td><td>Instant swap + 14px glide (0.22s) in the nav's direction · ink disc slides</td></tr>
+      <tr><td>Open a section / box</td><td>The tapped card grows into the next view (shared element)</td></tr>
+      <tr><td>Enter a screen</td><td>Children stagger in, fade-up 22px</td></tr>
+      <tr><td>Scroll</td><td>Sections reveal once as they enter</td></tr>
+      <tr><td>Numbers</td><td>Bars and rings fill from zero (0.9–1.3s)</td></tr>
+      <tr><td>Complete a habit</td><td>Row colour cross-fades 0.7s, check pops with a spring</td></tr>
+      <tr><td>Sign in / sign up</td><td>Lime success screen: check draws, title rises, bar fills, fades</td></tr>
+      <tr><td>Game ↔ Focus</td><td>Full-screen lime / sky wipe with the mode name — only on a real switch</td></tr>
+      <tr><td>Light ↔ dark</td><td>Every colour cross-fades 0.7s</td></tr>
+      <tr><td>Reduced motion</td><td>All of the above switched off</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- DO / DONT -->
+<section>
+  <h2 class="d">Do / don't</h2>
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card do"><div class="d" style="font-size:20px;margin-bottom:8px">Do</div>
+      <ul class="l" style="font-size:15px"><li>Solid pastel blocks with their own ink</li><li>Big, bold type and numbers</li><li>Pills and 24–28px rounded blocks</li><li>Separate by tone, not shadow</li><li>Same colour = same meaning</li><li>Back button on every sub-screen</li></ul>
+    </div>
+    <div class="card dont"><div class="d" style="font-size:20px;margin-bottom:8px">Don't</div>
+      <ul class="l" style="font-size:15px"><li>Purple — anywhere</li><li>Pastel text on paper</li><li>Thin fonts or uppercase mono labels</li><li>Glow, shimmer, neon, glass, blur</li><li>Diagonal gradients, gradient text</li><li>Dead ends that need the nav to escape</li></ul>
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

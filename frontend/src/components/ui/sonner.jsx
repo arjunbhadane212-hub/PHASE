@@ -1,9 +1,9 @@
 import { Toaster as Sonner, toast } from "sonner"
 
-// v2 toasts — a small rounded rectangle following the cyan/lime rules.
-// Base (neutral) colors are set via inline style; type-specific colors use
-// !important classes so they override the inline base:
-//   success = cyan, warning/"earned" = lime, error = destructive red.
+// UI v3 toasts — rounded blocks in the app palette. Base (neutral) colours are
+// inline; type colours use !important classes so they win:
+//   success / warning("earned") = lime · error = soft red block with dark-red
+//   ink and a solid red icon (same look as the auth error banner).
 const Toaster = ({ ...props }) => {
   return (
     <Sonner
@@ -12,7 +12,7 @@ const Toaster = ({ ...props }) => {
         style: {
           borderRadius: "16px",
           border: "none",
-          fontFamily: "'General Sans', sans-serif",
+          fontFamily: "'Figtree', sans-serif",
           fontWeight: 600,
           boxShadow: "var(--gm-shadow-card)",
           padding: "12px 16px",
@@ -20,13 +20,13 @@ const Toaster = ({ ...props }) => {
           color: "var(--gm-ink)",
         },
         classNames: {
-          toast: "!rounded-2xl",
-          title: "!font-['General_Sans',sans-serif] !font-semibold",
+          toast: "!rounded-[22px]",
+          title: "!font-sans !font-semibold",
           description: "!text-[color:var(--gm-muted)]",
-          success: "!bg-[#95DEE6] !text-[#183A3F] [&_[data-icon]]:!text-[#183A3F]",
-          warning: "!bg-[#DBF67F] !text-[#2A3B0B] [&_[data-icon]]:!text-[#2A3B0B]",
-          error: "!bg-[#B91C1C] !text-white [&_[data-icon]]:!text-white",
-          actionButton: "!bg-[#183A3F] !text-[#95DEE6] !rounded-full",
+          success: "!bg-[#D4F36B] !text-[#2B3A06] [&_[data-icon]]:!text-[#2B3A06]",
+          warning: "!bg-[#D4F36B] !text-[#2B3A06] [&_[data-icon]]:!text-[#2B3A06]",
+          error: "!bg-[#FFDAD4] !text-[#6B0F0F] [&_[data-icon]]:!text-[#B91C1C] [&_[data-description]]:!text-[#6B0F0F] [&_[data-description]]:!opacity-80 [&_[data-title]]:!font-extrabold",
+          actionButton: "!bg-[#2B3A06] !text-[#D4F36B] !rounded-full",
           cancelButton: "!bg-[color:var(--gm-badge)] !text-[color:var(--gm-muted)] !rounded-full",
         },
       }}

@@ -8,9 +8,18 @@ export function ModeProvider({ children }) {
   const { user, updateUser } = useAuth();
   const [mode, setMode] = useState('focus'); // 'focus' or 'game'
 
+  // Derive mode strictly from the CURRENT user. The old version only wrote mode
+  // when `user.app_mode` was truthy, so after one user signed out and another
+  // signed in — in the same SPA session, no reload — the previous account's
+  // mode stuck around (and a user whose profile had no app_mode inherited it).
+  // That was a cross-account state leak on shared devices. Now a sign-out or a
+  // user with no saved mode always falls back to the 'focus' default instead of
+  // keeping whatever the last account was in.
   useEffect(() => {
-    if (user && user.app_mode) {
-      setMode(user.app_mode);
+    if (user && typeof user === 'object') {
+      setMode(user.app_mode || 'focus');
+    } else if (user === false || user === 'banned') {
+      setMode('focus');
     }
   }, [user]);
 
@@ -37,6 +46,8 @@ export function ModeProvider({ children }) {
       throw error;
     }
     setMode(newMode);            // reflect immediately, no refresh needed
+    // UI v3: the full-screen "Game/Focus Mode" moment plays ONLY on a real switch.
+    window.dispatchEvent(new CustomEvent('phase:mode-switched', { detail: newMode }));
     updateUser({ app_mode: newMode });
     return newMode;
   };

@@ -7,7 +7,7 @@
 // 'wash' = full-bleed solid fill (the existing Cyan Pulse look, just made
 // swappable). 'glow' = near-black bg with a soft pulsing accent-color ring —
 // keeps purple scoped to an accent/glow, never a full-screen fill, per the
-// v2 color rule (#A59BCC is pill/chip-accent only).
+// v2 color rule (#141416 is pill/chip-accent only).
 // orbBg is the Breathing-Orb style's circle fill. Wash auras keep the classic
 // near-black orb (it needs to contrast against a bright page); the glow aura's
 // page is already near-black, so its orb gets a lighter elevated fill instead
@@ -15,7 +15,7 @@
 export const FOCUS_AURAS = {
   focus_aura_cyan_pulse: {
     key: 'focus_aura_cyan_pulse', name: 'Cyan Pulse', style: 'wash',
-    bg: '#4ECDDE', ink: '#0F1210', muted: 'rgba(15,18,16,0.55)', accent: '#95DEE6', orbBg: '#0F1210', track: 'rgba(255,255,255,0.4)',
+    bg: '#4ECDDE', ink: '#0F1210', muted: 'rgba(15,18,16,0.55)', accent: '#D4F36B', orbBg: '#0F1210', track: 'rgba(255,255,255,0.4)',
   },
   focus_aura_blue_drift: {
     key: 'focus_aura_blue_drift', name: 'Blue Drift', style: 'wash',
@@ -23,11 +23,11 @@ export const FOCUS_AURAS = {
   },
   focus_aura_lime_flow: {
     key: 'focus_aura_lime_flow', name: 'Lime Flow', style: 'wash',
-    bg: '#DBF67F', ink: '#0F1210', muted: 'rgba(15,18,16,0.55)', accent: '#EEFAB4', orbBg: '#0F1210', track: 'rgba(255,255,255,0.4)',
+    bg: '#D4F36B', ink: '#0F1210', muted: 'rgba(15,18,16,0.55)', accent: '#EEFAB4', orbBg: '#0F1210', track: 'rgba(255,255,255,0.4)',
   },
   focus_aura_violet_focus: {
-    key: 'focus_aura_violet_focus', name: 'Violet Focus', style: 'glow',
-    bg: '#14121A', ink: '#F4F5F2', muted: 'rgba(244,245,242,0.55)', accent: '#A59BCC', orbBg: '#39324A', track: 'rgba(255,255,255,0.4)',
+    key: 'focus_aura_violet_focus', name: 'Night Bloom', style: 'glow',
+    bg: '#16121A', ink: '#F4F5F2', muted: 'rgba(244,245,242,0.55)', accent: '#F6B3CE', orbBg: '#3A2E38', track: 'rgba(255,255,255,0.4)',
   },
   focus_aura_paper: {
     key: 'focus_aura_paper', name: 'Paper', style: 'wash',

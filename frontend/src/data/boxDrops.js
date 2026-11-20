@@ -9,9 +9,9 @@
 
 export const TIER_META = {
   common:    { label: 'Common',    order: 0, color: '#9BA09C' },
-  rare:      { label: 'Rare',      order: 1, color: '#95DEE6' },
-  legendary: { label: 'Legendary', order: 2, color: '#DBF67F' },
-  mythic:    { label: 'Mythic',    order: 3, color: '#A59BCC' },
+  rare:      { label: 'Rare',      order: 1, color: '#D4F36B' },
+  legendary: { label: 'Legendary', order: 2, color: '#D4F36B' },
+  mythic:    { label: 'Mythic',    order: 3, color: '#141416' },
 };
 
 export const TIER_ORDER = ['common', 'rare', 'legendary', 'mythic'];

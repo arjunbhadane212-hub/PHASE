@@ -15,24 +15,24 @@ import { markOnboardingSeen } from '../utils/onboardingFlag';
 const SLIDES = [
   {
     icon: Flame,
-    accent: '#95DEE6',
-    ink: '#183A3F',
+    accent: '#D4F36B',
+    ink: '#2B3A06',
     eyebrow: 'Discipline in your pocket',
     title: 'Build the streak you keep bragging about',
     sub: 'Phase turns showing up every day into a streak you can actually see — and flex.',
   },
   {
     icon: Target,
-    accent: '#DBF67F',
-    ink: '#2A3B0B',
+    accent: '#D4F36B',
+    ink: '#2B3A06',
     eyebrow: 'Two ways to play',
     title: 'Game Mode to compete. Focus Mode to lock in.',
     sub: 'Earn XP and climb the ranks, or drop into a distraction-free deep-work timer.',
   },
   {
     icon: Trophy,
-    accent: '#95DEE6',
-    ink: '#183A3F',
+    accent: '#D4F36B',
+    ink: '#2B3A06',
     eyebrow: 'Make it public',
     title: 'Your discipline, on a profile worth sharing',
     sub: 'Titles, ranks and a profile people screenshot. Consistency becomes your identity.',
@@ -76,7 +76,7 @@ export default function WelcomePage() {
         <div className="flex items-center gap-2.5">
           <PhaseMark size={28} />
           <span
-            className="font-['Archivo'] font-black uppercase text-[var(--gm-ink)]"
+            className="font-display font-black uppercase text-[var(--gm-ink)]"
             style={{ fontSize: 20, letterSpacing: '-0.01em' }}
           >
             Phase
@@ -85,7 +85,7 @@ export default function WelcomePage() {
         <button
           type="button"
           onClick={() => finish('/login')}
-          className="text-[11px] font-['JetBrains_Mono'] uppercase tracking-[0.08em] text-[var(--gm-muted)] hover:text-[var(--gm-ink)] transition-colors"
+          className="text-[13px] font-label uppercase tracking-[0.08em] text-[var(--gm-muted)] hover:text-[var(--gm-ink)] transition-colors"
           data-testid="welcome-skip"
         >
           Skip
@@ -102,16 +102,16 @@ export default function WelcomePage() {
             >
               <Icon size={30} strokeWidth={2} color={slide.ink} />
             </div>
-            <p className="text-[11px] font-['JetBrains_Mono'] uppercase tracking-[0.08em] text-[var(--gm-muted)] mb-3">
+            <p className="text-[13px] font-label uppercase tracking-[0.08em] text-[var(--gm-muted)] mb-3">
               {slide.eyebrow}
             </p>
             <h1
-              className="font-['Archivo'] font-black text-[var(--gm-ink)] mb-4"
+              className="font-display font-black text-[var(--gm-ink)] mb-4"
               style={{ fontSize: 30, lineHeight: 1.05, letterSpacing: '-0.02em' }}
             >
               {slide.title}
             </h1>
-            <p className="text-[15px] leading-relaxed text-[var(--gm-muted)] font-['General_Sans']">
+            <p className="text-[17px] leading-relaxed text-[var(--gm-muted)] font-sans">
               {slide.sub}
             </p>
           </motion.div>
@@ -126,7 +126,7 @@ export default function WelcomePage() {
             className="h-1.5 rounded-full transition-all duration-300"
             style={{
               width: i === index ? 24 : 8,
-              backgroundColor: i === index ? '#95DEE6' : 'var(--gm-track)',
+              backgroundColor: i === index ? '#D4F36B' : 'var(--gm-track)',
             }}
           />
         ))}
@@ -138,8 +138,8 @@ export default function WelcomePage() {
           <button
             type="button"
             onClick={() => finish('/signup')}
-            className="w-full py-3.5 rounded-xl font-['General_Sans'] font-bold text-[15px] transition-opacity hover:opacity-90"
-            style={{ backgroundColor: '#95DEE6', color: '#183A3F' }}
+            className="w-full py-3.5 rounded-xl font-sans font-bold text-[17px] transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#D4F36B', color: '#2B3A06' }}
             data-testid="welcome-signup"
           >
             Create your account
@@ -147,7 +147,7 @@ export default function WelcomePage() {
           <button
             type="button"
             onClick={() => finish('/login')}
-            className="w-full py-3.5 rounded-xl font-['General_Sans'] font-bold text-[15px] border border-[var(--gm-track)] text-[var(--gm-ink)] hover:bg-[var(--gm-card)] transition-colors"
+            className="w-full py-3.5 rounded-xl font-sans font-bold text-[17px] border border-[var(--gm-track)] text-[var(--gm-ink)] hover:bg-[var(--gm-card)] transition-colors"
             data-testid="welcome-login"
           >
             I already have an account
@@ -157,8 +157,8 @@ export default function WelcomePage() {
         <button
           type="button"
           onClick={next}
-          className="w-full py-3.5 rounded-xl font-['General_Sans'] font-bold text-[15px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-          style={{ backgroundColor: '#95DEE6', color: '#183A3F' }}
+          className="w-full py-3.5 rounded-xl font-sans font-bold text-[17px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+          style={{ backgroundColor: '#D4F36B', color: '#2B3A06' }}
           data-testid="welcome-next"
         >
           Continue

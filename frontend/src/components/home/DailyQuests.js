@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../../lib/supabaseClient';
@@ -48,8 +49,8 @@ export default function DailyQuests({ refreshKey = 0 }) {
   return (
     <section className="rounded-2xl bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-4" data-testid="daily-quests">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-['Archivo'] font-extrabold text-[17px] text-[var(--gm-ink)] tracking-[-0.01em]">Daily quests</h3>
-        <span className="font-['JetBrains_Mono'] font-bold uppercase text-[10px] tracking-[0.08em] text-[var(--gm-muted)]">{done}/{quests.length} · resets at midnight</span>
+        <h3 className="font-display font-extrabold text-[20px] text-[var(--gm-ink)] tracking-[-0.01em]">Daily quests</h3>
+        <span className="font-label font-bold uppercase text-[12px] tracking-[0.08em] text-[var(--gm-muted)]">{done}/{quests.length} · resets at midnight</span>
       </div>
       <ul className="space-y-3">
         {quests.map((q) => {
@@ -58,26 +59,26 @@ export default function DailyQuests({ refreshKey = 0 }) {
           const ready = q.complete && !q.claimed;
           return (
             <li key={q.key} className="flex items-center gap-3" data-testid={`quest-${q.key}`}>
-              <span className={`w-9 h-9 rounded-xl flex items-center justify-center flex-none ${q.claimed ? 'bg-[#DBF67F] text-[#2A3B0B]' : 'bg-[var(--gm-badge)] text-[var(--gm-ink)]'}`}>
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center flex-none ${q.claimed ? 'bg-[#D4F36B] text-[#2B3A06]' : 'bg-[var(--gm-badge)] text-[var(--gm-ink)]'}`}>
                 {q.claimed ? <Check size={18} /> : <Icon size={18} />}
               </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <p className={`text-[13px] font-['General_Sans'] font-bold truncate ${q.claimed ? 'text-[var(--gm-muted)]' : 'text-[var(--gm-ink)]'}`}>{q.title}</p>
-                  <span className="font-['JetBrains_Mono'] text-[10px] font-bold text-[var(--gm-muted)] tabular-nums flex-none">{Math.min(q.progress, q.target)}/{q.target}</span>
+                  <p className={`text-[15px] font-sans font-bold truncate ${q.claimed ? 'text-[var(--gm-muted)]' : 'text-[var(--gm-ink)]'}`}>{q.title}</p>
+                  <span className="font-label text-[12px] font-bold text-[var(--gm-muted)] tabular-nums flex-none">{Math.min(q.progress, q.target)}/{q.target}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-[var(--gm-track)] mt-1.5 overflow-hidden">
-                  <div className="h-full rounded-full bg-[#DBF67F] transition-[width] duration-500" style={{ width: `${pct}%` }} />
+                  <motion.div className="h-full rounded-full bg-[#D4F36B]" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.4 }} />
                 </div>
               </div>
               {ready ? (
                 <button type="button" onClick={() => claim(q)} disabled={claiming === q.key}
-                  className="flex-none h-8 px-3 rounded-full bg-[#95DEE6] text-[#183A3F] text-xs font-bold flex items-center gap-1 disabled:opacity-50" data-testid={`claim-${q.key}`}>
+                  className="flex-none h-8 px-3 rounded-full bg-[#D4F36B] text-[#2B3A06] text-xs font-bold flex items-center gap-1 disabled:opacity-50" data-testid={`claim-${q.key}`}>
                   {claiming === q.key ? '…' : <>Claim <GemIcon size={12} /> {q.reward}</>}
                 </button>
               ) : (
                 <span className={`flex-none flex items-center gap-1 text-xs font-bold ${q.claimed ? 'text-[var(--gm-muted)]' : 'text-[var(--gm-ink)]'}`}>
-                  <GemIcon size={12} className="text-[#95DEE6]" /> {q.reward}
+                  <GemIcon size={12} className="text-[#D4F36B]" /> {q.reward}
                 </span>
               )}
             </li>

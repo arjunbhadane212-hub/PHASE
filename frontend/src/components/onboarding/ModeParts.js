@@ -11,7 +11,7 @@ export function ModeCard({ mode, selected, onClick }) {
     <button
       onClick={onClick}
       className={`text-left rounded-[22px] p-3 transition-colors ${
-        selected ? 'bg-[#95DEE6] shadow-[var(--gm-shadow-hero)]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] hover:bg-[var(--gm-badge)]'
+        selected ? 'bg-[#D4F36B] shadow-[var(--gm-shadow-hero)]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] hover:bg-[var(--gm-badge)]'
       }`}
       aria-pressed={selected}
       data-testid={`onboarding-mode-${mode.id}`}
@@ -21,14 +21,14 @@ export function ModeCard({ mode, selected, onClick }) {
       </div>
       <div className="p-2 pt-4">
         <div className="flex items-center gap-2.5">
-          <Icon className={`w-5 h-5 ${selected ? 'text-[#183A3F]' : 'text-[var(--gm-ink)]'}`} />
-          <h3 className={`font-['Archivo'] font-black text-xl tracking-[-0.01em] ${selected ? 'text-[#183A3F]' : 'text-[var(--gm-ink)]'}`}>{mode.label}</h3>
+          <Icon className={`w-5 h-5 ${selected ? 'text-[#2B3A06]' : 'text-[var(--gm-ink)]'}`} />
+          <h3 className={`font-display font-black text-xl tracking-[-0.01em] ${selected ? 'text-[#2B3A06]' : 'text-[var(--gm-ink)]'}`}>{mode.label}</h3>
         </div>
-        <p className={`text-sm font-bold mt-1 ${selected ? 'text-[#3E6C71]' : 'text-[var(--gm-muted)]'}`}>{mode.tagline}</p>
+        <p className={`text-sm font-bold mt-1 ${selected ? 'text-[#4F6115]' : 'text-[var(--gm-muted)]'}`}>{mode.tagline}</p>
         <ul className="mt-3 space-y-1.5">
           {mode.points.map((p) => (
-            <li key={p} className={`flex items-center gap-2 text-[13px] font-medium ${selected ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${selected ? 'bg-[#183A3F]' : 'bg-[var(--gm-muted)]'}`} />
+            <li key={p} className={`flex items-center gap-2 text-[15px] font-medium ${selected ? 'text-[#2B3A06]' : 'text-[var(--gm-muted)]'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${selected ? 'bg-[#2B3A06]' : 'bg-[var(--gm-muted)]'}`} />
               {p}
             </li>
           ))}
@@ -57,21 +57,21 @@ function GamePreview() {
     <div className="absolute inset-0 p-4 flex flex-col justify-between">
       <div className="flex items-center justify-between">
         <span className={`${eyebrow} text-[#9BA09C]`}>Morning</span>
-        <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#95DEE6] text-[#183A3F] text-xs font-black font-['Archivo'] tabular-nums">
+        <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#D4F36B] text-[#2B3A06] text-xs font-black font-display tabular-nums">
           <Gem className="w-3 h-3" /> {gems}
         </span>
       </div>
       <div className="relative">
         <motion.div
           className="flex items-center gap-3 rounded-[14px] p-3"
-          animate={{ backgroundColor: done ? '#DBF67F' : '#1F2123' }}
+          animate={{ backgroundColor: done ? '#D4F36B' : '#1F2123' }}
           transition={{ duration: 0.25 }}
         >
-          <div className={`w-7 h-7 rounded-[9px] flex items-center justify-center ${done ? 'bg-[#2A3B0B]' : 'border-2 border-[#52525B]'}`}>
+          <div className={`w-7 h-7 rounded-[9px] flex items-center justify-center ${done ? 'bg-[#2B3A06]' : 'border-2 border-[#52525B]'}`}>
             {done && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
           </div>
-          <span className={`flex-1 text-[13px] font-bold ${done ? 'text-[#0F1210]' : 'text-[#F4F5F2]'}`}>Morning run</span>
-          <span className={`font-['JetBrains_Mono'] text-[11px] font-bold ${done ? 'text-[#2A3B0B]' : 'text-[#9BA09C]'}`}>+25 XP</span>
+          <span className={`flex-1 text-[15px] font-bold ${done ? 'text-[#0F1210]' : 'text-[#F4F5F2]'}`}>Morning run</span>
+          <span className={`font-label text-[13px] font-bold ${done ? 'text-[#2B3A06]' : 'text-[#9BA09C]'}`}>+25 XP</span>
         </motion.div>
         <AnimatePresence>
           {done && (
@@ -81,7 +81,7 @@ function GamePreview() {
               animate={{ opacity: 1, y: -30 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
-              className="absolute right-3 top-0 font-['Archivo'] font-black text-[#DBF67F] text-lg"
+              className="absolute right-3 top-0 font-display font-black text-[#D4F36B] text-lg"
             >
               +25 XP
             </motion.span>
@@ -111,17 +111,17 @@ function FocusPreview() {
       <div className="relative w-[110px] h-[110px]">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 110 110">
           <circle cx="55" cy="55" r={r} fill="none" stroke="#1F2123" strokeWidth="7" />
-          <circle cx="55" cy="55" r={r} fill="none" stroke="#95DEE6" strokeWidth="7" strokeLinecap="round"
+          <circle cx="55" cy="55" r={r} fill="none" stroke="#D4F36B" strokeWidth="7" strokeLinecap="round"
             strokeDasharray={c} strokeDashoffset={c * (1 - pct)} />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center font-['Archivo'] font-black text-[#F4F5F2] text-[22px] tabular-nums">
+        <div className="absolute inset-0 flex items-center justify-center font-display font-black text-[#F4F5F2] text-[25px] tabular-nums">
           {mm}:{ss}
         </div>
       </div>
       <div>
         <span className={`${eyebrow} text-[#9BA09C]`}>In session</span>
-        <p className="text-[13px] font-bold text-[#F4F5F2] mt-1">Deep work</p>
-        <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#1F2123] text-[#9BA09C] text-[11px] font-bold">
+        <p className="text-[15px] font-bold text-[#F4F5F2] mt-1">Deep work</p>
+        <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#1F2123] text-[#9BA09C] text-[13px] font-bold">
           <Play className="w-2.5 h-2.5 fill-current" /> 15 min
         </span>
       </div>
@@ -132,21 +132,21 @@ function FocusPreview() {
 export function Splash({ mode, name }) {
   if (mode === 'game') {
     return (
-      <div className="min-h-screen bg-[#DBF67F] flex items-center justify-center overflow-hidden px-6" data-testid="onboarding-splash">
+      <div className="min-h-screen bg-[#D4F36B] flex items-center justify-center overflow-hidden px-6" data-testid="onboarding-splash">
         <div className="text-center">
           <motion.div
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', bounce: 0.45, duration: 0.6 }}
-            className="w-20 h-20 rounded-[22px] bg-[#2A3B0B] flex items-center justify-center mx-auto mb-7"
+            className="w-20 h-20 rounded-[22px] bg-[#2B3A06] flex items-center justify-center mx-auto mb-7"
           >
-            <Gamepad2 className="w-10 h-10 text-[#DBF67F]" />
+            <Gamepad2 className="w-10 h-10 text-[#D4F36B]" />
           </motion.div>
           <motion.h1
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.15 }}
-            className="font-['Archivo'] font-black text-[#2A3B0B] text-[48px] sm:text-[72px] leading-[0.9] tracking-[-0.02em]"
+            className="font-display font-black text-[#2B3A06] text-[48px] sm:text-[72px] leading-[0.9] tracking-[-0.02em]"
           >
             {name ? `Game on, ${name}.` : 'Game on.'}
           </motion.h1>
@@ -154,7 +154,7 @@ export function Splash({ mode, name }) {
             initial={{ y: 16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="font-['JetBrains_Mono'] font-bold uppercase text-xs tracking-[0.08em] text-[#2A3B0B]/70 mt-4"
+            className="font-label font-bold uppercase text-xs tracking-[0.08em] text-[#2B3A06]/70 mt-4"
           >
             Rookie · Level 1 · Day 1
           </motion.p>
@@ -171,7 +171,7 @@ export function Splash({ mode, name }) {
           <svg className="w-full h-full -rotate-90" viewBox="0 0 130 130">
             <circle cx="65" cy="65" r={r} fill="none" stroke="#1F2123" strokeWidth="8" />
             <motion.circle
-              cx="65" cy="65" r={r} fill="none" stroke="#95DEE6" strokeWidth="8" strokeLinecap="round"
+              cx="65" cy="65" r={r} fill="none" stroke="#D4F36B" strokeWidth="8" strokeLinecap="round"
               strokeDasharray={c}
               initial={{ strokeDashoffset: c }}
               animate={{ strokeDashoffset: 0 }}
@@ -184,7 +184,7 @@ export function Splash({ mode, name }) {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="font-['Archivo'] font-black text-[#F4F5F2] text-[40px] sm:text-[56px] leading-[0.92] tracking-[-0.02em]"
+          className="font-display font-black text-[#F4F5F2] text-[40px] sm:text-[56px] leading-[0.92] tracking-[-0.02em]"
         >
           Let's get to work.
         </motion.h1>

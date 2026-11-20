@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from '../icons';
 import { supabase } from '../../lib/supabaseClient';
 import ProfileCard from './ProfileCard';
+import ProfileActions from './ProfileActions';
 
 export function useProfilePopout() {
   const [username, setUsername] = useState(null);
@@ -62,7 +63,7 @@ export default function ProfilePopout({ username, onClose }) {
         <motion.div
           className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-6"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
+          transition={{ duration: 0.4 }}
           onClick={onClose}
           data-testid="profile-popout"
         >
@@ -74,7 +75,7 @@ export default function ProfilePopout({ username, onClose }) {
             initial={{ y: 40, scale: 0.97, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: 24, scale: 0.98, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -86,6 +87,12 @@ export default function ProfilePopout({ username, onClose }) {
             >
               <X className="w-4 h-4" strokeWidth={2.5} />
             </button>
+
+            {!loading && profile && (
+              <div className="absolute top-2.5 right-12 z-30">
+                <ProfileActions username={profile.username} onBlocked={onClose} />
+              </div>
+            )}
 
             {loading && (
               <div className="h-64 flex items-center justify-center">

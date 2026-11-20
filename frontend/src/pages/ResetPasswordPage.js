@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2 } from '../components/icons';
 import AuthShell, { AuthTitle, AuthField, AuthError, PrimaryButton, LoginPanel } from '../components/auth/AuthShell';
+import { friendlyAuthError } from '../lib/authErrors';
 import { supabase } from '../lib/supabaseClient';
 
 // Password reset, step 2. The emailed link signs the user in with a short-lived
@@ -35,8 +36,8 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < 8) { setError('Use at least 8 characters.'); return; }
-    if (password !== confirm) { setError('The two passwords don’t match.'); return; }
+    if (password.length < 8) { setError({ title: 'Password is too short', detail: 'Use at least 8 characters.' }); return; }
+    if (password !== confirm) { setError({ title: 'The passwords don’t match', detail: 'Type the same new password in both boxes.' }); return; }
     setError('');
     setLoading(true);
     try {
@@ -45,7 +46,8 @@ export default function ResetPasswordPage() {
       toast.success('Password updated');
       navigate('/dashboard', { replace: true });
     } catch (e2) {
-      setError(e2?.message || 'Could not update the password.');
+      const f = friendlyAuthError(e2, 'reset');
+      setError({ title: f.title, detail: f.detail });
     } finally {
       setLoading(false);
     }
@@ -64,11 +66,11 @@ export default function ResetPasswordPage() {
         <>
           <AuthTitle title="New password" sub="Pick something you haven't used before." testId="reset-title" />
           <AuthError testId="reset-error">{error}</AuthError>
-          <form onSubmit={handleSubmit} className="space-y-5" data-testid="reset-form">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5" data-testid="reset-form">
             <AuthField id="password" label="New password" type="password" value={password} onChange={setPassword}
-              autoComplete="new-password" autoFocus error={tooShort ? 'At least 8 characters' : ''} testId="reset-password-input" />
+              autoComplete="new-password" autoFocus error={tooShort ? 'At least 8 characters.' : ''} testId="reset-password-input" />
             <AuthField id="confirm" label="Confirm password" type="password" value={confirm} onChange={setConfirm}
-              autoComplete="new-password" error={mismatch ? 'Doesn’t match' : ''} testId="reset-confirm-input" />
+              autoComplete="new-password" error={mismatch ? 'Doesn’t match your new password.' : ''} testId="reset-confirm-input" />
             <PrimaryButton type="submit" disabled={loading} data-testid="reset-submit">
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save password'}
             </PrimaryButton>

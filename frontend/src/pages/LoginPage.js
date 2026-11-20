@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, ArrowRight } from '../components/icons';
-import { toast } from 'sonner';
 import AuthShell, { AuthTitle, AuthField, AuthError, PrimaryButton, LoginPanel } from '../components/auth/AuthShell';
 import GoogleButton from '../components/auth/GoogleButton';
+import { showAuthSplash } from '../components/auth/AuthSplashHost';
+import { friendlyAuthError, checkEmail, checkPassword } from '../lib/authErrors';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -12,25 +13,40 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);       // { title, detail } banner
+  const [fieldErr, setFieldErr] = useState({});    // { email, password } — string or true (highlight only)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
+    // Catch the obvious mistakes here, with a specific message per field.
+    const emailMsg = checkEmail(email);
+    const pwMsg = checkPassword(password);
+    if (emailMsg || pwMsg) {
+      setFieldErr({ email: emailMsg, password: pwMsg });
+      return;
+    }
+    setFieldErr({});
     setLoading(true);
 
     try {
       const user = await login(email, password);
-      toast.success('Welcome back!');
-
+      // UI v3: success screen overlays the app while the destination loads.
+      const to = user?.onboarding_completed ? '/dashboard' : '/onboarding';
+      showAuthSplash({
+        title: "You're in",
+        subtitle: user?.first_name ? `Welcome back, ${user.first_name}.` : 'Welcome back.',
+        note: to === '/onboarding' ? 'Finishing your setup…' : 'Taking you to your habits…',
+      });
       // replace: so you can't Back into the login form once you're in.
-      if (!user.onboarding_completed) {
-        navigate('/onboarding', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
+      navigate(to, { replace: true });
     } catch (e) {
-      setError(e?.message || 'Login failed. Please try again.');
+      const f = friendlyAuthError(e, 'login');
+      setError({ title: f.title, detail: f.detail });
+      setFieldErr({
+        email: f.field === 'email' || f.field === 'both' ? true : '',
+        password: f.field === 'password' || f.field === 'both' ? true : '',
+      });
     } finally {
       setLoading(false);
     }
@@ -46,20 +62,21 @@ export default function LoginPage() {
 
       <div className="flex items-center gap-3 my-6" aria-hidden="true">
         <div className="flex-1 h-px bg-[var(--gm-track)]" />
-        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--gm-muted)] font-['JetBrains_Mono']">or email</span>
+        <span className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--gm-muted)] font-label">or email</span>
         <div className="flex-1 h-px bg-[var(--gm-track)]" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5" data-testid="login-form">
+      <form onSubmit={handleSubmit} noValidate className="space-y-5" data-testid="login-form">
         <AuthField
           id="email"
           label="Email"
           type="email"
           value={email}
-          onChange={setEmail}
+          onChange={(v) => { setEmail(v); setFieldErr((p) => ({ ...p, email: '' })); }}
           placeholder="you@example.com"
           autoComplete="email"
           autoFocus
+          error={fieldErr.email}
           testId="login-email-input"
         />
         <AuthField
@@ -67,9 +84,10 @@ export default function LoginPage() {
           label="Password"
           type="password"
           value={password}
-          onChange={setPassword}
+          onChange={(v) => { setPassword(v); setFieldErr((p) => ({ ...p, password: '' })); }}
           placeholder="Your password"
           autoComplete="current-password"
+          error={fieldErr.password}
           testId="login-password-input"
           aside={
             <Link
@@ -89,7 +107,7 @@ export default function LoginPage() {
 
       <p className="mt-8 text-center text-sm font-medium text-[var(--gm-muted)]">
         New to Phase?{' '}
-        <Link to="/signup" className="font-bold text-[var(--gm-ink)] underline underline-offset-4 decoration-[#95DEE6] decoration-2" data-testid="login-signup-link">
+        <Link to="/signup" className="font-bold text-[var(--gm-ink)] underline underline-offset-4 decoration-[#D4F36B] decoration-2" data-testid="login-signup-link">
           Create an account
         </Link>
       </p>

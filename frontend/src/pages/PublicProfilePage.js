@@ -3,13 +3,15 @@
 // Discord-style popout uses, so the two can never drift apart.
 
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft } from '../components/icons';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import BackButton from '../components/BackButton';
 import { supabase } from '../lib/supabaseClient';
 import ProfileCard from '../components/profile/ProfileCard';
+import ProfileActions from '../components/profile/ProfileActions';
 
 export default function PublicProfilePage() {
   const { username } = useParams();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,9 +51,10 @@ export default function PublicProfilePage() {
   return (
     <div className="min-h-screen bg-[var(--gm-bg)]" data-testid="public-profile-page">
       <div className="absolute top-4 left-4 z-20">
-        <Link to="/" className="flex items-center gap-1.5 text-sm font-bold text-[var(--gm-ink)] bg-[var(--gm-card)] px-3 py-1.5 rounded-full" data-testid="profile-back-link">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Link>
+        <BackButton to="/" testId="profile-back-link" />
+      </div>
+      <div className="absolute top-4 right-4 z-20">
+        <ProfileActions username={profile.username} onBlocked={() => navigate('/', { replace: true })} />
       </div>
       <div className="max-w-2xl mx-auto">
         <ProfileCard profile={profile} variant="page" />

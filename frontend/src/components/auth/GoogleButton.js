@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Loader2 } from '../icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
+import { friendlyAuthError } from '../../lib/authErrors';
 
 // Full Google "G" mark (official colours). Lives inside a dark-ink pill so it
 // contrasts the cyan primary button without competing with it visually.
@@ -30,7 +31,8 @@ export default function GoogleButton({ label, testId }) {
       // The browser is being redirected; keep the spinner.
     } catch (e) {
       setLoading(false);
-      toast.error(e?.message || 'Could not reach Google. Try again.');
+      const f = friendlyAuthError(e, 'login');
+      toast.error(f.title, { description: f.detail });
     }
   };
 
@@ -39,7 +41,7 @@ export default function GoogleButton({ label, testId }) {
       type="button"
       onClick={handle}
       disabled={loading}
-      className="w-full h-[52px] rounded-full bg-[var(--gm-card)] text-[var(--gm-ink)] text-[15px] font-bold border-2 border-transparent hover:border-[var(--gm-track)] active:scale-[0.99] transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+      className="w-full h-[52px] rounded-full bg-[var(--gm-card)] text-[var(--gm-ink)] text-[17px] font-bold border-2 border-transparent hover:border-[var(--gm-track)] active:scale-[0.99] transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
       data-testid={testId}
     >
       {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (

@@ -20,9 +20,9 @@ const CHART_TYPES = [
 // in light AND dark). Each metric's tile color == its chart-series color.
 //   Gems = cyan · XP = purple · Tasks = lime
 const METRIC = {
-  gems:  { surface: '#95DEE6', ink: '#183A3F' }, // cyan  (Home streak-hero cyan)
-  xp:    { surface: '#A59BCC', ink: '#241A40' }, // purple (v2 accent)
-  tasks: { surface: '#DBF67F', ink: '#2A3B0B' }, // lime  (Home success/completed)
+  gems:  { surface: '#9DD3F7', ink: '#0B2E45' }, // cyan  (Home streak-hero cyan)
+  xp:    { surface: '#FFD25E', ink: '#4A3500' }, // purple (v2 accent)
+  tasks: { surface: '#D4F36B', ink: '#2B3A06' }, // lime  (Home success/completed)
 };
 
 
@@ -180,19 +180,18 @@ export default function ProgressPage() {
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 pb-24 md:pb-8" data-testid="progress-page">
-      <div className="max-w-4xl mx-auto animate-slide-up">
-        <h1 className="text-xl sm:text-2xl font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em] mb-5">Progress</h1>
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-xl sm:text-2xl font-display font-extrabold text-[color:var(--gm-ink)] tracking-[-0.01em] mb-5">Progress</h1>
 
         {/* Time Range Toggle — active pill is solid cyan (Home hero accent) */}
         <div className="inline-flex items-center gap-2 mb-6" data-testid="range-toggle">
           {['daily', 'weekly', 'monthly'].map(r => (
             <button key={r} onClick={() => setRange(r)}
-              className={`px-4 py-2 rounded-full font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] transition-colors ${
-                range === r
-                  ? 'bg-[#95DEE6] text-[#183A3F]'
-                  : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
+              className={`relative px-4 py-2 rounded-full font-label text-[15px] capitalize transition-colors duration-500 ${
+                range === r ? 'text-[#2B3A06]' : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
               }`} data-testid={`range-${r}`}>
-              {r}
+              {range === r && <motion.span layoutId="progress-range-pill" className="absolute inset-0 rounded-full bg-[#D4F36B]" transition={SPRING} />}
+              <span className="relative">{r}</span>
             </button>
           ))}
         </div>
@@ -202,23 +201,23 @@ export default function ProgressPage() {
         ) : (
           <>
             {/* Stat Cards — solid metric-identity surfaces (cyan / purple / lime) */}
-            <p className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mb-3" data-testid="period-label">{data?.periodLabel}</p>
-            <div className={`grid ${showXp ? 'grid-cols-3' : 'grid-cols-2'} gap-3 sm:gap-4 mb-6`} data-testid="stat-cards">
-              <StatCard icon={<Gem className="w-5 h-5" />} value={gemsEarned} label="Gems Earned" tone={METRIC.gems} />
-              {showXp && <StatCard icon={<Zap className="w-5 h-5" />} value={xpEarned} label="XP Earned" tone={METRIC.xp} />}
-              <StatCard icon={<CheckSquare className="w-5 h-5" />} value={tasksDone} label="Tasks Done" tone={METRIC.tasks} />
-            </div>
+            <p className="font-label text-[12px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mb-3" data-testid="period-label">{data?.periodLabel}</p>
+            <motion.div key={range} variants={staggerParent(0.08, 0)} initial="hidden" animate="show"
+              className={`grid ${showXp ? 'grid-cols-3' : 'grid-cols-2'} gap-3 sm:gap-4 mb-6`} data-testid="stat-cards">
+              <motion.div variants={fadeUp}><StatCard icon={<Gem className="w-5 h-5" />} value={gemsEarned} label="Gems Earned" tone={METRIC.gems} /></motion.div>
+              {showXp && <motion.div variants={fadeUp}><StatCard icon={<Zap className="w-5 h-5" />} value={xpEarned} label="XP Earned" tone={METRIC.xp} /></motion.div>}
+              <motion.div variants={fadeUp}><StatCard icon={<CheckSquare className="w-5 h-5" />} value={tasksDone} label="Tasks Done" tone={METRIC.tasks} /></motion.div>
+            </motion.div>
 
             {/* Chart Type Toolbar — active pill is solid lime (success accent) */}
             <div className="flex items-center gap-1 mb-4" data-testid="chart-toolbar">
               {CHART_TYPES.map(({ id, icon: Icon, label }) => (
                 <button key={id} onClick={() => setChartType(id)} title={label}
-                  className={`p-2 rounded-lg transition-colors ${
-                    chartType === id
-                      ? 'bg-[#DBF67F] text-[#2A3B0B]'
-                      : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
+                  className={`relative p-2.5 rounded-full transition-colors duration-500 ${
+                    chartType === id ? 'text-[#2B3A06]' : 'text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)]'
                   }`} data-testid={`chart-${id}`}>
-                  <Icon className="w-4 h-4" />
+                  {chartType === id && <motion.span layoutId="progress-chart-pill" className="absolute inset-0 rounded-full bg-[#D4F36B]" transition={SPRING} />}
+                  <Icon className="relative w-5 h-5" />
                 </button>
               ))}
             </div>
@@ -227,8 +226,8 @@ export default function ProgressPage() {
             <div className="rounded-2xl bg-[color:var(--gm-card)] p-4 sm:p-6" data-testid="progress-chart">
               <AnimatePresence mode="wait">
                 <motion.div key={chartType}
-                  initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.25, ease: 'easeInOut' }}>
+                  initial={{ opacity: 0, scale: 0.94, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: -8 }} transition={{ duration: 0.5, ease: EASE }}>
                   <ChartRenderer type={chartType} data={chartData} showXp={showXp} />
                 </motion.div>
               </AnimatePresence>
@@ -249,8 +248,8 @@ function StatCard({ icon, value, label, tone }) {
   return (
     <div className="rounded-2xl p-4 sm:p-5 text-center" style={{ backgroundColor: tone.surface }} data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
       <div className="flex justify-center mb-2" style={{ color: tone.ink }}>{icon}</div>
-      <p className="text-3xl sm:text-4xl font-['Archivo'] font-black leading-none tracking-[-0.02em] tabular-nums" style={{ color: tone.ink }}>{value}</p>
-      <p className="mt-2 font-['JetBrains_Mono'] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.08em]" style={{ color: tone.ink, opacity: 0.72 }}>{label}</p>
+      <p className="text-3xl sm:text-4xl font-display font-black leading-none tracking-[-0.02em] tabular-nums" style={{ color: tone.ink }}>{value}</p>
+      <p className="mt-2 font-label text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: tone.ink, opacity: 0.72 }}>{label}</p>
     </div>
   );
 }
@@ -260,7 +259,7 @@ function xAxisProps(c) {
   return {
     dataKey: 'name',
     stroke: c.muted,
-    tick: { fill: c.muted, fontSize: 11, fontFamily: 'JetBrains Mono' },
+    tick: { fill: c.muted, fontSize: 11, fontFamily: 'Figtree, sans-serif' },
     tickLine: false,
     axisLine: false,
     interval: 0,
@@ -270,7 +269,7 @@ function xAxisProps(c) {
 function yAxisProps(c) {
   return {
     stroke: c.muted,
-    tick: { fill: c.muted, fontSize: 11, fontFamily: 'JetBrains Mono' },
+    tick: { fill: c.muted, fontSize: 11, fontFamily: 'Figtree, sans-serif' },
     tickLine: false,
     axisLine: false,
     allowDecimals: false,
@@ -280,7 +279,7 @@ function yAxisProps(c) {
 function tooltipProps(c) {
   return {
     contentStyle: { background: c.card, border: 'none', borderRadius: 12, color: c.ink, boxShadow: 'none' },
-    labelStyle: { color: c.muted, fontFamily: 'JetBrains Mono', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' },
+    labelStyle: { color: c.muted, fontFamily: 'Figtree, sans-serif', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' },
     itemStyle: { color: c.ink },
     cursor: { fill: c.track, opacity: 0.4 },
   };

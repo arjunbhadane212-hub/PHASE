@@ -133,8 +133,9 @@ export function globalBadge(rank, total) {
   const elite = pct <= 1, strong = pct <= 5, notable = pct <= 10;
   return {
     rank: r, total: t, pct,
-    a: elite ? '#FBBF24' : strong ? '#60A5FA' : '#4D8EF0',
-    b: elite ? '#FFFFFF' : strong ? '#BFDBFE' : '#93C5FD',
+    // UI v3 palette: top 1% sun, top 5% sky, else ink with a sky partner.
+    a: elite ? '#FFD25E' : strong ? '#9DD3F7' : '#141416',
+    b: elite ? '#FFFFFF' : strong ? '#D6ECFB' : '#9DD3F7',
     glow: elite ? 1 : strong ? 0.6 : notable ? 0.4 : 0.22,
     sheen: strong,
     halo: elite,

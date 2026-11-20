@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from '../components/icons';
+import BackButton from '../components/BackButton';
 import { APP_NAME, SUPPORT_EMAIL, OPERATOR_NAME, OPERATOR_COUNTRY, LEGAL_LAST_UPDATED } from '../config/legal';
 
-const H2 = "text-lg font-['Archivo'] font-extrabold text-[color:var(--gm-ink)] mt-8 mb-2";
+const H2 = "text-lg font-display font-extrabold text-[color:var(--gm-ink)] mt-8 mb-2";
 const P = 'text-sm leading-relaxed text-[color:var(--gm-muted)] mb-3';
 const LI = 'text-sm leading-relaxed text-[color:var(--gm-muted)] mb-1.5';
 
@@ -18,14 +18,9 @@ function Shell({ title, children, testId }) {
   return (
     <div className="min-h-screen bg-[color:var(--gm-bg)] p-5 sm:p-8" data-testid={testId}>
       <div className="max-w-2xl mx-auto">
-        <button
-          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
-          className="flex items-center gap-2 text-sm text-[color:var(--gm-muted)] hover:text-[color:var(--gm-ink)] mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
-        <h1 className="text-2xl sm:text-3xl font-['Archivo'] font-black text-[color:var(--gm-ink)] tracking-[-0.01em]">{title}</h1>
-        <p className="font-['JetBrains_Mono'] text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-2 mb-6">
+        <div className="mb-6"><BackButton variant="ghost" className="-ml-2" /></div>
+        <h1 className="text-2xl sm:text-3xl font-display font-black text-[color:var(--gm-ink)] tracking-[-0.01em]">{title}</h1>
+        <p className="font-label text-[13px] font-bold uppercase tracking-[0.08em] text-[color:var(--gm-muted)] mt-2 mb-6">
           Last updated {LEGAL_LAST_UPDATED}
         </p>
         {children}

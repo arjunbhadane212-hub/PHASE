@@ -37,13 +37,13 @@ export function TitleUnlockCard({ title }) {
     >
       <TitlePlate titleKey={title.key} name={title.name} tier={tier} size="md" />
       <div className="min-w-0">
-        <p className="font-['JetBrains_Mono'] text-[10px] font-bold uppercase tracking-[0.12em] text-[color:var(--gm-ink)]">
+        <p className="font-label text-[12px] font-bold uppercase tracking-[0.12em] text-[color:var(--gm-ink)]">
           Title earned
         </p>
-        {line && <p className="text-[11px] text-[color:var(--gm-muted)] truncate">{line}</p>}
+        {line && <p className="text-[13px] text-[color:var(--gm-muted)] truncate">{line}</p>}
         {/* The key UX line: the user is told exactly where it went and that it's
             theirs to equip — so it's a reward they understand, not a mystery. */}
-        <p className="text-[11px] font-semibold text-[#95DEE6] truncate">Equip it in your Profile</p>
+        <p className="text-[13px] font-semibold text-[#D4F36B] truncate">Equip it in your Profile</p>
       </div>
     </div>
   );

@@ -49,8 +49,8 @@ export default function AdminPage() {
     <div className="min-h-screen bg-[#06080F] flex items-center justify-center p-4">
       <form onSubmit={handleAuth} className="w-full max-w-sm p-6 rounded-2xl bg-[#0C1220] border border-[#1A2438]" data-testid="admin-login">
         <div className="flex items-center gap-2 mb-6">
-          <Lock className="w-5 h-5 text-[#4D8EF0]" />
-          <h1 className="text-lg font-bold text-white font-['Satoshi']">Admin Dashboard</h1>
+          <Lock className="w-5 h-5 text-[#141416]" />
+          <h1 className="text-lg font-bold text-white font-display">Admin Dashboard</h1>
         </div>
         <Input
           type="password"
@@ -60,7 +60,7 @@ export default function AdminPage() {
           className="mb-4 bg-[#101828] border-[#1A2438] text-white"
           data-testid="admin-secret-input"
         />
-        <Button type="submit" disabled={loading} className="w-full bg-[#1B6AE4] hover:bg-[#1B6AE4]/90 text-white" data-testid="admin-login-btn">
+        <Button type="submit" disabled={loading} className="w-full bg-[#141416] hover:bg-[#141416]/90 text-white" data-testid="admin-login-btn">
           {loading ? 'Verifying...' : 'Access Dashboard'}
         </Button>
       </form>
@@ -84,13 +84,13 @@ function AdminDashboard({ secret }) {
       <div className="border-b border-[#1A2438] px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link to="/dashboard" className="text-zinc-500 hover:text-zinc-300 text-sm flex items-center gap-1"><ArrowLeft className="w-3.5 h-3.5" /> Back</Link>
-          <h1 className="text-base sm:text-lg font-bold font-['Satoshi']">Admin Dashboard</h1>
+          <h1 className="text-base sm:text-lg font-bold font-display">Admin Dashboard</h1>
         </div>
         <div className="flex gap-1">
           {TABS.map(({ id, icon: Icon, label }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-                tab === id ? 'bg-[#1B6AE4]/15 text-[#4D8EF0]' : 'text-zinc-500 hover:text-zinc-300'
+                tab === id ? 'bg-[#141416]/15 text-[#141416]' : 'text-zinc-500 hover:text-zinc-300'
               }`} data-testid={`admin-tab-${id}`}>
               <Icon className="w-3.5 h-3.5" /> {label}
             </button>
@@ -124,7 +124,7 @@ function OverviewTab({ secret }) {
     <div data-testid="admin-overview">
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <StatCard icon={<Users className="w-5 h-5 text-[#4D8EF0]" />} value={stats.total_users} label="Total Users" />
+        <StatCard icon={<Users className="w-5 h-5 text-[#141416]" />} value={stats.total_users} label="Total Users" />
         <StatCard icon={<Zap className="w-5 h-5 text-amber-400" />} value={stats.active_today} label="Active Today" />
         <StatCard icon={<BarChart3 className="w-5 h-5 text-emerald-400" />} value={stats.total_habits} label="Total Habits" />
         <StatCard icon={<Ban className="w-5 h-5 text-red-400" />} value={stats.banned_users} label="Banned" />
@@ -204,7 +204,7 @@ function UsersTab({ secret }) {
             data-testid="admin-search"
           />
         </div>
-        <Button type="submit" className="bg-[#1B6AE4] hover:bg-[#1B6AE4]/90 text-white text-sm">Search</Button>
+        <Button type="submit" className="bg-[#141416] hover:bg-[#141416]/90 text-white text-sm">Search</Button>
       </form>
 
       {loading ? <Loader /> : (
@@ -242,18 +242,18 @@ function UserRow({ user, busy, onEdit, onQuickGrant, onToggleBan }) {
 
   return (
     <div className={`p-3 rounded-xl bg-[#0C1220] border flex flex-wrap items-center gap-3 ${banned ? 'border-red-900/60' : 'border-[#1A2438]'}`} data-testid={`user-row-${user.email}`}>
-      <div className="w-9 h-9 rounded-full bg-[#101828] flex items-center justify-center text-xs font-bold text-[#4D8EF0] flex-shrink-0">
+      <div className="w-9 h-9 rounded-full bg-[#101828] flex items-center justify-center text-xs font-bold text-[#141416] flex-shrink-0">
         {user.first_name?.[0]}{user.last_name?.[0]}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-white truncate flex items-center gap-2">
           {user.first_name} {user.last_name}
-          {banned && <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-red-500/15 text-red-400">BANNED</span>}
+          {banned && <span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-red-500/15 text-red-400">BANNED</span>}
         </p>
-        <p className="text-[10px] text-zinc-500 truncate">{user.email} &middot; @{user.username}</p>
+        <p className="text-[12px] text-zinc-500 truncate">{user.email} &middot; @{user.username}</p>
       </div>
       <div className="hidden sm:flex items-center gap-3 text-xs text-zinc-400">
-        <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-[#4D8EF0]" /> Rank {user.rank}</span>
+        <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-[#141416]" /> Rank {user.rank}</span>
         <span className="flex items-center gap-1"><Gem className="w-3 h-3 text-purple-400" /> {user.gems ?? 0}</span>
         <span className="flex items-center gap-1"><Flame className="w-3 h-3 text-orange-400" /> {user.current_streak ?? 0}d</span>
       </div>
@@ -278,7 +278,7 @@ function UserRow({ user, busy, onEdit, onQuickGrant, onToggleBan }) {
       </div>
 
       <div className="flex gap-1.5">
-        <button onClick={onEdit} className="p-1.5 rounded-lg text-zinc-500 hover:text-[#4D8EF0] hover:bg-[#101828] transition-all" data-testid={`edit-${user.email}`}>
+        <button onClick={onEdit} className="p-1.5 rounded-lg text-zinc-500 hover:text-[#141416] hover:bg-[#101828] transition-all" data-testid={`edit-${user.email}`}>
           <Edit2 className="w-3.5 h-3.5" />
         </button>
         <button
@@ -339,7 +339,7 @@ function EditUserModal({ user, secret, onClose, onSaved }) {
             { key: 'total_habits_completed', label: 'Habits Completed', icon: '📊' },
           ].map(({ key, label, icon }) => (
             <div key={key}>
-              <label className="text-[10px] text-zinc-500 mb-1 block">{icon} {label}</label>
+              <label className="text-[12px] text-zinc-500 mb-1 block">{icon} {label}</label>
               <Input
                 type="number"
                 value={form[key]}
@@ -355,14 +355,14 @@ function EditUserModal({ user, secret, onClose, onSaved }) {
           <label className="text-xs text-zinc-400">Pro subscriber</label>
           <button
             onClick={() => setForm(prev => ({ ...prev, is_pro: !prev.is_pro }))}
-            className={`w-10 h-6 rounded-full transition-all relative ${form.is_pro ? 'bg-[#1B6AE4]' : 'bg-[#1A2438]'}`}
+            className={`w-10 h-6 rounded-full transition-all relative ${form.is_pro ? 'bg-[#141416]' : 'bg-[#1A2438]'}`}
           >
             <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${form.is_pro ? 'left-[18px]' : 'left-0.5'}`} />
           </button>
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={saving} className="flex-1 bg-[#1B6AE4] hover:bg-[#1B6AE4]/90 text-white text-sm">
+          <Button onClick={handleSave} disabled={saving} className="flex-1 bg-[#141416] hover:bg-[#141416]/90 text-white text-sm">
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
           <Button onClick={onClose} variant="outline" className="border-[#1A2438] text-zinc-400 text-sm">Cancel</Button>
@@ -377,7 +377,7 @@ function StatCard({ icon, value, label }) {
     <div className="p-4 rounded-xl bg-[#0C1220] border border-[#1A2438] text-center">
       <div className="flex justify-center mb-2">{icon}</div>
       <p className="text-xl sm:text-2xl font-bold text-white">{value?.toLocaleString?.() ?? value}</p>
-      <p className="text-[10px] text-zinc-500 mt-1">{label}</p>
+      <p className="text-[12px] text-zinc-500 mt-1">{label}</p>
     </div>
   );
 }
@@ -402,5 +402,5 @@ function Leaderboard({ title, data, valueKey, icon }) {
 }
 
 function Loader() {
-  return <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[#1B6AE4] border-t-transparent rounded-full animate-spin" /></div>;
+  return <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-2 border-[#141416] border-t-transparent rounded-full animate-spin" /></div>;
 }

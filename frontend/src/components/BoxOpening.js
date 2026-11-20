@@ -23,8 +23,8 @@ import { useShake, usePrefersCalm } from './boxopen/fx';
 
 const STAGE_BG = '#0E1012';
 const CRACKS_NEEDED = 3;
-const FONT_DISPLAY = "'Archivo', sans-serif";
-const FONT_MONO = "'JetBrains Mono', monospace";
+const FONT_DISPLAY = "'Bricolage Grotesque', sans-serif";
+const FONT_MONO = "'Bricolage Grotesque', sans-serif";
 const haptic = (p) => { try { navigator.vibrate?.(p); } catch { /* unsupported */ } };
 
 // =============================================================================
@@ -207,7 +207,7 @@ export default function BoxOpening({ boxId, rolledItems, onContinue }) {
               initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + summaryItems.length * 0.09, duration: 0.3 }}
               onClick={onContinue}
               className="active:scale-[0.97] transition-transform"
-              style={{ marginTop: 26, padding: '14px 44px', borderRadius: 16, background: '#95DEE6', color: '#183A3F', fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: '0.08em' }}
+              style={{ marginTop: 26, padding: '14px 44px', borderRadius: 16, background: '#D4F36B', color: '#2B3A06', fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: '0.08em' }}
               data-testid="opening-continue-btn"
             >
               Continue

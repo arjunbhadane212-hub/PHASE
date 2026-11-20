@@ -25,7 +25,7 @@ const PAY_STEP = HABIT_STEP + 1;         // 6
 const PrimaryBtn = ({ children, className = '', ...p }) => (
   <button
     {...p}
-    className={`w-full h-[54px] rounded-full bg-[#95DEE6] text-[#183A3F] text-[15px] font-bold shadow-[var(--gm-shadow-cyan)] hover:opacity-90 active:scale-[0.99] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+    className={`w-full h-[54px] rounded-full bg-[#D4F36B] text-[#2B3A06] text-[17px] font-bold shadow-[var(--gm-shadow-cyan)] hover:opacity-90 active:scale-[0.99] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
   >
     {children}
   </button>
@@ -174,7 +174,7 @@ export default function OnboardingPage() {
               {Array.from({ length: total }).map((_, i) => (
                 <div key={i} className="flex-1 h-1.5 rounded-full bg-[var(--gm-track)] overflow-hidden">
                   <motion.div
-                    className="h-full bg-[#95DEE6]"
+                    className="h-full bg-[#D4F36B]"
                     initial={false}
                     animate={{ width: i <= currentStep ? '100%' : '0%' }}
                     transition={{ duration: 0.35 }}
@@ -193,10 +193,10 @@ export default function OnboardingPage() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25 }}
+                initial={{ opacity: 0, x: 60, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -50, scale: 0.98 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
                 {currentStep === -1 && <Intro name={user?.first_name} onStart={() => go(0)} />}
 
@@ -204,12 +204,12 @@ export default function OnboardingPage() {
                   <>
                     <span className={`${eyebrow} text-[var(--gm-muted)]`}>Question {currentStep + 1} of {QUESTIONS.length}</span>
                     <h2
-                      className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[30px] sm:text-[38px] leading-[0.98] tracking-[-0.02em] mt-3"
+                      className="font-display font-black text-[var(--gm-ink)] text-[30px] sm:text-[38px] leading-[0.98] tracking-[-0.02em] mt-3"
                       data-testid="onboarding-question"
                     >
                       {question.prompt}
                     </h2>
-                    <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3 mb-7">{question.sub}</p>
+                    <p className="text-[17px] font-medium text-[var(--gm-muted)] mt-3 mb-7">{question.sub}</p>
                     <div className="space-y-2.5">
                       {question.options.map((option) => (
                         <OptionRow
@@ -227,12 +227,12 @@ export default function OnboardingPage() {
                   <>
                     <span className={`${eyebrow} text-[var(--gm-muted)]`}>How you play</span>
                     <h2
-                      className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[30px] sm:text-[38px] leading-[0.98] tracking-[-0.02em] mt-3 mb-2"
+                      className="font-display font-black text-[var(--gm-ink)] text-[30px] sm:text-[38px] leading-[0.98] tracking-[-0.02em] mt-3 mb-2"
                       data-testid="onboarding-question"
                     >
                       Pick your style.
                     </h2>
-                    <p className="text-[15px] font-medium text-[var(--gm-muted)] mb-7">Same habits and streak either way. Switch any time in Settings.</p>
+                    <p className="text-[17px] font-medium text-[var(--gm-muted)] mb-7">Same habits and streak either way. Switch any time in Settings.</p>
                     <div className="grid sm:grid-cols-2 gap-3">
                       {MODES.map((m) => (
                         <ModeCard key={m.id} mode={m} selected={selectedMode === m.id} onClick={() => setSelectedMode(m.id)} />
@@ -249,12 +249,12 @@ export default function OnboardingPage() {
                   <>
                     <span className={`${eyebrow} text-[var(--gm-muted)]`}>Your first habits</span>
                     <h2
-                      className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[30px] sm:text-[38px] leading-[0.98] tracking-[-0.02em] mt-3"
+                      className="font-display font-black text-[var(--gm-ink)] text-[30px] sm:text-[38px] leading-[0.98] tracking-[-0.02em] mt-3"
                       data-testid="onboarding-question"
                     >
                       Start with these.
                     </h2>
-                    <p className="text-[15px] font-medium text-[var(--gm-muted)] mt-3 mb-6">
+                    <p className="text-[17px] font-medium text-[var(--gm-muted)] mt-3 mb-6">
                       Picked for "{optionFor('main_goal', goalKey)?.label?.toLowerCase()}". Tap to swap. Three is plenty to start.
                     </p>
                     <div className="space-y-2">
@@ -308,7 +308,7 @@ function Intro({ name, onStart }) {
   return (
     <div>
       <span className={`${eyebrow} text-[var(--gm-muted)]`}>Welcome to Phase</span>
-      <h1 className="font-['Archivo'] font-black text-[var(--gm-ink)] text-[44px] sm:text-[60px] leading-[0.9] tracking-[-0.02em] mt-3">
+      <h1 className="font-display font-black text-[var(--gm-ink)] text-[44px] sm:text-[60px] leading-[0.9] tracking-[-0.02em] mt-3">
         {name ? <>Hey {name}.<br /></> : null}Let's build your plan.
       </h1>
       <p className="text-base sm:text-lg font-medium text-[var(--gm-muted)] mt-5 max-w-md">
@@ -321,17 +321,17 @@ function Intro({ name, onStart }) {
           ['3', 'A plan you can keep', 'Free to start. No card needed.'],
         ].map(([n, t, s]) => (
           <div key={n} className="flex items-center gap-4 rounded-2xl bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] p-4">
-            <span className="w-9 h-9 rounded-full bg-[#95DEE6] text-[#183A3F] font-['Archivo'] font-black text-sm flex items-center justify-center flex-shrink-0">{n}</span>
+            <span className="w-9 h-9 rounded-full bg-[#D4F36B] text-[#2B3A06] font-display font-black text-sm flex items-center justify-center flex-shrink-0">{n}</span>
             <div>
-              <div className="text-[15px] font-bold text-[var(--gm-ink)]">{t}</div>
-              <div className="text-[13px] font-medium text-[var(--gm-muted)]">{s}</div>
+              <div className="text-[17px] font-bold text-[var(--gm-ink)]">{t}</div>
+              <div className="text-[15px] font-medium text-[var(--gm-muted)]">{s}</div>
             </div>
           </div>
         ))}
       </div>
       <button
         onClick={onStart}
-        className="mt-8 h-[54px] px-8 rounded-full bg-[#95DEE6] text-[#183A3F] text-[15px] font-bold shadow-[var(--gm-shadow-cyan)] hover:opacity-90 transition flex items-center gap-2"
+        className="mt-8 h-[54px] px-8 rounded-full bg-[#D4F36B] text-[#2B3A06] text-[17px] font-bold shadow-[var(--gm-shadow-cyan)] hover:opacity-90 transition flex items-center gap-2"
         data-testid="onboarding-intro-start"
       >
         Let's go <ArrowRight className="w-4 h-4" />
@@ -347,22 +347,22 @@ function OptionRow({ option, selected, onClick }) {
       whileTap={{ scale: 0.985 }}
       onClick={onClick}
       className={`w-full flex items-center gap-4 p-3.5 rounded-2xl text-left transition-colors ${
-        selected ? 'bg-[#95DEE6] shadow-[var(--gm-shadow-hero)]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] hover:bg-[var(--gm-badge)]'
+        selected ? 'bg-[#D4F36B] shadow-[var(--gm-shadow-hero)]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] hover:bg-[var(--gm-badge)]'
       }`}
       data-testid={`onboarding-option-${option.id}`}
     >
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#183A3F] text-[#95DEE6]' : 'bg-[var(--gm-badge)] text-[var(--gm-muted)]'}`}>
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#2B3A06] text-[#D4F36B]' : 'bg-[var(--gm-badge)] text-[var(--gm-muted)]'}`}>
         <Icon className="w-5 h-5" strokeWidth={2} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-[15px] font-bold ${selected ? 'text-[#183A3F]' : 'text-[var(--gm-ink)]'}`}>{option.label}</p>
+        <p className={`text-[17px] font-bold ${selected ? 'text-[#2B3A06]' : 'text-[var(--gm-ink)]'}`}>{option.label}</p>
         {/* Once chosen, a row that has a "fix" tells them what Phase does about it. */}
-        <p className={`text-[13px] font-medium ${selected ? 'text-[#3E6C71]' : 'text-[var(--gm-muted)]'}`}>
+        <p className={`text-[15px] font-medium ${selected ? 'text-[#4F6115]' : 'text-[var(--gm-muted)]'}`}>
           {selected && option.fix ? <><span className="font-bold">Phase's answer:</span> {option.fix}</> : option.desc}
         </p>
       </div>
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#183A3F]' : 'border-2 border-[var(--gm-checkbox)]'}`}>
-        {selected && <Check className="w-3.5 h-3.5 text-[#95DEE6]" strokeWidth={3} />}
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#2B3A06]' : 'border-2 border-[var(--gm-checkbox)]'}`}>
+        {selected && <Check className="w-3.5 h-3.5 text-[#D4F36B]" strokeWidth={3} />}
       </div>
     </motion.button>
   );
@@ -375,19 +375,19 @@ function HabitPick({ habit, mode, selected, onClick }) {
       whileTap={{ scale: 0.985 }}
       onClick={onClick}
       className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl text-left transition-colors ${
-        selected ? 'bg-[#95DEE6] shadow-[var(--gm-shadow-hero)]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] hover:bg-[var(--gm-badge)]'
+        selected ? 'bg-[#D4F36B] shadow-[var(--gm-shadow-hero)]' : 'bg-[var(--gm-card)] shadow-[var(--gm-shadow-card)] hover:bg-[var(--gm-badge)]'
       }`}
       aria-pressed={selected}
       data-testid={`onboarding-habit-${habit.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
     >
-      <span className={`w-7 h-7 rounded-[9px] flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#183A3F]' : 'border-2 border-[var(--gm-checkbox)]'}`}>
-        {selected && <Check className="w-4 h-4 text-[#95DEE6]" strokeWidth={3} />}
+      <span className={`w-7 h-7 rounded-[9px] flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#2B3A06]' : 'border-2 border-[var(--gm-checkbox)]'}`}>
+        {selected && <Check className="w-4 h-4 text-[#D4F36B]" strokeWidth={3} />}
       </span>
       <div className="flex-1 min-w-0">
-        <p className={`text-[15px] font-bold truncate ${selected ? 'text-[#183A3F]' : 'text-[var(--gm-ink)]'}`}>{habit.name}</p>
-        <p className={`${eyebrow} text-[10px] mt-0.5 ${selected ? 'text-[#3E6C71]' : 'text-[var(--gm-muted)]'}`}>{SLOT_LABEL[habit.slot]}</p>
+        <p className={`text-[17px] font-bold truncate ${selected ? 'text-[#2B3A06]' : 'text-[var(--gm-ink)]'}`}>{habit.name}</p>
+        <p className={`${eyebrow} text-[12px] mt-0.5 ${selected ? 'text-[#4F6115]' : 'text-[var(--gm-muted)]'}`}>{SLOT_LABEL[habit.slot]}</p>
       </div>
-      <span className={`font-['JetBrains_Mono'] text-[11px] font-bold flex-shrink-0 ${selected ? 'text-[#183A3F]' : 'text-[var(--gm-muted)]'}`}>{meta}</span>
+      <span className={`font-label text-[13px] font-bold flex-shrink-0 ${selected ? 'text-[#2B3A06]' : 'text-[var(--gm-muted)]'}`}>{meta}</span>
     </motion.button>
   );
 }

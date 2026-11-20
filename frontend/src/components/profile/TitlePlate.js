@@ -45,7 +45,7 @@ export default function TitlePlate({ titleKey, name, tier = 'common', size = 'md
     display: 'inline-flex', alignItems: 'center', overflow: 'hidden',
     height: h, borderRadius: px(BASE.radius),
     background: tier === 'common' ? alpha('#ffffff', 0.04) : 'var(--gm-card)',
-    fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: px(BASE.font),
+    fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: px(BASE.font),
     letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1,
     whiteSpace: 'nowrap', verticalAlign: 'middle', maxWidth: '100%',
   };
@@ -75,7 +75,7 @@ export default function TitlePlate({ titleKey, name, tier = 'common', size = 'md
   );
   const tierTag = showTier ? (
     <span style={{
-      fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, fontSize: px(8.5),
+      fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 600, fontSize: px(8.5),
       letterSpacing: '0.12em', color: 'var(--gm-muted)', paddingRight: px(10), flex: 'none',
     }}>{tier}</span>
   ) : null;

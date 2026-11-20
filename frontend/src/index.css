@@ -1,109 +1,137 @@
-/* Archivo (v2 display) + JetBrains Mono from Google Fonts (reliable). */
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
-/* General Sans is NOT on Google Fonts (verified 400), so it stays on Fontshare.
-   Satoshi is kept here too: it is still used by ~15 un-migrated v1 screens, and
-   dropping it would send all of them to a serif fallback. It will be retired
-   per-screen as each is migrated to Typography v2. Inter dropped (v1 only). */
-@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap');
+/* ============================================================
+   PHASE UI v3 — "Market" palette (Nov 2026)
+   Paper + Ink structure, Lime as the brand/done color, and four
+   pastel "category" colors (sun, coral, sky, pink) used as solid
+   blocks everywhere so the app reads colorful (refs 1-3).
+   No purple. Type: Bricolage Grotesque (display) + Figtree (UI).
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #06080F;
-  --surface: #0F1525;
-  --elevated: #141C32;
-  --text-primary: #F7F7F7;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
-  --primary: #8B5CF6;
-  --primary-hover: #A78BFA;
-  --primary-glow: rgba(139, 92, 246, 0.5);
+  /* ---- palette (constant in both themes) ---- */
+  --ph-paper: #F5F4EF;
+  --ph-ink:   #141416;
+  --ph-lime:  #D4F36B;  --ph-lime-ink:  #2B3A06;
+  --ph-sun:   #FFD25E;  --ph-sun-ink:   #4A3500;
+  --ph-coral: #FF9F82;  --ph-coral-ink: #4D1A0B;
+  --ph-sky:   #9DD3F7;  --ph-sky-ink:   #0B2E45;
+  --ph-pink:  #F6B3CE;  --ph-pink-ink:  #4B1530;
+  --ph-red:   #B91C1C;
+  /* Errors — a soft red block with dark-red ink (constant), plus the text/wash
+     colours that sit directly on the page (theme-aware). */
+  --ph-error:      #B91C1C;
+  --ph-error-soft: #FFDAD4;
+  --ph-error-ink:  #6B0F0F;
+  --ph-error-text: #FF8F85;
+  --ph-error-wash: rgba(255,143,133,0.10);
+  --ph-hero:  #232327;
+
+  --background: #0E0E10;
+  --surface: #1A1A1D;
+  --elevated: #232327;
+  --text-primary: #F3F3F0;
+  --text-secondary: #A3A3A8;
+  --text-muted: #8E8E93;
+  --primary: #D4F36B;
+  --primary-hover: #DDF68A;
+  --primary-glow: rgba(212,243,107,0);
   --accent-focus: #E4E4E7;
-  --accent-game: #C084FC;
-  --warning: #FBBF24;
-  --success: #34D399;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.12);
-  --radius: 0.5rem;
+  --accent-game: #D4F36B;
+  --warning: #E0B23C;
+  --success: #D4F36B;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --radius: 1rem;
 
-  /* Dual-Mode Color Tokens */
-  --color-bg: #06080F;
-  --color-bg-deep: #06080F;
-  --color-bg-main: #090D18;
-  --color-surface: #0F1525;
-  --color-surface-raised: #141C32;
-  --color-elevated: #141C32;
-  --color-text: #F7F7F7;
-  --color-text-secondary: #A1A1AA;
-  --color-text-muted: #71717A;
-  --color-border: #182038;
-  --color-border-hover: rgba(255, 255, 255, 0.12);
-  --color-accent: #8B5CF6;
-  --color-success: #34D399;
-  --color-warning: #FBBF24;
-  --color-danger: #EF4444;
+  --color-bg: #0E0E10;
+  --color-bg-deep: #0E0E10;
+  --color-bg-main: #0E0E10;
+  --color-surface: #1A1A1D;
+  --color-surface-raised: #232327;
+  --color-elevated: #232327;
+  --color-text: #F3F3F0;
+  --color-text-secondary: #A3A3A8;
+  --color-text-muted: #8E8E93;
+  --color-border: #26262A;
+  --color-border-hover: rgba(255,255,255,0.14);
+  --color-accent: #D4F36B;
+  --color-success: #D4F36B;
+  --color-warning: #E0B23C;
+  --color-danger: #B91C1C;
 
-  /* Dynamic User Colors (set via JS in Game Mode) */
+  --gm-bg: #0E0E10;
+  --gm-card: #1A1A1D;
+  --gm-badge: #26262A;
+  --gm-track: #2A2A2F;
+  --gm-checkbox: #4A4A50;
+  --gm-ink: #F3F3F0;
+  --gm-muted: #8E8E93;
 
-  /* Game Mode home v2 — theme-aware surface tokens. These are the DARK values
-     (the original Steps 1-6 dark Game Mode home). The .light-mode block below
-     overrides them with the verified light palette, so the Home screen flips
-     with the Settings light/dark toggle. NOTE: the cyan streak card (#95DEE6),
-     lime completed rows (#DBF67F) and purple accent (#A59BCC) are intentionally
-     NOT tokenized here — they are identical in both themes. */
-  --gm-bg: #0E1012;        /* page background (v2 spec) */
-  --gm-card: #1F2123;      /* stat tiles, quest cards, uncompleted rows, chips */
-  --gm-badge: #2E3235;     /* quest icon badge (non-complete) */
-  --gm-track: #2E3235;     /* weekly ring track, card hover border */
-  --gm-checkbox: #52525B;  /* uncompleted checkbox outline */
-  --gm-ink: #F4F5F2;       /* primary text / numbers */
-  --gm-muted: #9BA09C;     /* muted labels / secondary text */
-
-  /* Elevation system (dark defaults) — one source of truth for every card,
-     hero, CTA, FAB and nav shadow on the Home screen. Values pulled from the
-     approved Focus Mode Home redesign mockup. */
-  --gm-shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -10px rgba(0,0,0,0.55);
-  --gm-shadow-hero: 0 1px 2px rgba(0,0,0,0.3), 0 8px 22px -12px rgba(0,0,0,0.55);
-  --gm-shadow-lime: 0 1px 2px rgba(0,0,0,0.3), 0 6px 20px -10px rgba(0,0,0,0.55);
-  --gm-shadow-cyan: 0 4px 12px -6px rgba(0,0,0,0.5);
-  --gm-shadow-fab: 0 10px 24px -6px rgba(0,0,0,0.6);
-  --gm-shadow-nav: 0 12px 30px -10px rgba(0,0,0,0.65);
+  --gm-shadow-card: none;
+  --gm-shadow-hero: none;
+  --gm-shadow-lime: none;
+  --gm-shadow-cyan: none;
+  --gm-shadow-fab: 0 10px 24px -8px rgba(0,0,0,0.6);
+  --gm-shadow-nav: 0 14px 30px -12px rgba(0,0,0,0.7);
 }
 
-/* Light Mode Override */
+/* LIGHT is the lab default (references are all light). */
 .light-mode {
-  --color-bg: #FAFAFA;
+  --background: #F5F4EF;
+  --text-primary: #141416;
+  --color-bg: #F5F4EF;
+  --color-bg-main: #F5F4EF;
   --color-surface: #FFFFFF;
-  --color-elevated: #F5F5F5;
-  --color-text: #18181B;
-  --color-text-secondary: #52525B;
-  --color-text-muted: #A1A1AA;
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-hover: rgba(0, 0, 0, 0.15);
-  --color-accent: #7C3AED;
-  --color-success: #059669;
-  --color-warning: #D97706;
-  --color-danger: #DC2626;
+  --color-surface-raised: #FFFFFF;
+  --color-elevated: #F6F6F3;
+  --color-text: #141416;
+  --color-text-secondary: #55555A;
+  --color-text-muted: #86868B;
+  --color-border: #E3E3DF;
+  --color-border-hover: #D2D2CD;
+  --color-accent: #141416;
+  --color-success: #5E7A12;
+  --color-warning: #B7791F;
+  --color-danger: #B91C1C;
 
-  /* Game Mode home v2 — LIGHT values (verified from the design reference). */
-  --gm-bg: #FAFAF7;
-  --gm-card: #F2F3F0;
-  --gm-badge: #E4E6E1;
-  --gm-track: #D9DBD6;
-  --gm-checkbox: #C9CCC6;
-  --gm-ink: #0F1210;
-  --gm-muted: #6C6F6C;
+  --ph-hero: #141416;
+  --ph-error-text: #B91C1C;
+  --ph-error-wash: #FFF4F2;
+  --gm-bg: #F5F4EF;
+  --gm-card: #FFFFFF;
+  --gm-badge: #F0EFE9;
+  --gm-track: #E3E3DF;
+  --gm-checkbox: #CFCFCA;
+  --gm-ink: #141416;
+  --gm-muted: #86868B;
 
-  /* Elevation system — LIGHT overrides (softer, tinted for a light ground). */
-  --gm-shadow-card: 0 1px 2px rgba(15,18,16,0.05), 0 6px 18px -10px rgba(15,18,16,0.13);
-  --gm-shadow-hero: 0 1px 2px rgba(15,18,16,0.05), 0 8px 20px -12px rgba(15,18,16,0.18);
-  --gm-shadow-lime: 0 1px 2px rgba(15,18,16,0.05), 0 6px 18px -10px rgba(15,18,16,0.13);
-  --gm-shadow-cyan: 0 4px 12px -6px rgba(15,18,16,0.2);
-  --gm-shadow-fab: 0 10px 22px -6px rgba(15,18,16,0.35);
-  --gm-shadow-nav: 0 12px 26px -10px rgba(15,18,16,0.16);
+  /* Flat — the refs separate white cards from paper by tone alone. */
+  --gm-shadow-card: none;
+  --gm-shadow-hero: none;
+  --gm-shadow-lime: none;
+  --gm-shadow-cyan: none;
+  --gm-shadow-fab: 0 10px 22px -8px rgba(20,20,22,0.35);
+  --gm-shadow-nav: 0 14px 28px -12px rgba(20,20,22,0.45);
 }
+
+/* ---- Type: one family, three roles ---- */
+.font-display { font-family: 'Bricolage Grotesque', sans-serif !important; font-weight: 800 !important; letter-spacing: -0.03em !important; font-variation-settings: 'opsz' 48; }
+.font-label   { font-family: 'Figtree', sans-serif !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: 0 !important; }
+.font-sans    { font-family: 'Figtree', sans-serif !important; }
+.font-display, .font-label { font-variant-numeric: tabular-nums; }
+
+/* ---- Lab nav ---- */
+/* Nav follows the theme: white pill on light, charcoal pill on dark. */
+.ph-nav { background: var(--gm-card); }
+aside.ph-nav { border-right: 1px solid var(--gm-track); }
+nav .ph-nav { box-shadow: 0 10px 30px -12px rgba(20,20,22,0.28), 0 0 0 1px var(--gm-track); }
+.ph-nav-item { color: var(--gm-muted); }
+.ph-nav-item:hover { color: var(--gm-ink) !important; }
+.ph-nav-item.is-on, .ph-nav-item.is-on:hover { color: var(--gm-bg) !important; }
 
 /* Explicit box-shadow utilities. Tailwind reads `shadow-[var(--gm-shadow-*)]`
    as a shadow COLOR (bare var is ambiguous) and emits no box-shadow, so these
@@ -126,7 +154,7 @@
 }
 
 body {
-  font-family: 'General Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--color-bg);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -136,7 +164,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Satoshi', 'General Sans', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
@@ -179,70 +207,30 @@ code {
   display: none !important;
 }
 
-/* Game Mode Styles - Dark Black + Dark Blue */
+/* UI v3: both modes share one flat token-driven surface system. */
 .mode-game {
-  --card-bg: #0C1220;
-  --card-border: #1A2438;
-  --accent-glow: rgba(27, 106, 228, 0.12);
-  --bg-base: #06080F;
-  --bg-gradient: #06080F;
-  --text-muted: #94A3B8;
-  background: #06080F;
+  --card-bg: var(--gm-card);
+  --card-border: var(--gm-track);
+  --accent-glow: transparent;
+  --bg-base: var(--gm-bg);
+  --bg-gradient: var(--gm-bg);
+  --text-muted: var(--gm-muted);
+  background: var(--gm-bg);
 }
-
-.mode-game .glass-card {
-  background: #0C1220;
+.glass, .glass-card, .mode-game .glass-card {
+  background: var(--gm-card);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border: 1px solid #1A2438;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  border: 0;
+  box-shadow: none;
+  border-radius: 24px;
 }
-
-.mode-game .glass-card:hover {
-  border-color: #1A2438;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-.mode-game .glass-nav {
-  background: #06080F;
-  backdrop-filter: blur(16px);
-  border-top: 1px solid #1A2438;
-  border-color: #1A2438;
-}
-
-.mode-game .glow-effect {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-/* Glassmorphism */
-.glass {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  transition: border-color 0.3s ease, transform 0.2s ease;
-}
-
-.glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Default nav (Focus Mode — Game Mode overrides via .mode-game .glass-nav
-   above). Theme-aware v2 surface so the Focus nav bar follows light/dark. */
-.glass-nav {
+.glass-card:hover, .mode-game .glass-card:hover { border: 0; box-shadow: none; }
+.glass-nav, .mode-game .glass-nav {
   background: var(--gm-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--gm-track);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: var(--gm-track);
 }
 
 /* Glow effects - reduced */
@@ -375,7 +363,7 @@ code {
   height: 60vmax;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, #1B6AE4 0%, transparent 70%);
+  background: radial-gradient(circle, #141416 0%, transparent 70%);
   animation: focus-glow 4s ease-in-out infinite;
   pointer-events: none;
 }
@@ -421,7 +409,7 @@ code {
 .level-1 { --level-color: #6B7280; }
 .level-2 { --level-color: #3B82F6; }
 .level-3 { --level-color: #10B981; }
-.level-4 { --level-color: #8B5CF6; }
+.level-4 { --level-color: #F06B5B; }
 .level-5 { --level-color: #F59E0B; }
 .level-6 { --level-color: #EF4444; }
 .level-7 { --level-color: #EC4899; }
@@ -546,13 +534,13 @@ input:focus, textarea:focus, select:focus {
 
 
 /* ===== PROFILE ANIMATIONS =====
-   Rethemed Oct 2026 (profile remodel): on-theme cyan #95DEE6 / lime #DBF67F /
-   white #EAFCFF only. No purple, no rainbow, no neon #0ff, no hue-rotate — the
+   Rethemed Oct 2026 (profile remodel): on-theme cyan #D4F36B / lime #D4F36B /
+   white #F8FCE8 only. No purple, no rainbow, no neon #0ff, no hue-rotate — the
    old set was the app's worst "AI" slop. Glows are soft and slow; the tiers are
    told apart by MOTION and by the cyan/lime mix, not by garish colour. All stop
    under prefers-reduced-motion (rule at the end of this block). */
 @keyframes pa-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
-@keyframes pa-glow { 0%,100%{box-shadow:0 0 8px rgba(149,222,230,0.35)} 50%{box-shadow:0 0 22px rgba(149,222,230,0.65)} }
+@keyframes pa-glow { 0%,100%{box-shadow:0 0 8px rgba(212,243,107,0.35)} 50%{box-shadow:0 0 22px rgba(212,243,107,0.65)} }
 @keyframes pa-breathe { 0%,100%{opacity:0.82} 50%{opacity:1} }
 @keyframes pa-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 @keyframes pa-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
@@ -561,26 +549,26 @@ input:focus, textarea:focus, select:focus {
 @keyframes pa-wave { 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
 @keyframes pa-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
 @keyframes pa-fadepulse { 0%,100%{opacity:0.62} 50%{opacity:1} }
-@keyframes pa-neon { 0%,100%{box-shadow:0 0 5px #95DEE6,0 0 10px #95DEE6} 50%{box-shadow:0 0 14px #95DEE6,0 0 28px #95DEE6} }
-@keyframes pa-aurora { 0%,100%{box-shadow:0 0 16px #95DEE6} 50%{box-shadow:0 0 22px #DBF67F} }
-@keyframes pa-firering { 0%,100%{box-shadow:0 0 10px #DBF67F,0 0 20px #95DEE6} 50%{box-shadow:0 0 20px #DBF67F,0 0 38px #95DEE6} }
-@keyframes pa-icering { 0%,100%{box-shadow:0 0 10px #95DEE6,0 0 20px #5FB8C4} 50%{box-shadow:0 0 20px #95DEE6,0 0 40px #5FB8C4} }
-@keyframes pa-electric { 0%,100%{box-shadow:0 0 8px #95DEE6} 25%{box-shadow:2px -2px 14px #EAFCFF} 75%{box-shadow:-2px 2px 14px #95DEE6} }
-@keyframes pa-rainbow { 0%,100%{box-shadow:0 0 16px #95DEE6} 50%{box-shadow:0 0 16px #DBF67F} }
+@keyframes pa-neon { 0%,100%{box-shadow:0 0 5px #D4F36B,0 0 10px #D4F36B} 50%{box-shadow:0 0 14px #D4F36B,0 0 28px #D4F36B} }
+@keyframes pa-aurora { 0%,100%{box-shadow:0 0 16px #D4F36B} 50%{box-shadow:0 0 22px #D4F36B} }
+@keyframes pa-firering { 0%,100%{box-shadow:0 0 10px #D4F36B,0 0 20px #D4F36B} 50%{box-shadow:0 0 20px #D4F36B,0 0 38px #D4F36B} }
+@keyframes pa-icering { 0%,100%{box-shadow:0 0 10px #D4F36B,0 0 20px #A9C93C} 50%{box-shadow:0 0 20px #D4F36B,0 0 40px #A9C93C} }
+@keyframes pa-electric { 0%,100%{box-shadow:0 0 8px #D4F36B} 25%{box-shadow:2px -2px 14px #F8FCE8} 75%{box-shadow:-2px 2px 14px #D4F36B} }
+@keyframes pa-rainbow { 0%,100%{box-shadow:0 0 16px #D4F36B} 50%{box-shadow:0 0 16px #D4F36B} }
 @keyframes pa-galaxy { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-@keyframes pa-ripple { 0%{box-shadow:0 0 0 0 rgba(149,222,230,0.4)} 100%{box-shadow:0 0 0 20px rgba(149,222,230,0)} }
+@keyframes pa-ripple { 0%{box-shadow:0 0 0 0 rgba(212,243,107,0.4)} 100%{box-shadow:0 0 0 20px rgba(212,243,107,0)} }
 @keyframes pa-vortex { 0%{transform:rotate(0) scale(1)} 50%{transform:rotate(180deg) scale(0.96)} 100%{transform:rotate(360deg) scale(1)} }
-@keyframes pa-matrix { 0%,100%{text-shadow:0 0 5px #95DEE6} 50%{text-shadow:0 0 15px #95DEE6} }
-@keyframes pa-plasma { 0%,100%{box-shadow:0 0 15px #95DEE6,0 0 30px #DBF67F} 50%{box-shadow:0 0 24px #DBF67F,0 0 48px #95DEE6} }
-@keyframes pa-shadowflame { 0%,100%{box-shadow:0 0 15px #0A0E10,0 0 30px #95DEE6} 50%{box-shadow:0 0 24px #95DEE6,0 0 48px #0A0E10} }
-@keyframes pa-lightning { 0%,100%{box-shadow:0 0 10px #95DEE6} 10%{box-shadow:0 0 30px #EAFCFF} 12%{box-shadow:0 0 10px #95DEE6} 50%{box-shadow:0 0 10px #5FB8C4} 52%{box-shadow:0 0 34px #EAFCFF} 54%{box-shadow:0 0 10px #5FB8C4} }
-@keyframes pa-cosmic { 0%,100%{box-shadow:0 0 20px #95DEE6;transform:scale(1)} 50%{box-shadow:0 0 40px #DBF67F;transform:scale(1.02)} }
-@keyframes pa-goldenaura { 0%,100%{box-shadow:0 0 15px #DBF67F,0 0 30px #EAFCFF} 50%{box-shadow:0 0 28px #DBF67F,0 0 56px #EAFCFF} }
-@keyframes pa-voidpulse { 0%,100%{box-shadow:0 0 15px #06090B,inset 0 0 15px rgba(149,222,230,0.22)} 50%{box-shadow:0 0 30px #04070A,inset 0 0 28px rgba(149,222,230,0.42)} }
-@keyframes pa-supernova { 0%,100%{box-shadow:0 0 20px #95DEE6;transform:scale(1)} 50%{box-shadow:0 0 56px #EAFCFF;transform:scale(1.05)} 75%{box-shadow:0 0 38px #DBF67F} }
-@keyframes pa-ethereal { 0%,100%{box-shadow:0 0 20px rgba(234,252,255,0.14);filter:brightness(1)} 50%{box-shadow:0 0 40px rgba(149,222,230,0.4);filter:brightness(1.08)} }
-@keyframes pa-inferno { 0%,100%{box-shadow:0 0 15px #DBF67F,0 0 30px #95DEE6} 50%{box-shadow:0 0 26px #EAFCFF,0 0 52px #DBF67F} }
-@keyframes pa-divine { 0%,100%{box-shadow:0 0 30px #DBF67F,0 0 60px #EAFCFF;transform:scale(1)} 50%{box-shadow:0 0 56px #EAFCFF,0 0 96px #95DEE6;transform:scale(1.03)} }
+@keyframes pa-matrix { 0%,100%{text-shadow:0 0 5px #D4F36B} 50%{text-shadow:0 0 15px #D4F36B} }
+@keyframes pa-plasma { 0%,100%{box-shadow:0 0 15px #D4F36B,0 0 30px #D4F36B} 50%{box-shadow:0 0 24px #D4F36B,0 0 48px #D4F36B} }
+@keyframes pa-shadowflame { 0%,100%{box-shadow:0 0 15px #0A0E10,0 0 30px #D4F36B} 50%{box-shadow:0 0 24px #D4F36B,0 0 48px #0A0E10} }
+@keyframes pa-lightning { 0%,100%{box-shadow:0 0 10px #D4F36B} 10%{box-shadow:0 0 30px #F8FCE8} 12%{box-shadow:0 0 10px #D4F36B} 50%{box-shadow:0 0 10px #A9C93C} 52%{box-shadow:0 0 34px #F8FCE8} 54%{box-shadow:0 0 10px #A9C93C} }
+@keyframes pa-cosmic { 0%,100%{box-shadow:0 0 20px #D4F36B;transform:scale(1)} 50%{box-shadow:0 0 40px #D4F36B;transform:scale(1.02)} }
+@keyframes pa-goldenaura { 0%,100%{box-shadow:0 0 15px #D4F36B,0 0 30px #F8FCE8} 50%{box-shadow:0 0 28px #D4F36B,0 0 56px #F8FCE8} }
+@keyframes pa-voidpulse { 0%,100%{box-shadow:0 0 15px #06090B,inset 0 0 15px rgba(212,243,107,0.22)} 50%{box-shadow:0 0 30px #04070A,inset 0 0 28px rgba(212,243,107,0.42)} }
+@keyframes pa-supernova { 0%,100%{box-shadow:0 0 20px #D4F36B;transform:scale(1)} 50%{box-shadow:0 0 56px #F8FCE8;transform:scale(1.05)} 75%{box-shadow:0 0 38px #D4F36B} }
+@keyframes pa-ethereal { 0%,100%{box-shadow:0 0 20px rgba(234,252,255,0.14);filter:brightness(1)} 50%{box-shadow:0 0 40px rgba(212,243,107,0.4);filter:brightness(1.08)} }
+@keyframes pa-inferno { 0%,100%{box-shadow:0 0 15px #D4F36B,0 0 30px #D4F36B} 50%{box-shadow:0 0 26px #F8FCE8,0 0 52px #D4F36B} }
+@keyframes pa-divine { 0%,100%{box-shadow:0 0 30px #D4F36B,0 0 60px #F8FCE8;transform:scale(1)} 50%{box-shadow:0 0 56px #F8FCE8,0 0 96px #D4F36B;transform:scale(1.03)} }
 
 .profile-anim-pulse { animation: pa-pulse 2s ease-in-out infinite }
 .profile-anim-glow { animation: pa-glow 2.5s ease-in-out infinite }
@@ -631,8 +619,14 @@ input:focus, textarea:focus, select:focus {
 @keyframes mr-rot { to { transform: rotate(360deg); } }
 @keyframes mr-pulse { 0%,100%{ transform: scale(.82); opacity:.95 } 50%{ transform: scale(1.06); opacity:.2 } }
 @keyframes mr-op { 0%,100%{ opacity:1 } 50%{ opacity:.28 } }
-@keyframes mr-shift { 0%,100%{ stroke:currentColor } 50%{ stroke:#EAFCFF } }
+@keyframes mr-shift { 0%,100%{ stroke:currentColor } 50%{ stroke:#F8FCE8 } }
 @keyframes mr-draw { 0%{ stroke-dashoffset:126 } 45%,55%{ stroke-dashoffset:0 } 100%{ stroke-dashoffset:-126 } }
+.mr-beat  { animation: mr-beat 1.6s ease-in-out infinite; }
+.mr-blink { animation: mr-blink 2.2s steps(1, end) infinite; }
+.mr-swing { animation: mr-swing 2.4s ease-in-out infinite alternate; }
+@keyframes mr-beat { 0%,40%,100%{ transform: scale(.86) } 12%{ transform: scale(1.04) } 26%{ transform: scale(.94) } 32%{ transform: scale(1.02) } }
+@keyframes mr-blink { 0%{ opacity:1 } 50%{ opacity:.18 } 62%{ opacity:1 } 74%{ opacity:.18 } 86%{ opacity:1 } }
+@keyframes mr-swing { from{ transform: rotate(-70deg) } to{ transform: rotate(110deg) } }
 @media (prefers-reduced-motion: reduce) { .mr-ring { animation: none !important; } }
 
 /* The legacy .title-{rarity} text classes are gone. There is now exactly one
@@ -652,56 +646,56 @@ input:focus, textarea:focus, select:focus {
 /* The four PROFILE EFFECTS that are actually equippable (see data/shopEffects.js)
    — rethemed Oct 2026 to cyan/lime radial/conic (no banned diagonal gradients,
    no purple/pink/rainbow). The deco-* classes below these are legacy and unused. */
-.deco-flame-ring{background:radial-gradient(circle,#DBF67F,#0A0E10 70%);animation:pa-firering 2.5s ease-in-out infinite}
-.deco-frost-ring{background:radial-gradient(circle,#95DEE6,#0A0E10 70%);animation:pa-icering 3s ease-in-out infinite}
-.deco-lightning-arc{background:radial-gradient(circle,#EAFCFF,#0A0E10 72%);animation:pa-lightning 3s ease-in-out infinite}
-.deco-galaxy-spiral{background:conic-gradient(from 0deg,#95DEE6,#DBF67F,#5FB8C4,#95DEE6);animation:pa-galaxy 10s linear infinite}
+.deco-flame-ring{background:radial-gradient(circle,#D4F36B,#0A0E10 70%);animation:pa-firering 2.5s ease-in-out infinite}
+.deco-frost-ring{background:radial-gradient(circle,#D4F36B,#0A0E10 70%);animation:pa-icering 3s ease-in-out infinite}
+.deco-lightning-arc{background:radial-gradient(circle,#F8FCE8,#0A0E10 72%);animation:pa-lightning 3s ease-in-out infinite}
+.deco-galaxy-spiral{background:conic-gradient(from 0deg,#D4F36B,#D4F36B,#A9C93C,#D4F36B);animation:pa-galaxy 10s linear infinite}
 .deco-void-portal{background:radial-gradient(ellipse at center,#1a0033 0%,#0a0015 30%,#000 60%,#1a0033 100%);background-size:200% 200%;animation:deco-move 6s ease infinite,deco-pulse-bg 4s ease-in-out infinite}
 .deco-golden-wreath{background:linear-gradient(135deg,#1a1000,#3d2800 25%,#fbbf24 45%,#f59e0b 55%,#3d2800 75%,#1a1000);background-size:300% 300%;animation:deco-move 6s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-neon-pulse{background:linear-gradient(135deg,#0a001a,#00ffff 20%,#ff00ff 40%,#00ff00 60%,#ff00ff 80%,#0a001a);background-size:400% 400%;animation:deco-move 5s ease infinite}
 .deco-sakura-petals{background:linear-gradient(135deg,#1a0a10,#3d1525 20%,#fda4af 40%,#fb7185 55%,#f9a8d4 70%,#1a0a10);background-size:300% 300%;animation:deco-move 7s ease infinite}
 .deco-electric-storm{background:linear-gradient(160deg,#000820,#001440,#1d4ed8 40%,#3b82f6 50%,#fff 52%,#1d4ed8 55%,#000820);background-size:400% 400%;animation:deco-move 3s ease infinite}
 .deco-shadow-tendrils{background:linear-gradient(135deg,#000,#0a0015 30%,#1a0033 50%,#0a0015 70%,#000);background-size:300% 300%;animation:deco-move 8s ease infinite,deco-pulse-bg 5s ease-in-out infinite}
-.deco-aurora-wave{background:linear-gradient(135deg,#001a12,#43cea2 25%,#185a9d 50%,#a855f7 75%,#001a12);background-size:400% 400%;animation:deco-move 8s ease infinite}
+.deco-aurora-wave{background:linear-gradient(135deg,#001a12,#43cea2 25%,#185a9d 50%,#E85A9C 75%,#001a12);background-size:400% 400%;animation:deco-move 8s ease infinite}
 .deco-crimson-blaze{background:linear-gradient(135deg,#1a0000,#450a0a 20%,#dc2626 40%,#ef4444 55%,#f97316 70%,#1a0000);background-size:300% 300%;animation:deco-move 5s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-emerald-glow{background:linear-gradient(135deg,#001a0a,#064e3b 25%,#059669 50%,#10b981 65%,#34d399 80%,#001a0a);background-size:300% 300%;animation:deco-move 7s ease infinite}
-.deco-royal-crest{background:linear-gradient(135deg,#0a0020,#2d0066 20%,#7c3aed 40%,#fbbf24 55%,#7c3aed 70%,#0a0020);background-size:400% 400%;animation:deco-move 6s ease infinite,deco-pulse-bg 4s ease-in-out infinite}
-.deco-plasma-orbit{background:linear-gradient(135deg,#0a001a,#4c0070 20%,#a855f7 40%,#ec4899 55%,#a855f7 70%,#0a001a);background-size:400% 400%;animation:deco-move 7s ease infinite,deco-shift 15s linear infinite}
+.deco-royal-crest{background:linear-gradient(135deg,#0a0020,#2d0066 20%,#141416 40%,#fbbf24 55%,#141416 70%,#0a0020);background-size:400% 400%;animation:deco-move 6s ease infinite,deco-pulse-bg 4s ease-in-out infinite}
+.deco-plasma-orbit{background:linear-gradient(135deg,#0a001a,#4c0070 20%,#E85A9C 40%,#ec4899 55%,#E85A9C 70%,#0a001a);background-size:400% 400%;animation:deco-move 7s ease infinite,deco-shift 15s linear infinite}
 .deco-cyber-grid{background:linear-gradient(135deg,#000a0a,#003333 20%,#00ffff 40%,#00ff00 55%,#00ffff 70%,#000a0a);background-size:400% 400%;animation:deco-move 5s ease infinite}
 .deco-diamond-dust{background:linear-gradient(135deg,#0a0a15,#1a1a30 25%,#c8c8ff 45%,#fff 50%,#c8c8ff 55%,#1a1a30 75%,#0a0a15);background-size:300% 300%;animation:deco-move 6s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-phoenix-wings{background:linear-gradient(160deg,#1a0500,#6b2500 20%,#f97316 40%,#fbbf24 50%,#ef4444 60%,#6b2500 80%,#1a0500);background-size:400% 400%;animation:deco-move 5s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-dragon-breath{background:linear-gradient(135deg,#1a0000,#5c0000 20%,#dc2626 40%,#f97316 55%,#fbbf24 65%,#5c0000 80%,#1a0000);background-size:400% 400%;animation:deco-move 4s ease infinite}
-.deco-spirit-chains{background:linear-gradient(135deg,#05001a,#1a0040 30%,#6366f1 50%,#8b5cf6 60%,#1a0040 80%,#05001a);background-size:300% 300%;animation:deco-move 8s ease infinite}
-.deco-nebula-ring{background:linear-gradient(135deg,#0a0020,#7c3aed 20%,#ec4899 40%,#3b82f6 60%,#7c3aed 80%,#0a0020);background-size:400% 400%;animation:deco-move 8s ease infinite,deco-shift 25s linear infinite}
+.deco-spirit-chains{background:linear-gradient(135deg,#05001a,#1a0040 30%,#F2843A 50%,#F06B5B 60%,#1a0040 80%,#05001a);background-size:300% 300%;animation:deco-move 8s ease infinite}
+.deco-nebula-ring{background:linear-gradient(135deg,#0a0020,#141416 20%,#ec4899 40%,#3b82f6 60%,#141416 80%,#0a0020);background-size:400% 400%;animation:deco-move 8s ease infinite,deco-shift 25s linear infinite}
 .deco-solar-flare{background:radial-gradient(ellipse at 30% 50%,#fbbf24,#f59e0b 30%,#92400e 60%,#1a0800);background-size:200% 200%;animation:deco-move 5s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-lunar-halo{background:linear-gradient(135deg,#08080f,#1a1a30 30%,#c8c8e6 50%,#9999b3 60%,#1a1a30 80%,#08080f);background-size:300% 300%;animation:deco-move 8s ease infinite}
 .deco-toxic-mist{background:linear-gradient(135deg,#001a00,#0a3d0a 25%,#22c55e 45%,#16a34a 55%,#0a3d0a 75%,#001a00);background-size:300% 300%;animation:deco-move 6s ease infinite}
 .deco-blood-moon{background:radial-gradient(circle at 70% 30%,#dc2626 0%,#991b1b 20%,#450a0a 50%,#1a0000 80%);background-size:200% 200%;animation:deco-move 6s ease infinite,deco-pulse-bg 4s ease-in-out infinite}
 .deco-star-burst{background:radial-gradient(ellipse at center,#fff 0%,#fbbf24 10%,#f59e0b 25%,#1a1000 60%,#000);background-size:200% 200%;animation:deco-move 5s ease infinite,deco-pulse-bg 2.5s ease-in-out infinite}
-.deco-mystic-runes{background:linear-gradient(135deg,#0a0020,#1a0040 20%,#a855f7 35%,#6366f1 50%,#a855f7 65%,#1a0040 80%,#0a0020);background-size:400% 400%;animation:deco-move 7s ease infinite}
+.deco-mystic-runes{background:linear-gradient(135deg,#0a0020,#1a0040 20%,#E85A9C 35%,#F2843A 50%,#E85A9C 65%,#1a0040 80%,#0a0020);background-size:400% 400%;animation:deco-move 7s ease infinite}
 .deco-aqua-surge{background:linear-gradient(135deg,#001a20,#003d48 25%,#06b6d4 45%,#22d3ee 55%,#003d48 75%,#001a20);background-size:300% 300%;animation:deco-move 6s ease infinite}
 .deco-dark-matter{background:radial-gradient(ellipse at center,#1a0033 0%,#0a0015 25%,#000 50%,#0a0015 75%,#1a0033);background-size:200% 200%;animation:deco-move 8s ease infinite}
 .deco-prism-shift{background:linear-gradient(135deg,red,orange,yellow,green,blue,violet,red);background-size:400% 400%;animation:deco-move 6s linear infinite}
 .deco-inferno-core{background:radial-gradient(ellipse at 50% 80%,#fbbf24,#f97316 20%,#dc2626 40%,#991b1b 60%,#1a0000 80%);background-size:200% 200%;animation:deco-move 4s ease infinite,deco-pulse-bg 2s ease-in-out infinite}
 .deco-arctic-wind{background:linear-gradient(135deg,#0a1020,#1a2848 25%,#bae6fd 45%,#e0f2fe 50%,#7dd3fc 55%,#1a2848 75%,#0a1020);background-size:300% 300%;animation:deco-move 7s ease infinite}
 .deco-thunder-clap{background:linear-gradient(170deg,#0a0a2e,#1a1a4e 25%,#fbbf24 45%,#fff 48%,#3b82f6 52%,#1a1a4e 75%,#0a0a2e);background-size:400% 400%;animation:deco-move 3s ease infinite}
-.deco-crystal-cage{background:linear-gradient(135deg,#0a0a1a,#1a1a3a 20%,#c8c8ff 40%,#a5a5ff 50%,#8b5cf6 60%,#1a1a3a 80%,#0a0a1a);background-size:400% 400%;animation:deco-move 7s ease infinite}
-.deco-warp-drive{background:linear-gradient(135deg,#000,#0a0020 15%,#6366f1 35%,#a855f7 50%,#6366f1 65%,#0a0020 85%,#000);background-size:400% 400%;animation:deco-move 4s ease infinite,deco-shift 12s linear infinite}
+.deco-crystal-cage{background:linear-gradient(135deg,#0a0a1a,#1a1a3a 20%,#c8c8ff 40%,#a5a5ff 50%,#F06B5B 60%,#1a1a3a 80%,#0a0a1a);background-size:400% 400%;animation:deco-move 7s ease infinite}
+.deco-warp-drive{background:linear-gradient(135deg,#000,#0a0020 15%,#F2843A 35%,#E85A9C 50%,#F2843A 65%,#0a0020 85%,#000);background-size:400% 400%;animation:deco-move 4s ease infinite,deco-shift 12s linear infinite}
 .deco-ethereal-mist{background:linear-gradient(135deg,#08080f,#15152a 30%,#c8c8e6 48%,#e0e0f0 52%,#15152a 70%,#08080f);background-size:300% 300%;animation:deco-move 8s ease infinite,deco-pulse-bg 5s ease-in-out infinite}
 .deco-magma-flow{background:linear-gradient(180deg,#1a0000,#5c0000 20%,#dc2626 40%,#f97316 55%,#fbbf24 65%,#5c0000 85%,#1a0000);background-size:300% 300%;animation:deco-move 5s ease infinite}
 .deco-glitch-matrix{background:linear-gradient(135deg,#000,#001a00 25%,#00ff00 45%,#000 48%,#00ff00 52%,#001a00 75%,#000);background-size:400% 400%;animation:deco-move 2s linear infinite}
 .deco-heaven-ascent{background:linear-gradient(180deg,#fbbf24 0%,#fff 15%,#f0f0ff 30%,#c8c8e6 50%,#1a1a30 80%,#08080f);background-size:200% 200%;animation:deco-move 8s ease infinite,deco-pulse-bg 4s ease-in-out infinite}
 .deco-demon-aura{background:linear-gradient(135deg,#000,#1a0000 20%,#7f1d1d 40%,#450a0a 55%,#dc2626 65%,#1a0000 80%,#000);background-size:300% 300%;animation:deco-move 5s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-radiant-sun{background:radial-gradient(circle at 50% 40%,#fff,#fbbf24 15%,#f59e0b 30%,#92400e 55%,#1a0800 80%);background-size:200% 200%;animation:deco-move 6s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
-.deco-twilight-veil{background:linear-gradient(180deg,#0a001a 0%,#6366f1 25%,#f59e0b 50%,#ec4899 75%,#0a001a);background-size:300% 300%;animation:deco-move 8s ease infinite}
-.deco-cosmic-dust{background:linear-gradient(135deg,#000,#0a0020 15%,#a855f7 30%,#ec4899 45%,#3b82f6 60%,#0a0020 80%,#000);background-size:400% 400%;animation:deco-move 10s ease infinite,deco-shift 20s linear infinite}
-.deco-serpent-coil{background:linear-gradient(135deg,#001a00,#0a3d0a 20%,#22c55e 40%,#7c3aed 55%,#22c55e 70%,#0a3d0a 85%,#001a00);background-size:400% 400%;animation:deco-move 6s ease infinite}
+.deco-twilight-veil{background:linear-gradient(180deg,#0a001a 0%,#F2843A 25%,#f59e0b 50%,#ec4899 75%,#0a001a);background-size:300% 300%;animation:deco-move 8s ease infinite}
+.deco-cosmic-dust{background:linear-gradient(135deg,#000,#0a0020 15%,#E85A9C 30%,#ec4899 45%,#3b82f6 60%,#0a0020 80%,#000);background-size:400% 400%;animation:deco-move 10s ease infinite,deco-shift 20s linear infinite}
+.deco-serpent-coil{background:linear-gradient(135deg,#001a00,#0a3d0a 20%,#22c55e 40%,#141416 55%,#22c55e 70%,#0a3d0a 85%,#001a00);background-size:400% 400%;animation:deco-move 6s ease infinite}
 .deco-phantom-ring{background:linear-gradient(135deg,#08080f,#1a1a30 30%,#6b6b9e 48%,#9696c8 52%,#1a1a30 70%,#08080f);background-size:300% 300%;animation:deco-move 7s ease infinite,deco-pulse-bg 5s ease-in-out infinite}
-.deco-chrono-rift{background:linear-gradient(135deg,#0a001a,#6366f1 25%,#06b6d4 50%,#6366f1 75%,#0a001a);background-size:400% 400%;animation:deco-move 6s ease infinite,deco-shift 15s linear infinite}
+.deco-chrono-rift{background:linear-gradient(135deg,#0a001a,#F2843A 25%,#06b6d4 50%,#F2843A 75%,#0a001a);background-size:400% 400%;animation:deco-move 6s ease infinite,deco-shift 15s linear infinite}
 .deco-volcanic-ash{background:linear-gradient(180deg,#78350f,#92400e 20%,#f97316 40%,#dc2626 55%,#450a0a 75%,#1a0800);background-size:300% 300%;animation:deco-move 5s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-divine-wings{background:linear-gradient(135deg,#1a1000,#fbbf24 20%,#fff 40%,#fbbf24 55%,#fff 70%,#1a1000);background-size:400% 400%;animation:deco-move 6s ease infinite,deco-pulse-bg 3s ease-in-out infinite}
 .deco-obsidian-edge{background:linear-gradient(135deg,#000,#1a1a1a 25%,#333 45%,#1a1a1a 55%,#000);background-size:300% 300%;animation:deco-move 8s ease infinite}
-.deco-supernova-burst{background:radial-gradient(ellipse at center,#fff 0%,#fbbf24 10%,#f97316 20%,#a855f7 35%,#7c3aed 50%,#1a0033 75%,#000);background-size:200% 200%;animation:deco-move 5s ease infinite,deco-pulse-bg 2.5s ease-in-out infinite}
+.deco-supernova-burst{background:radial-gradient(ellipse at center,#fff 0%,#fbbf24 10%,#f97316 20%,#E85A9C 35%,#141416 50%,#1a0033 75%,#000);background-size:200% 200%;animation:deco-move 5s ease infinite,deco-pulse-bg 2.5s ease-in-out infinite}
 
 
 /* ===================================================================
@@ -712,8 +706,8 @@ input:focus, textarea:focus, select:focus {
    =================================================================== */
 
 .flexbadge {
-  --bg: #3B82F6;
-  --bg2: #60A5FA;
+  --bg: #9DD3F7;
+  --bg2: #D6ECFB;
   --glow: 0.6;
   position: relative;
   display: inline-flex;
@@ -797,5 +791,49 @@ input:focus, textarea:focus, select:focus {
 @media (max-height: 900px) { .phone-fit { transform: scale(0.82); transform-origin: top center; } }
 @media (max-height: 720px) { .phone-fit { transform: scale(0.66); } }
 /* v2 fields (auth + onboarding): beat the legacy global purple input:focus. */
-.phase-input:focus { border-color: #95DEE6 !important; box-shadow: none; }
-.phase-input.phase-input-error:focus { border-color: #B91C1C !important; }
+.phase-input:focus { border-color: var(--gm-ink) !important; box-shadow: none; }
+/* UI v3 error state: red ring + a faint red wash so the field itself says "this one". */
+.phase-input.phase-input-error,
+.phase-input.phase-input-error:focus { border-color: var(--ph-error) !important; background: var(--ph-error-wash) !important; }
+
+/* UI v3: lime is a surface, never text, on the light paper ground. */
+.light-mode .text-\[\#D4F36B\] { color: #4F6115; }
+.light-mode .ph-nav .text-\[\#D4F36B\], .light-mode .bg-\[\#141416\] .text-\[\#D4F36B\] { color: #D4F36B; }
+
+/* Category color blocks */
+.ph-sun   { background: #FFD25E; color: #4A3500; }
+.ph-coral { background: #FF9F82; color: #4D1A0B; }
+.ph-sky   { background: #9DD3F7; color: #0B2E45; }
+.ph-pink  { background: #F6B3CE; color: #4B1530; }
+.ph-lime  { background: #D4F36B; color: #2B3A06; }
+
+/* UI v3: dialog overlay softer on paper */
+.light-mode [data-radix-dialog-overlay], .light-mode .fixed.inset-0.bg-black\/80 { background: rgba(20,20,22,0.35); }
+
+
+/* ---- Lab v3: heavier type everywhere (user: "no skinny fonts") ---- */
+body { font-weight: 600; }
+h1, h2, h3, h4, h5, h6 { font-weight: 800; }
+.font-light, .font-normal { font-weight: 500 !important; }
+.font-medium   { font-weight: 600 !important; }
+.font-semibold { font-weight: 700 !important; }
+.font-bold     { font-weight: 800 !important; }
+.font-extrabold, .font-black { font-weight: 800 !important; }
+input, textarea, select, button { font-weight: 600; }
+/* lucide leftovers (shadcn internals) match Phosphor's bold weight */
+svg.lucide { stroke-width: 2.6; }
+
+/* UI v3: smooth theme switch (class added for ~0.8s by the Settings toggle) */
+html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after {
+  transition: background-color .7s cubic-bezier(.22,1,.36,1), color .7s cubic-bezier(.22,1,.36,1),
+              border-color .7s cubic-bezier(.22,1,.36,1), fill .7s, stroke .7s !important;
+}
+/* UI v3: every plain button/link eases its colours instead of snapping */
+button, a { transition-property: background-color, color, border-color, opacity, box-shadow; transition-duration: .35s; transition-timing-function: cubic-bezier(.22,1,.36,1); }
+@media (prefers-reduced-motion: reduce) { html.theme-anim * { transition: none !important; } }
+
+/* UI v3: top-level screen change (landing → login → app) — CSS only, so the
+   first-load bundle doesn't need the animation library. */
+.route-fade { animation: route-fade .25s cubic-bezier(.22,1,.36,1) both; }
+@keyframes route-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .route-fade { animation: none; } }

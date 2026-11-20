@@ -5,7 +5,7 @@
 import { FlameIcon, XpIcon } from '../icons';
 
 export function FlameGlyph({ size = 18, className = '', style, stage, solid = true }) { // eslint-disable-line no-unused-vars
-  const color = style?.color || '#95DEE6';
+  const color = style?.color || '#D4F36B';
   return <FlameIcon size={size} className={className} style={style} color={color} variant={solid ? 'solid' : 'outline'} />;
 }
 

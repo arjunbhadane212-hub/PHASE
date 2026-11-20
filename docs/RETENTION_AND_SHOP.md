@@ -3,37 +3,62 @@
 What was built, where it lives, and the numbers it runs on. Everything here is
 enforced server-side in Supabase; the UI only displays it.
 
-## The shop — sections (top → bottom, also the sticky jump-list)
+## The shop — v3 "Drops" (2026-11-19, supersedes the Nov 11 rotation)
+
+Full item sheet + per-item frequencies: **docs/SHOP_CATALOG.md**.
 
 | Section | What's in it | Stock |
 |---|---|---|
-| **Today** | 1 featured item (legendary/mythic when the draw has one) + 1 **daily deal at 30% off** | rotates daily |
+| **Today** | the drop's rarest piece (featured) + a **30%-off deal** on a rare-or-better | daily drop |
+| **The Sanctum** | 1 **mythic** + 1 legendary from another section — the ONLY place mythics are sold | weekly, Monday 00:00 UTC |
 | **Mystery boxes** | Starter (100) · Delta (500) · Phase (2,000) | always |
-| **Titles** | 4 buyable titles | rotates daily, from 37 |
-| **Banners** | 3 profile banners | rotates daily, from 21 |
-| **Animations** | 2 avatar animations | rotates daily, from 14 |
-| **Profile effects** | 3 ring effects | rotates daily, from 22 |
+| **Titles** | 4 of 37 | daily drop |
+| **Banners** | 3 of 25 | daily drop |
+| **Animations** | 3 of 25 | daily drop |
+| **Profile effects** | 3 of 30 | daily drop |
 | **Essentials** | 2× / 3× / 5× XP boost (24h), Streak Shield, Streak Revive | always |
 
-- **Restock:** every day at 00:00 UTC, same shop for everyone. The small timer
-  under "Shop" counts down using the server clock.
-- **Fresh stock:** items shown yesterday go to the back of the draw, so a
-  restock always brings something new. Rarer items appear less often
-  (weights common 6 · rare 5 · epic 3.5 · legendary 2.2 · mythic 1).
-- **Enforced:** `purchase_shop_item` refuses a rotating item that isn't in
-  today's shop (5-minute grace after a restock) and charges the deal price.
-- **Earned titles are never sold** (streak / hours ladders, box titles). The
-  shop shows how close the next earned one is.
+- **Restock:** a new numbered drop ("Drop #009") every day at 00:00 UTC, same
+  shop for everyone; the clock uses the server time.
+- **Rarity = how hard it is to SEE:** each slot rolls a rarity first — common
+  40 · rare 32 · epic 18 · legendary 10 — then picks an item of that rarity.
+  Mythics never drop daily. Every drop holds at least one epic-or-better.
+- **Fresh stock:** an item shown in the last 3 drops sits out; if a whole
+  rarity is cooling down, the item gone longest comes back.
+- **History:** each drop item carries `times_seen` / `last_seen_cycle`, so the
+  UI says "First drop" or "Back after 23d".
+- **Enforced:** `purchase_shop_item` refuses anything not in today's drop or
+  this week's Sanctum (5-minute grace at each edge) and charges the deal price.
+- **Wishlist:** `shop_wishlist` (RLS own-rows). The shop flags a wishlisted
+  item the moment it's in stock.
+- **Earned titles are never sold** (streak / hours ladders, box titles).
 - **Tunable without a deploy:** `game_config` keys `shop_cycle_hours`,
-  `shop_slots_title|banner|anim|effect`, `shop_deal_pct`.
-- Tables/RPCs: `shop_rotations`, `get_shop_rotation()`, `ensure_shop_rotation()`,
-  pg_cron `shop_prebuild_next` (23:50 UTC).
+  `shop_slots_title|banner|anim|effect`, `shop_odds_common|rare|epic|legendary`,
+  `shop_cooldown_cycles`, `shop_vault_cooldown_weeks`, `shop_deal_pct`.
+- Tables/RPCs: `shop_rotations`, `shop_vault`, `shop_wishlist`,
+  `get_shop_rotation()`, `ensure_shop_rotation()`, `ensure_shop_vault()`,
+  pg_cron `shop_prebuild_next` (23:50 UTC). Internally the Sanctum is "vault".
+
+### The shop UI (components/shop/)
+
+- **Drop intro** (`DropIntro`): first visit to each drop — "#009" slams, the
+  rarity tally ticks in worst → best, Mondays the Sanctum bar wipes across,
+  shutters lift. ~2.5s, tap to skip. Once per drop per user (localStorage).
+- **Sealed cards** (`ShopPieces/ShopCard`): on a new drop every drop card is
+  face-down — a "?" plate whose rarity strip HEIGHT hints the pull. Cards flip
+  as they scroll into view, worst → best within each shelf; epic+ gets a hit
+  (solid flash + punch). "Reveal N" in the sticky bar opens the rest.
+- **Collection index** (`CatalogIndex`): every item, owned/total per section,
+  in-stock/Sanctum tags, "~every N days" from the live odds, wishlist toggle.
+- **Buy stamp** (`ItemSheet`): a solid rarity panel + "YOURS" + flat confetti,
+  then "Equip now". Flat film language only — no glow (house rule).
+- Preview on fixtures, no sign-in: **/dev/shop** (non-production builds).
 
 ## Why people come back (Duolingo / Strava / Cal AI patterns, implemented)
 
 | Pattern | Phase implementation |
 |---|---|
-| Streak loss aversion | Streak card turns dark with a **live countdown to midnight** until you check in; lights up cyan once done. 20:45 local push if the streak is about to end. |
+| Streak loss aversion | Streak card turns dark with a **live countdown to midnight** until you check in; turns lime once done (UI v3). 20:45 local push if the streak is about to end. |
 | The streak moment | Full-screen **"N-day streak"** screen on the first check-in of each day (number ticks up, week row fills). |
 | Milestones | 3/7/14/30/50/100/200/365 days pay **25 → 1,000 gems**, once ever (`user_rewards`). Next milestone + reward shown on the streak card. |
 | Levels that matter | Level N pays **25·N + 25 gems** the first time you reach it (75 → 400). Shown on Home ("LV.5 +150") and on every rank in the Level page. |

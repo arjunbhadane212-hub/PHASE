@@ -1,39 +1,52 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect, lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ModeProvider } from "./contexts/ModeContext";
 import { GameProvider } from "./contexts/GameContext";
 import { Toaster } from "./components/ui/sonner";
 import ErrorBoundary from "./components/ErrorBoundary";
-
-// Pages
-import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import OnboardingPage from "./pages/OnboardingPage";
-import WelcomePage from "./pages/WelcomePage";
-import DashboardLayout from "./pages/DashboardLayout";
-import HomePage from "./pages/HomePage";
-import ProfilePage from "./pages/ProfilePage";
-import LevelPage from "./pages/LevelPage";
-import ProgressPage from "./pages/ProgressPage";
-import SettingsPage from "./pages/SettingsPage";
-import ShopPage from "./pages/ShopPage";
-import FocusShopPage from "./pages/FocusShopPage";
-import MyProfilePage from "./pages/MyProfilePage";
-import LeaderboardPage from "./pages/LeaderboardPage";
-import PublicProfilePage from "./pages/PublicProfilePage";
-import AdminPage from "./pages/AdminPage";
-import DevBoxOpeningPage from "./pages/DevBoxOpeningPage";
-import DevIconsPage from "./pages/DevIconsPage";
-import { PrivacyPage, TermsPage, HelpPage } from "./pages/LegalPage";
-import RoastNotification, { RoastListener } from "./components/RoastNotification";
-import { TitleUnlockListener } from "./components/profile/TitleUnlockToast";
+import AuthSplashHost from "./components/auth/AuthSplashHost";
 import { isInstalledApp } from "./utils/platform";
 import { hasSeenOnboarding } from "./utils/onboardingFlag";
 import { resolveRootRoute, ROUTE_LANDING } from "./utils/appEntry";
+
+// Pages — lazy-loaded so each screen's JS downloads on demand instead of
+// shipping the whole app (every page, chart lib, onboarding, landing) in one
+// bundle before first paint. The <Suspense> fallback below is the same spinner
+// the route guards already use, so a chunk load is indistinguishable from the
+// auth check that often precedes it.
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const SignupPage = lazy(() => import("./pages/SignupPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
+const WelcomePage = lazy(() => import("./pages/WelcomePage"));
+const DashboardLayout = lazy(() => import("./pages/DashboardLayout"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const LevelPage = lazy(() => import("./pages/LevelPage"));
+const ProgressPage = lazy(() => import("./pages/ProgressPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const ShopPage = lazy(() => import("./pages/ShopPage"));
+const FocusShopPage = lazy(() => import("./pages/FocusShopPage"));
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
+const PublicProfilePage = lazy(() => import("./pages/PublicProfilePage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const DevBoxOpeningPage = lazy(() => import("./pages/DevBoxOpeningPage"));
+const DevIconsPage = lazy(() => import("./pages/DevIconsPage"));
+const DevLeaguePage = lazy(() => import("./pages/DevLeaguePage"));
+const DevShopPage = lazy(() => import("./pages/DevShopPage"));
+const PrivacyPage = lazy(() => import("./pages/LegalPage").then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import("./pages/LegalPage").then((m) => ({ default: m.TermsPage })));
+const HelpPage = lazy(() => import("./pages/LegalPage").then((m) => ({ default: m.HelpPage })));
+
+// Always-mounted notification shells. They render null until an event fires,
+// and they pull in framer-motion — so loading them lazily (fallback null)
+// keeps framer-motion out of the initial bundle without any visible delay.
+const RoastNotification = lazy(() => import("./components/RoastNotification"));
+const RoastListener = lazy(() => import("./components/RoastNotification").then((m) => ({ default: m.RoastListener })));
+const TitleUnlockListener = lazy(() => import("./components/profile/TitleUnlockToast").then((m) => ({ default: m.TitleUnlockListener })));
 
 // Shown when the admin dashboard has banned this account. The account was
 // already signed out server-side (see AuthContext.loadUser); this just
@@ -42,9 +55,9 @@ function SuspendedScreen() {
   return (
     <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center p-4">
       <div className="w-full max-w-sm p-6 rounded-2xl bg-[var(--gm-card)] text-center">
-        <h1 className="text-lg font-black text-[var(--gm-ink)] font-['Archivo'] mb-2">Account suspended</h1>
+        <h1 className="text-lg font-black text-[var(--gm-ink)] font-display mb-2">Account suspended</h1>
         <p className="text-sm text-[var(--gm-muted)] mb-6">This account has been suspended. If you think this is a mistake, contact support.</p>
-        <a href="/login" className="inline-block w-full py-2.5 rounded-full bg-[#95DEE6] text-[#183A3F] text-sm font-bold">
+        <a href="/login" className="inline-block w-full py-2.5 rounded-full bg-[#D4F36B] text-[#2B3A06] text-sm font-bold">
           Back to login
         </a>
       </div>
@@ -59,7 +72,7 @@ function ProtectedRoute({ children }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-[#D4F36B] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -87,7 +100,7 @@ function AuthRoute({ children }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-[#D4F36B] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -113,7 +126,7 @@ function OnboardingRoute({ children }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-[#D4F36B] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -151,7 +164,7 @@ function RootEntry() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-[#D4F36B] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -175,7 +188,7 @@ function WelcomeRoute({ children }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#95DEE6] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-[#D4F36B] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -187,9 +200,26 @@ function WelcomeRoute({ children }) {
   return children;
 }
 
-function AppRoutes() {
+// Shared fallback while a lazy route chunk loads — matches the route guards'
+// spinner so a chunk fetch looks like the auth check, not a blank flash.
+function RouteFallback() {
   return (
-    <Routes>
+    <div className="min-h-screen bg-[var(--gm-bg)] flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-[#D4F36B] border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+}
+
+function AppRoutes() {
+  // UI v3: every top-level screen change (landing → login → success → app)
+  // cross-fades/slides instead of cutting. Inside /dashboard, DashboardLayout
+  // runs its own direction-aware page transition.
+  const location = useLocation();
+  const topKey = location.pathname.startsWith('/dashboard') ? '/dashboard' : location.pathname;
+  return (
+    <div key={topKey} className="route-fade">
+    <Suspense fallback={<RouteFallback />}>
+    <Routes location={location}>
       {/* Entry point. "/" may show the marketing landing; "/app" is the
           installed app's manifest start_url and never does. Both share the
           same decision. */}
@@ -218,6 +248,12 @@ function AppRoutes() {
       {process.env.NODE_ENV !== "production" && (
         <Route path="/dev/icons" element={<DevIconsPage />} />
       )}
+      {process.env.NODE_ENV !== "production" && (
+        <Route path="/dev/league" element={<DevLeaguePage />} />
+      )}
+      {process.env.NODE_ENV !== "production" && (
+        <Route path="/dev/shop" element={<DevShopPage />} />
+      )}
 
       {/* Legal + help (linked from signup and Settings; required by the app stores) */}
       <Route path="/privacy" element={<PrivacyPage />} />
@@ -241,13 +277,15 @@ function AppRoutes() {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
+    </div>
   );
 }
 
 function App() {
   // Restore light mode preference on load
   useEffect(() => {
-    if (localStorage.getItem('lightMode') === 'true') {
+    if (localStorage.getItem('lightMode') !== 'false') {
       document.documentElement.classList.add('light-mode');
     }
   }, []);
@@ -259,10 +297,13 @@ function App() {
           <ModeProvider>
             <GameProvider>
               <AppRoutes />
+              <AuthSplashHost />
               <Toaster position="top-right" />
-              <RoastNotification />
-              <RoastListener />
-              <TitleUnlockListener />
+              <Suspense fallback={null}>
+                <RoastNotification />
+                <RoastListener />
+                <TitleUnlockListener />
+              </Suspense>
             </GameProvider>
           </ModeProvider>
         </AuthProvider>
